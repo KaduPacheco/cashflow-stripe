@@ -8,8 +8,7 @@ export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ exi
   try {
     const credentials = btoa('Cashflow:Cashflow123');
     
-    // Você precisa fornecer a URL completa do seu webhook aqui
-    const webhookUrl = 'COLE_A_URL_DO_WEBHOOK_QUE_VERIFICA_WHATSAPP_AQUI';
+    const webhookUrl = 'https://n8n.forteia.com.br/webhook-test/verifica-zap';
     
     const response = await fetch(webhookUrl, {
       method: 'POST',

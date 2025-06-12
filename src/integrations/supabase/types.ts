@@ -61,15 +61,7 @@ export type Database = {
           userId?: string | null
           valor?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lembretes_userId_fkey"
-            columns: ["userId"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -156,13 +148,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categorias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transacoes_userId_fkey"
-            columns: ["userId"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
