@@ -12,20 +12,20 @@ export default function Plano() {
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
     if (theme === 'dark') {
-      return '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png' // logo-black
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png' // logo-white
     } else if (theme === 'light') {
-      return '/lovable-uploads/b679a5ba-8a42-42cc-bc36-ccf4569fa05f.png' // logo-white
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png' // logo-black
     } else {
       // System theme - check actual computed theme
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       return isDark 
-        ? '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png'
-        : '/lovable-uploads/b679a5ba-8a42-42cc-bc36-ccf4569fa05f.png'
+        ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
+        : 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png'
     }
   }
 
   const handleSubscribe = () => {
-    window.open('https://sandbox.asaas.com/c/6yc5f1jlcoe21w8b', '_blank')
+    window.open('https://buy.stripe.com/test_14A28r52i9VHaQ14zw14400', '_blank')
   }
 
   const handleBackToLogin = () => {
@@ -70,7 +70,7 @@ export default function Plano() {
           <div>
             <img 
               src={getLogoSrc()} 
-              alt="FinanceFlow" 
+              alt="Cash Flow" 
               className="h-8 w-auto"
             />
           </div>
@@ -78,7 +78,7 @@ export default function Plano() {
           <div className="w-full lg:min-w-[470px] mx-auto">
             <div className="text-start py-8">
               <h1 className="text-2xl font-bold text-slate-800 mb-2 dark:text-slate-300">
-                Plano Agente Financeiro – R$29,99/mês
+                Plano Agente Financeiro – R$ 34,90/mês
               </h1>
               <p className="text-lg text-muted-foreground mb-8">
                 Organize suas finanças de forma simples e inteligente!
@@ -99,7 +99,7 @@ export default function Plano() {
               {/* Impact Message */}
               <div className="bg-primary/10 rounded-lg p-4 mb-8">
                 <p className="text-lg font-semibold text-primary text-center">
-                  Invista no controle da sua vida financeira por menos de R$1 por dia!
+                  Invista no controle da sua vida financeira por pouco mais de R$ 1 por dia!
                 </p>
               </div>
 

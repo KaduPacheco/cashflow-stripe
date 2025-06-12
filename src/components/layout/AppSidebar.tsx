@@ -1,3 +1,4 @@
+
 import { NavLink, useLocation } from 'react-router-dom'
 import { Home, CreditCard, Calendar, User, LogOut, Tag, FileText } from 'lucide-react'
 import {
@@ -40,15 +41,15 @@ export function AppSidebar() {
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
     if (theme === 'dark') {
-      return '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png' // logo-black
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png' // logo-white
     } else if (theme === 'light') {
-      return '/lovable-uploads/b679a5ba-8a42-42cc-bc36-ccf4569fa05f.png' // logo-white
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png' // logo-black
     } else {
       // System theme - check actual computed theme
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       return isDark 
-        ? '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png'
-        : '/lovable-uploads/b679a5ba-8a42-42cc-bc36-ccf4569fa05f.png'
+        ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
+        : 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png'
     }
   }
 
@@ -60,14 +61,14 @@ export function AppSidebar() {
             <div className="min-w-8">
               <img 
                 src="/lovable-uploads/a5a40de7-4096-4a32-af0c-76fe03ec72f7.png"
-                alt="FinanceFlow Icon" 
+                alt="Cash Flow Icon" 
                 className="h-8 w-8"
               />
             </div>
           ) : (
             <img 
               src={getLogoSrc()} 
-              alt="FinanceFlow" 
+              alt="Cash Flow" 
               className="h-8 w-auto"
             />
           )}

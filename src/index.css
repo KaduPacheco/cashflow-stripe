@@ -11,7 +11,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 229 84% 59%; /* #4361ee */
+    --primary: 142 76% 36%; /* Verde #16a34a */
     --primary-foreground: 0 0% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -23,16 +23,16 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 229 84% 59%; /* #4361ee */
+    --ring: 142 76% 36%; /* Verde #16a34a */
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 229 84% 59%; /* #4361ee */
+    --sidebar-primary: 142 76% 36%; /* Verde #16a34a */
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 229 84% 59%; /* #4361ee */
+    --sidebar-ring: 142 76% 36%; /* Verde #16a34a */
     --title-color: 10 10% 10%; /* #1a1a1a */
   }
 
@@ -43,7 +43,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 229 84% 59%; /* #4361ee */
+    --primary: 142 76% 36%; /* Verde #16a34a */
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -55,15 +55,15 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 229 84% 59%; /* #4361ee */
+    --ring: 142 76% 36%; /* Verde #16a34a */
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 229 84% 59%; /* #4361ee */
+    --sidebar-primary: 142 76% 36%; /* Verde #16a34a */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 229 84% 59%; /* #4361ee */
+    --sidebar-ring: 142 76% 36%; /* Verde #16a34a */
     --title-color: 210 40% 98%; /* White for dark theme */
   }
 }

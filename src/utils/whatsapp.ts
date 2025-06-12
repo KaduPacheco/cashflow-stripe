@@ -6,9 +6,12 @@ interface WhatsAppValidationResponse {
 
 export async function validateWhatsAppNumber(phoneNumber: string): Promise<{ exists: boolean; whatsappId?: string }> {
   try {
-    const credentials = btoa('zanini:oba+1bilhao');
+    const credentials = btoa('Cashflow:Cashflow123');
     
-    const response = await fetch('https://n8n.tidi.com.br/webhook/verifica-zap', {
+    // Você precisa fornecer a URL completa do seu webhook aqui
+    const webhookUrl = 'COLE_A_URL_DO_WEBHOOK_QUE_VERIFICA_WHATSAPP_AQUI';
+    
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
