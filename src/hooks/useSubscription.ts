@@ -30,8 +30,8 @@ export function useSubscription() {
     try {
       setChecking(true)
       console.log('Checking subscription for user:', user.id)
+      console.log('Using session token:', session.access_token.substring(0, 20) + '...')
       
-      // Usar o token da sessão ativa
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -49,7 +49,7 @@ export function useSubscription() {
       console.error('Failed to check subscription:', error)
       toast({
         title: "Erro ao verificar assinatura",
-        description: error.message,
+        description: error.message || "Erro desconhecido ao verificar assinatura",
         variant: "destructive",
       })
       setSubscriptionData({ subscribed: false })
@@ -71,6 +71,7 @@ export function useSubscription() {
 
     try {
       console.log('Creating checkout session for user:', user.id)
+      console.log('Using session token:', session.access_token.substring(0, 20) + '...')
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         headers: {
@@ -86,12 +87,19 @@ export function useSubscription() {
       if (data?.url) {
         console.log('Redirecting to checkout:', data.url)
         window.open(data.url, '_blank')
+        
+        toast({
+          title: "Redirecionando para pagamento",
+          description: "Abrindo nova aba com o checkout do Stripe...",
+        })
+      } else {
+        throw new Error('URL do checkout não retornada')
       }
     } catch (error: any) {
       console.error('Failed to create checkout:', error)
       toast({
         title: "Erro ao criar sessão de pagamento",
-        description: error.message,
+        description: error.message || "Erro desconhecido ao criar checkout",
         variant: "destructive",
       })
     }
@@ -129,14 +137,14 @@ export function useSubscription() {
       console.error('Failed to open customer portal:', error)
       toast({
         title: "Erro ao abrir portal do cliente",
-        description: error.message,
+        description: error.message || "Erro desconhecido ao abrir portal",
         variant: "destructive",
       })
     }
   }
 
   useEffect(() => {
-    if (session) {
+    if (session && user) {
       checkSubscription()
     }
   }, [user, session])
