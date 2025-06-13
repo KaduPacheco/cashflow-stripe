@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { SubscriptionGate } from "@/components/subscription/SubscriptionGate";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -37,7 +38,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <SubscriptionGate>
+      <AppLayout>{children}</AppLayout>
+    </SubscriptionGate>
+  );
 }
 
 function AppRoutes() {

@@ -2,12 +2,14 @@
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useTheme } from '@/hooks/useTheme'
-import { Check } from 'lucide-react'
+import { useSubscription } from '@/hooks/useSubscription'
+import { Check, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Plano() {
   const { theme } = useTheme()
   const navigate = useNavigate()
+  const { createCheckout, subscriptionData } = useSubscription()
 
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
@@ -25,11 +27,15 @@ export default function Plano() {
   }
 
   const handleSubscribe = () => {
-    window.open('https://buy.stripe.com/test_14A28r52i9VHaQ14zw14400', '_blank')
+    createCheckout()
   }
 
   const handleBackToLogin = () => {
     navigate('/auth')
+  }
+
+  const handleBackToDashboard = () => {
+    navigate('/dashboard')
   }
 
   const benefits = [
@@ -37,6 +43,10 @@ export default function Plano() {
     'Receba lembretes de contas e metas',
     'Tenha um assistente sempre pronto para ajudar'
   ]
+
+  // Check if coming from checkout cancellation
+  const urlParams = new URLSearchParams(window.location.search)
+  const checkoutCanceled = urlParams.get('checkout') === 'canceled'
 
   return (
     <div className="h-screen flex bg-background p-6">
@@ -77,6 +87,14 @@ export default function Plano() {
           
           <div className="w-full lg:min-w-[470px] mx-auto">
             <div className="text-start py-8">
+              {checkoutCanceled && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+                  <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                    Pagamento cancelado. Você pode tentar novamente quando quiser.
+                  </p>
+                </div>
+              )}
+
               <h1 className="text-2xl font-bold text-slate-800 mb-2 dark:text-slate-300">
                 Plano Agente Financeiro – R$ 34,90/mês
               </h1>
@@ -105,20 +123,40 @@ export default function Plano() {
 
               {/* Action Buttons */}
               <div className="space-y-4">
-                <Button
-                  onClick={handleSubscribe}
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-lg font-semibold"
-                >
-                  Assinar agora
-                </Button>
+                {!subscriptionData.subscribed ? (
+                  <Button
+                    onClick={handleSubscribe}
+                    className="w-full h-11 bg-primary hover:bg-primary/90 text-lg font-semibold"
+                  >
+                    Assinar agora
+                  </Button>
+                ) : (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                    <p className="text-green-800 dark:text-green-200 font-medium">
+                      ✅ Você já possui uma assinatura ativa!
+                    </p>
+                  </div>
+                )}
                 
-                <Button
-                  variant="outline"
-                  onClick={handleBackToLogin}
-                  className="w-full h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  Voltar ao login
-                </Button>
+                {subscriptionData.subscribed ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleBackToDashboard}
+                    className="w-full h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar ao Dashboard
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleBackToLogin}
+                    className="w-full h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar ao login
+                  </Button>
+                )}
               </div>
             </div>
           </div>
