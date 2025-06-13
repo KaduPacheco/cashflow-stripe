@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
 interface LoginFormProps {
   onForgotPassword: () => void
@@ -18,7 +17,6 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
-  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,10 +41,6 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
     }
 
     setLoading(false)
-  }
-
-  const handleSubscribeClick = () => {
-    navigate('/plano')
   }
 
   return (
@@ -112,14 +106,6 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
           className="w-full h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
         >
           Criar conta
-        </Button>
-        
-        <Button
-          onClick={handleSubscribeClick}
-          variant="outline"
-          className="w-full h-11 border-gray-300 text-gray-600 hover:bg-gray-50"
-        >
-          Adquira já
         </Button>
         
         <Button
