@@ -7,6 +7,7 @@ import { PhoneInput } from '@/components/ui/phone-input'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { validateWhatsAppNumber } from '@/utils/whatsapp'
 
 interface SignUpFormProps {
   onBackToLogin: () => void
@@ -18,7 +19,9 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nome, setNome] = useState('')
   const [phone, setPhone] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [countryCode, setCountryCode] = useState('+55')
+  const [whatsappCountryCode, setWhatsappCountryCode] = useState('+55')
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
 
@@ -52,6 +55,26 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
       return
     }
 
+    if (!whatsapp.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O WhatsApp é obrigatório",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate WhatsApp number
+    const fullWhatsapp = whatsappCountryCode + whatsapp.replace(/\D/g, '')
+    if (!validateWhatsAppNumber(fullWhatsapp)) {
+      toast({
+        title: "Erro de validação",
+        description: "Número de WhatsApp inválido",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -60,7 +83,8 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
       
       const { error } = await signUp(email, password, { 
         nome,
-        phone: fullPhone
+        phone: fullPhone,
+        whatsapp: fullWhatsapp
       })
 
       if (error) {
@@ -124,6 +148,20 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
             countryCode={countryCode}
             onValueChange={setPhone}
             onCountryChange={setCountryCode}
+            required
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="whatsapp" className="text-sm font-medium">
+            WhatsApp
+          </Label>
+          <PhoneInput
+            id="whatsapp"
+            value={whatsapp}
+            countryCode={whatsappCountryCode}
+            onValueChange={setWhatsapp}
+            onCountryChange={setWhatsappCountryCode}
             required
             className="h-11"
           />
