@@ -38,7 +38,11 @@ export function UserProfile() {
 
   if (!profile) return null
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null | undefined) => {
+    if (!name || typeof name !== 'string') {
+      return 'U' // Default fallback for "User"
+    }
+    
     return name
       .split(' ')
       .map(n => n[0])
@@ -57,8 +61,8 @@ export function UserProfile() {
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-          <p className="text-sm font-medium truncate">{profile.nome}</p>
-          <p className="text-xs text-muted-foreground truncate">{profile.phone}</p>
+          <p className="text-sm font-medium truncate">{profile.nome || 'Usuário'}</p>
+          <p className="text-xs text-muted-foreground truncate">{profile.phone || 'Sem telefone'}</p>
         </div>
       </div>
     </NavLink>
