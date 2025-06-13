@@ -9,6 +9,7 @@ export interface SubscriptionData {
   subscription_tier?: string
   subscription_end?: string
   subscription_id?: string
+  error?: string
 }
 
 export function useSubscription() {
@@ -40,19 +41,32 @@ export function useSubscription() {
       
       if (error) {
         console.error('Error checking subscription:', error)
-        throw error
+        // Em caso de erro, assumir não subscrito
+        setSubscriptionData({ subscribed: false, error: error.message })
+        return
       }
 
       console.log('Subscription check result:', data)
-      setSubscriptionData(data)
+      
+      // Se a resposta contém erro, mas status 200, tratar como não subscrito
+      if (data?.error) {
+        console.log('Subscription check returned error:', data.error)
+        setSubscriptionData({ subscribed: false, error: data.error })
+        return
+      }
+      
+      setSubscriptionData(data || { subscribed: false })
     } catch (error: any) {
       console.error('Failed to check subscription:', error)
-      toast({
-        title: "Erro ao verificar assinatura",
-        description: error.message || "Erro desconhecido ao verificar assinatura",
-        variant: "destructive",
-      })
-      setSubscriptionData({ subscribed: false })
+      // Não mostrar toast de erro se for problema de autenticação
+      if (!error.message?.includes('User not authenticated')) {
+        toast({
+          title: "Erro ao verificar assinatura",
+          description: error.message || "Erro desconhecido ao verificar assinatura",
+          variant: "destructive",
+        })
+      }
+      setSubscriptionData({ subscribed: false, error: error.message })
     } finally {
       setLoading(false)
       setChecking(false)
@@ -146,6 +160,9 @@ export function useSubscription() {
   useEffect(() => {
     if (session && user) {
       checkSubscription()
+    } else {
+      setLoading(false)
+      setSubscriptionData({ subscribed: false })
     }
   }, [user, session])
 

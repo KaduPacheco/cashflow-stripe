@@ -36,24 +36,53 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("No authorization header provided");
+      logStep("No authorization header - returning unsubscribed");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        error: "No authorization provided" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
     logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     logStep("Attempting to authenticate user", { tokenLength: token.length });
     
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    // Usar uma instância diferente do cliente para autenticação
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
     
-    if (userError) {
-      logStep("Authentication error", { error: userError.message, code: userError.status });
-      throw new Error(`Authentication error: ${userError.message}`);
+    const { data: userData, error: userError } = await authClient.auth.getUser(token);
+    
+    if (userError || !userData.user) {
+      logStep("Authentication error or user not found", { 
+        error: userError?.message, 
+        hasUser: !!userData.user 
+      });
+      
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        error: "User not authenticated"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
     
     const user = userData.user;
     if (!user?.email) {
-      logStep("No user or email found", { hasUser: !!user });
-      throw new Error("User not authenticated or email not available");
+      logStep("No user email found");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        error: "User email not available" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
     
     logStep("User authenticated successfully", { userId: user.id, email: user.email });
@@ -144,9 +173,14 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in check-subscription", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    
+    // Retornar sempre status 200 com subscribed: false em caso de erro
+    return new Response(JSON.stringify({ 
+      subscribed: false,
+      error: errorMessage 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 200,
     });
   }
 });
