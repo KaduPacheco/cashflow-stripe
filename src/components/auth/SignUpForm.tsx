@@ -19,7 +19,6 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nome, setNome] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
-  const [countryCode, setCountryCode] = useState('+55')
   const [whatsappCountryCode, setWhatsappCountryCode] = useState('+55')
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
@@ -40,15 +39,6 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
       toast({
         title: "Erro de validação",
         description: "A senha deve ter pelo menos 6 caracteres",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!phone.trim()) {
-      toast({
-        title: "Erro de validação",
-        description: "O telefone é obrigatório",
         variant: "destructive",
       })
       return
@@ -77,12 +67,8 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
     setLoading(true)
 
     try {
-      // Combine country code with phone number
-      const fullPhone = countryCode + phone.replace(/\D/g, '')
-      
       const { error } = await signUp(email, password, { 
         nome,
-        phone: fullPhone,
         whatsapp: fullWhatsapp
       })
 
@@ -133,20 +119,6 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
             placeholder="Seu nome completo"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            required
-            className="h-11"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone" className="text-sm font-medium">
-            Telefone
-          </Label>
-          <PhoneInput
-            id="phone"
-            value={phone}
-            countryCode={countryCode}
-            onValueChange={setPhone}
-            onCountryChange={setCountryCode}
             required
             className="h-11"
           />
