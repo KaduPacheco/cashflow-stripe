@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useSubscription } from '@/hooks/useSubscription'
 import { toast } from '@/hooks/use-toast'
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
 
 interface DashboardStats {
   totalReceitas: number
@@ -52,6 +54,7 @@ const dicas = [
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { subscriptionData } = useSubscription()
   const [stats, setStats] = useState<DashboardStats>({
     totalReceitas: 0,
     totalDespesas: 0,
@@ -90,36 +93,48 @@ export default function Dashboard() {
       
       console.log('Dashboard: Date range:', { startDate, endDate })
 
-      // Buscar transações - usando campo 'quando' para filtro de data
-      const { data: transacoes, error: transacoesError } = await supabase
+      // Para usuários sem assinatura, limitar aos últimos 30 dias
+      let transacoesQuery = supabase
         .from('transacoes')
         .select('*')
         .eq('userId', user.id)
-        .gte('quando', startDate.toISOString().split('T')[0])
-        .lte('quando', endDate.toISOString().split('T')[0])
         .order('quando', { ascending: false })
+
+      let lembretesQuery = supabase
+        .from('lembretes')
+        .select('*')
+        .eq('userId', user.id)
+        .order('data', { ascending: true })
+
+      if (subscriptionData.subscribed) {
+        // Usuários assinantes podem filtrar por período
+        transacoesQuery = transacoesQuery
+          .gte('quando', startDate.toISOString().split('T')[0])
+          .lte('quando', endDate.toISOString().split('T')[0])
+        
+        lembretesQuery = lembretesQuery
+          .gte('data', startDate.toISOString().split('T')[0])
+          .lte('data', endDate.toISOString().split('T')[0])
+      } else {
+        // Usuários gratuitos veem apenas últimos 5 registros
+        transacoesQuery = transacoesQuery.limit(5)
+        lembretesQuery = lembretesQuery.limit(3)
+      }
+
+      const { data: transacoes, error: transacoesError } = await transacoesQuery
+      const { data: lembretes, error: lembretesError } = await lembretesQuery
 
       if (transacoesError) {
         console.error('Dashboard: Error fetching transactions:', transacoesError)
         throw transacoesError
       }
 
-      console.log('Dashboard: Transactions fetched:', transacoes?.length || 0)
-
-      // Buscar lembretes - formatando datas corretamente
-      const { data: lembretes, error: lembretesError } = await supabase
-        .from('lembretes')
-        .select('*')
-        .eq('userId', user.id)
-        .gte('data', startDate.toISOString().split('T')[0])
-        .lte('data', endDate.toISOString().split('T')[0])
-        .order('data', { ascending: true })
-
       if (lembretesError) {
         console.error('Dashboard: Error fetching lembretes:', lembretesError)
         throw lembretesError
       }
 
+      console.log('Dashboard: Transactions fetched:', transacoes?.length || 0)
       console.log('Dashboard: Lembretes fetched:', lembretes?.length || 0)
 
       setTransacoes(transacoes || [])
@@ -223,45 +238,55 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <SubscriptionBanner />
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
             Visão geral das suas finanças pessoais
             {transacoes.length > 0 && ` • ${transacoes.length} transações encontradas`}
+            {!subscriptionData.subscribed && " • Versão gratuita (últimos 5 registros)"}
           </p>
         </div>
         
-        <div className="flex gap-2 items-center">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i} value={i.toString()}>
-                  {new Date(0, i).toLocaleDateString('pt-BR', { month: 'long' })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 5 }, (_, i) => {
-                const year = new Date().getFullYear() - 2 + i
-                return (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
+        {subscriptionData.subscribed ? (
+          <div className="flex gap-2 items-center">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <SelectItem key={i} value={i.toString()}>
+                    {new Date(0, i).toLocaleDateString('pt-BR', { month: 'long' })}
                   </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 5 }, (_, i) => {
+                  const year = new Date().getFullYear() - 2 + i
+                  return (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            <span className="text-sm">Filtros disponíveis com assinatura</span>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -277,7 +302,7 @@ export default function Dashboard() {
               {formatCurrency(stats.totalReceitas)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Mês atual
+              {subscriptionData.subscribed ? "Mês atual" : "Últimos registros"}
             </p>
           </CardContent>
         </Card>
@@ -294,7 +319,7 @@ export default function Dashboard() {
               {formatCurrency(stats.totalDespesas)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Mês atual
+              {subscriptionData.subscribed ? "Mês atual" : "Últimos registros"}
             </p>
           </CardContent>
         </Card>
@@ -328,7 +353,7 @@ export default function Dashboard() {
               {stats.lembretesCount}
             </div>
             <p className="text-xs text-muted-foreground">
-              Este mês
+              {subscriptionData.subscribed ? "Este mês" : "Próximos"}
             </p>
           </CardContent>
         </Card>
@@ -337,9 +362,15 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Gastos por Categoria</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Gastos por Categoria
+              {!subscriptionData.subscribed && <Lock className="h-4 w-4 text-muted-foreground" />}
+            </CardTitle>
             <CardDescription>
-              Distribuição dos seus gastos no período selecionado
+              {subscriptionData.subscribed 
+                ? "Distribuição dos seus gastos no período selecionado"
+                : "Distribuição dos últimos gastos registrados"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
