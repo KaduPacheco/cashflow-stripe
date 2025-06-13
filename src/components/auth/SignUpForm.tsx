@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,8 +68,10 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
     setLoading(true)
 
     try {
+      // Preencher automaticamente o phone com o valor do whatsapp
       const { error } = await signUp(email, password, { 
         nome,
+        phone: fullWhatsapp, // phone preenchido automaticamente com o valor do whatsapp
         whatsapp: fullWhatsapp
       })
 
@@ -209,3 +212,4 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
     </div>
   )
 }
+
