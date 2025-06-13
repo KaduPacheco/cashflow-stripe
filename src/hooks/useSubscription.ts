@@ -12,7 +12,7 @@ export interface SubscriptionData {
 }
 
 export function useSubscription() {
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
     subscribed: false
   })
@@ -20,7 +20,8 @@ export function useSubscription() {
   const [checking, setChecking] = useState(false)
 
   const checkSubscription = async () => {
-    if (!user) {
+    if (!user || !session?.access_token) {
+      console.log('No user or session token available')
       setSubscriptionData({ subscribed: false })
       setLoading(false)
       return
@@ -30,7 +31,12 @@ export function useSubscription() {
       setChecking(true)
       console.log('Checking subscription for user:', user.id)
       
-      const { data, error } = await supabase.functions.invoke('check-subscription')
+      // Usar o token da sessão ativa
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
       
       if (error) {
         console.error('Error checking subscription:', error)
@@ -54,9 +60,23 @@ export function useSubscription() {
   }
 
   const createCheckout = async () => {
+    if (!user || !session?.access_token) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para criar uma assinatura",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
-      console.log('Creating checkout session...')
-      const { data, error } = await supabase.functions.invoke('create-checkout')
+      console.log('Creating checkout session for user:', user.id)
+      
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
       
       if (error) {
         console.error('Error creating checkout:', error)
@@ -78,9 +98,23 @@ export function useSubscription() {
   }
 
   const openCustomerPortal = async () => {
+    if (!user || !session?.access_token) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para acessar o portal do cliente",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
-      console.log('Opening customer portal...')
-      const { data, error } = await supabase.functions.invoke('customer-portal')
+      console.log('Opening customer portal for user:', user.id)
+      
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
       
       if (error) {
         console.error('Error opening customer portal:', error)
@@ -102,8 +136,10 @@ export function useSubscription() {
   }
 
   useEffect(() => {
-    checkSubscription()
-  }, [user])
+    if (session) {
+      checkSubscription()
+    }
+  }, [user, session])
 
   // Auto-refresh subscription status every 30 seconds when user is active
   useEffect(() => {
