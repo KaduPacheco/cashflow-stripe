@@ -18,7 +18,6 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nome, setNome] = useState('')
-  const [phone, setPhone] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [countryCode, setCountryCode] = useState('+55')
   const [whatsappCountryCode, setWhatsappCountryCode] = useState('+55')
