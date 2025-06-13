@@ -29,7 +29,11 @@ export function UserProfile() {
         .eq('id', user?.id)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao carregar perfil:', error)
+        return
+      }
+      
       setProfile(data)
     } catch (error) {
       console.error('Erro ao carregar perfil:', error)
