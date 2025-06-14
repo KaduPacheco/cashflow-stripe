@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 interface LoginFormProps {
   onForgotPassword: () => void
@@ -17,6 +18,7 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
+  const isMobile = useIsMobile()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,17 +46,17 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
   }
 
   return (
-    <div className="w-full lg:min-w-[470px] mx-auto">
-      <div className="text-start py-8">
-        <h1 className="text-lg font-bold text-slate-800 mb-2 dark:text-slate-300">
+    <div className="w-full mx-auto">
+      <div className={`text-start ${isMobile ? 'py-4' : 'py-8'}`}>
+        <h1 className={`${isMobile ? 'text-lg' : 'text-lg'} font-bold text-slate-800 mb-2 dark:text-slate-300`}>
           Bem-vindo de volta
         </h1>
-        <p className="text-base text-muted-foreground">
+        <p className={`${isMobile ? 'text-sm' : 'text-base'} text-muted-foreground`}>
           Entre na sua conta para continuar
         </p>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className={`space-y-${isMobile ? '4' : '6'}`}>
         <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium">
             Email
@@ -66,7 +68,7 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="h-11"
+            className={`${isMobile ? 'h-10' : 'h-11'}`}
           />
         </div>
         <div className="space-y-2">
@@ -80,12 +82,12 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="h-11"
+            className={`${isMobile ? 'h-10' : 'h-11'}`}
           />
         </div>
         <Button
           type="submit"
-          className="w-full h-11 bg-primary hover:bg-primary/90"
+          className={`w-full ${isMobile ? 'h-10' : 'h-11'} bg-primary hover:bg-primary/90`}
           disabled={loading}
         >
           {loading ? (
@@ -99,11 +101,11 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
         </Button>
       </form>
       
-      <div className="mt-6 space-y-4 text-center">
+      <div className={`${isMobile ? 'mt-4' : 'mt-6'} space-y-${isMobile ? '3' : '4'} text-center`}>
         <Button
           onClick={onSignUp}
           variant="outline"
-          className="w-full h-11 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          className={`w-full ${isMobile ? 'h-10' : 'h-11'} border-primary text-primary hover:bg-primary hover:text-primary-foreground`}
         >
           Criar conta
         </Button>

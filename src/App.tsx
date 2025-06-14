@@ -123,7 +123,7 @@ function AppRoutes() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="financeflow-theme">
+    <ThemeProvider defaultTheme="system" storageKey="financeflow-theme">
       <TooltipProvider>
         <Toaster />
         <Sonner />

@@ -5,6 +5,7 @@ import { SignUpForm } from '@/components/auth/SignUpForm'
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useTheme } from '@/hooks/useTheme'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 type AuthMode = 'login' | 'signup' | 'forgot'
 
@@ -17,6 +18,7 @@ const authImages = {
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>('login')
   const { theme } = useTheme()
+  const isMobile = useIsMobile()
 
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
@@ -34,40 +36,38 @@ export default function Auth() {
   }
 
   return (
-    <div className="h-screen flex bg-background p-6">
-      {/* Left side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden rounded-3xl">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background p-4 lg:p-6">
+      {/* Image section - visible on mobile at top, side on desktop */}
+      <div className={`${isMobile ? 'h-48 w-full mb-4' : 'hidden lg:flex lg:w-1/2'} relative overflow-hidden rounded-3xl`}>
         <img
           src={authImages[mode]}
           alt="Finance Management"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-primary/20" />
-        <div className="absolute bottom-8 left-8 text-white">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-3xl font-bold text-white">Agora ficou fácil!</h2>
+        <div className={`absolute ${isMobile ? 'bottom-4 left-4' : 'bottom-8 left-8'} text-white`}>
+          <div className="flex items-center gap-3 mb-2 lg:mb-4">
+            <h2 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold text-white`}>Agora ficou fácil!</h2>
           </div>
-          <p className="text-lg opacity-90">
+          <p className={`${isMobile ? 'text-sm' : 'text-lg'} opacity-90`}>
             Gerencie suas finanças de forma simples e inteligente
           </p>
         </div>
       </div>
 
-      {/* Right side - Forms */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
-        {/* Header with Logo and Theme Toggle */}
-        <div className="absolute top-4 left-4 right-4 flex justify-end items-center">
-          
-          {/* Theme Toggle */}
+      {/* Forms section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-8 relative">
+        {/* Header with Theme Toggle */}
+        <div className="absolute top-2 lg:top-4 left-2 lg:left-4 right-2 lg:right-4 flex justify-end items-center">
           <ThemeToggle />
         </div>
 
-        <div className="grid w-full min-w-[480px] mt-16 justify-center gap-4">
-          <div>
+        <div className="grid w-full max-w-md lg:max-w-lg mt-12 lg:mt-16 justify-center gap-4">
+          <div className="mb-2">
             <img 
               src={getLogoSrc()} 
               alt="FinanceFlow" 
-              className="h-8 w-auto"
+              className="h-6 lg:h-8 w-auto"
             />
           </div>
           
