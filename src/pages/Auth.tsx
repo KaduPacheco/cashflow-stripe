@@ -21,15 +21,15 @@ export default function Auth() {
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
     if (theme === 'dark') {
-      return '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png' // logo-black
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png' // logo-black
     } else if (theme === 'light') {
-      return '/lovable-uploads/b679a5ba-8a42-42cc-bc36-ccf4569fa05f.png' // logo-white
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png' // logo-white
     } else {
       // System theme - check actual computed theme
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       return isDark 
-        ? '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png'
-        : '/lovable-uploads/b679a5ba-8a42-42cc-bc36-ccf4569fa05f.png'
+        ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
+        : 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png'
     }
   }
 
