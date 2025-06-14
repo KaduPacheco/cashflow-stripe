@@ -16,14 +16,14 @@ export default function Plano() {
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
     if (theme === 'dark') {
-      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png' // logo-white
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749932907/logo_gsproy.jpg' // logo-white
     } else if (theme === 'light') {
       return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png' // logo-black
     } else {
       // System theme - check actual computed theme
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       return isDark 
-        ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
+        ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749932907/logo_gsproy.jpg.png'
         : 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png'
     }
   }
