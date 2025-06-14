@@ -9,9 +9,9 @@ import { useTheme } from '@/hooks/useTheme'
 type AuthMode = 'login' | 'signup' | 'forgot'
 
 const authImages = {
-  login: '/lovable-uploads/7a9a766e-0b47-43d5-9605-b2ec2dcd0803.png',
-  signup: '/lovable-uploads/7a9a766e-0b47-43d5-9605-b2ec2dcd0803.png',
-  forgot: '/lovable-uploads/7a9a766e-0b47-43d5-9605-b2ec2dcd0803.png'
+  login: 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749909272/freepik__upload__21739_pufvnw.jpg',
+  signup: 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749909272/freepik__upload__21739_pufvnw.jpg',
+  forgot: 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749909272/freepik__upload__21739_pufvnw.jpg'
 }
 
 export default function Auth() {
