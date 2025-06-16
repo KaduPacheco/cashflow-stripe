@@ -226,7 +226,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      convert_to_brasilia_time: {
+        Args: { input_timestamp?: string }
+        Returns: string
+      }
+      format_brasilia_datetime: {
+        Args: { input_timestamp: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

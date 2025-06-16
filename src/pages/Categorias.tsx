@@ -61,7 +61,10 @@ export default function Categorias() {
     }
 
     try {
-      await updateCategory(editingCategory.id, { nome: editingCategory.nome })
+      await updateCategory({
+        id: editingCategory.id,
+        updates: { nome: editingCategory.nome }
+      })
       toast({
         title: 'Sucesso',
         description: 'Categoria atualizada com sucesso.',

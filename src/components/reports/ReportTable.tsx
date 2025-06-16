@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
+import { formatBrazilianDateTime } from '@/utils/dateFormatter'
 import { ReportTransaction } from '@/hooks/useReports'
 
 interface ReportTableProps {
@@ -11,11 +12,6 @@ interface ReportTableProps {
 }
 
 export function ReportTable({ transactions }: ReportTableProps) {
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '-'
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -40,7 +36,7 @@ export function ReportTable({ transactions }: ReportTableProps) {
             <TableBody>
               {transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell>{formatDate(transaction.quando || '')}</TableCell>
+                  <TableCell>{formatBrazilianDateTime(transaction.quando)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {transaction.tipo === 'receita' ? (

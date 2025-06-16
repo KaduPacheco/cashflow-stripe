@@ -19,6 +19,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { toast } from '@/hooks/use-toast'
 import { Plus, Edit, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
+import { formatBrazilianDateTime } from '@/utils/dateFormatter'
 import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
 import { ReadOnlyWrapper } from '@/components/subscription/ReadOnlyWrapper'
 import { SubscriptionGate } from '@/components/subscription/SubscriptionGate'
@@ -248,10 +249,6 @@ export default function Transacoes() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -421,14 +418,21 @@ export default function Transacoes() {
                             <p>Categoria: {transacao.categorias.nome}</p>
                           )}
                           {transacao.quando && (
-                            <p>Data: {formatDate(transacao.quando)}</p>
+                            <p>Data: {formatBrazilianDateTime(transacao.quando)}</p>
                           )}
+                          <p>Criado em: {formatBrazilianDateTime(transacao.created_at)}</p>
                           {transacao.detalhes && (
                             <p>Detalhes: {transacao.detalhes}</p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <span className={`text-lg font-bold ${
+                          transacao.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transacao.tipo === 'receita' ? '+' : '-'}
+                          {formatCurrency(Math.abs(transacao.valor || 0))}
+                        </span>
                         <ReadOnlyWrapper message="Edição disponível apenas na versão premium" showOverlay={false}>
                           <Button
                             variant="outline"
