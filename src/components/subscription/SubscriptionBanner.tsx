@@ -1,12 +1,12 @@
+
 import { useSubscription } from '@/hooks/useSubscription'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { CreditCard, AlertTriangle } from 'lucide-react'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AlertTriangle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
 
 export function SubscriptionBanner() {
-  const { subscriptionData, loading, createCheckout } = useSubscription()
+  const { subscriptionData, loading } = useSubscription()
   const { isReadOnly } = useReadOnlyMode()
   const navigate = useNavigate()
 
