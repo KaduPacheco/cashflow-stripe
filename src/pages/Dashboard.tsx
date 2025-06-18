@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,8 +29,12 @@ interface Transacao {
   valor: number | null
   detalhes: string | null
   tipo: string | null
-  categoria: string | null
+  category_id: string
   userId: string | null
+  categorias?: {
+    id: string
+    nome: string
+  }
 }
 
 interface Lembrete {
@@ -96,7 +101,13 @@ export default function Dashboard() {
       // Para usuários sem assinatura, limitar aos últimos 30 dias
       let transacoesQuery = supabase
         .from('transacoes')
-        .select('*')
+        .select(`
+          *,
+          categorias (
+            id,
+            nome
+          )
+        `)
         .eq('userId', user.id)
         .order('quando', { ascending: false })
 
@@ -171,8 +182,9 @@ export default function Dashboard() {
     const categorias: { [key: string]: number } = {}
     
     transacoes.forEach(t => {
-      if (t.categoria && t.valor && t.tipo === 'despesa') {
-        categorias[t.categoria] = (categorias[t.categoria] || 0) + Math.abs(t.valor)
+      if (t.categorias?.nome && t.valor && t.tipo === 'despesa') {
+        const categoryName = t.categorias.nome
+        categorias[categoryName] = (categorias[categoryName] || 0) + Math.abs(t.valor)
       }
     })
 
