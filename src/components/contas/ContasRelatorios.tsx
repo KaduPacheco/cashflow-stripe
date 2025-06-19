@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/utils/currency'
 import { FileText, Download, Calendar } from 'lucide-react'
+import type { ContasFilters } from '@/types/contas'
 
 export function ContasRelatorios() {
   const { contas, fetchContas } = useContas()
-  const [filtros, setFiltros] = useState({
-    tipo: '',
+  const [filtros, setFiltros] = useState<ContasFilters>({
+    tipo: undefined,
     data_inicio: '',
     data_fim: '',
     status: ''
@@ -68,7 +69,7 @@ export function ContasRelatorios() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label htmlFor="tipo">Tipo</Label>
-              <Select value={filtros.tipo} onValueChange={(value) => setFiltros(prev => ({ ...prev, tipo: value }))}>
+              <Select value={filtros.tipo || ''} onValueChange={(value) => setFiltros(prev => ({ ...prev, tipo: value as 'pagar' | 'receber' | undefined }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
@@ -82,7 +83,7 @@ export function ContasRelatorios() {
 
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select value={filtros.status} onValueChange={(value) => setFiltros(prev => ({ ...prev, status: value }))}>
+              <Select value={filtros.status || ''} onValueChange={(value) => setFiltros(prev => ({ ...prev, status: value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
@@ -100,7 +101,7 @@ export function ContasRelatorios() {
               <Input
                 id="data_inicio"
                 type="date"
-                value={filtros.data_inicio}
+                value={filtros.data_inicio || ''}
                 onChange={(e) => setFiltros(prev => ({ ...prev, data_inicio: e.target.value }))}
               />
             </div>
@@ -110,7 +111,7 @@ export function ContasRelatorios() {
               <Input
                 id="data_fim"
                 type="date"
-                value={filtros.data_fim}
+                value={filtros.data_fim || ''}
                 onChange={(e) => setFiltros(prev => ({ ...prev, data_fim: e.target.value }))}
               />
             </div>
