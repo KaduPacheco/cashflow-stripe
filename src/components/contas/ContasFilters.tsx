@@ -70,12 +70,12 @@ export function ContasFilters({ filters, onFiltersChange, tipo }: ContasFiltersP
 
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={localFilters.status || ''} onValueChange={(value) => handleFilterChange('status', value)}>
+            <Select value={localFilters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value === 'all' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {statusOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -87,12 +87,12 @@ export function ContasFilters({ filters, onFiltersChange, tipo }: ContasFiltersP
 
           <div>
             <Label htmlFor="categoria">Categoria</Label>
-            <Select value={localFilters.categoria || ''} onValueChange={(value) => handleFilterChange('categoria', value)}>
+            <Select value={localFilters.categoria || 'all'} onValueChange={(value) => handleFilterChange('categoria', value === 'all' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.nome}
@@ -104,12 +104,12 @@ export function ContasFilters({ filters, onFiltersChange, tipo }: ContasFiltersP
 
           <div>
             <Label htmlFor="cliente_fornecedor">{tipo === 'pagar' ? 'Fornecedor' : 'Cliente'}</Label>
-            <Select value={localFilters.cliente_fornecedor || ''} onValueChange={(value) => handleFilterChange('cliente_fornecedor', value)}>
+            <Select value={localFilters.cliente_fornecedor || 'all'} onValueChange={(value) => handleFilterChange('cliente_fornecedor', value === 'all' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {clientesFornecedoresFiltrados.map((cf) => (
                   <SelectItem key={cf.id} value={cf.id}>
                     {cf.nome}
