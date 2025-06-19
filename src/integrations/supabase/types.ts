@@ -36,6 +36,120 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes_fornecedores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          documento: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          tipo: Database["public"]["Enums"]["tipo_contato"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          documento?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_contato"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          documento?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_contato"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contas_pagar_receber: {
+        Row: {
+          category_id: string | null
+          cliente_fornecedor_id: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          id: string
+          numero_documento: string | null
+          observacoes: string | null
+          status: Database["public"]["Enums"]["status_conta"]
+          tipo: Database["public"]["Enums"]["tipo_conta"]
+          updated_at: string
+          user_id: string
+          valor: number
+          valor_pago: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          cliente_fornecedor_id?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          id?: string
+          numero_documento?: string | null
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["status_conta"]
+          tipo: Database["public"]["Enums"]["tipo_conta"]
+          updated_at?: string
+          user_id: string
+          valor: number
+          valor_pago?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          cliente_fornecedor_id?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          id?: string
+          numero_documento?: string | null
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["status_conta"]
+          tipo?: Database["public"]["Enums"]["tipo_conta"]
+          updated_at?: string
+          user_id?: string
+          valor?: number
+          valor_pago?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_receber_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_receber_cliente_fornecedor_id_fkey"
+            columns: ["cliente_fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "clientes_fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lembretes: {
         Row: {
           created_at: string
@@ -236,7 +350,14 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      status_conta:
+        | "pendente"
+        | "pago"
+        | "parcialmente_pago"
+        | "vencido"
+        | "cancelado"
+      tipo_conta: "pagar" | "receber"
+      tipo_contato: "cliente" | "fornecedor" | "ambos"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -351,6 +472,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      status_conta: [
+        "pendente",
+        "pago",
+        "parcialmente_pago",
+        "vencido",
+        "cancelado",
+      ],
+      tipo_conta: ["pagar", "receber"],
+      tipo_contato: ["cliente", "fornecedor", "ambos"],
+    },
   },
 } as const
