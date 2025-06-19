@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { useContas } from '@/hooks/useContas'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,7 +33,7 @@ export function ContasRelatorios() {
 
   const contasFiltradas = contas.filter(conta => {
     if (filtros.tipo && conta.tipo !== filtros.tipo) return false
-    if (filtros.status && conta.status !== filtros.status) return false
+    if (filtros.status && filtros.status !== 'all' && conta.status !== filtros.status) return false
     if (filtros.data_inicio && conta.data_vencimento < filtros.data_inicio) return false
     if (filtros.data_fim && conta.data_vencimento > filtros.data_fim) return false
     return true
@@ -69,12 +68,12 @@ export function ContasRelatorios() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label htmlFor="tipo">Tipo</Label>
-              <Select value={filtros.tipo || ''} onValueChange={(value) => setFiltros(prev => ({ ...prev, tipo: value as 'pagar' | 'receber' | undefined }))}>
+              <Select value={filtros.tipo || 'all'} onValueChange={(value) => setFiltros(prev => ({ ...prev, tipo: value === 'all' ? undefined : value as 'pagar' | 'receber' }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pagar">A Pagar</SelectItem>
                   <SelectItem value="receber">A Receber</SelectItem>
                 </SelectContent>
@@ -83,12 +82,12 @@ export function ContasRelatorios() {
 
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select value={filtros.status || ''} onValueChange={(value) => setFiltros(prev => ({ ...prev, status: value }))}>
+              <Select value={filtros.status || 'all'} onValueChange={(value) => setFiltros(prev => ({ ...prev, status: value === 'all' ? '' : value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
                   <SelectItem value="vencido">Vencido</SelectItem>
