@@ -94,7 +94,10 @@ export function ClienteFornecedorQuickAdd({ tipo, onSuccess }: ClienteFornecedor
 
           <div>
             <Label htmlFor="tipo">Tipo</Label>
-            <Select value={formData.tipo} onValueChange={(value) => setFormData(prev => ({ ...prev, tipo: value }))}>
+            <Select 
+              value={formData.tipo} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, tipo: value as 'cliente' | 'fornecedor' }))}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
