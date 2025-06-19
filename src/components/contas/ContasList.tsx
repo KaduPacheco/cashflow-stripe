@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar, Edit, Trash2, DollarSign } from 'lucide-react'
+import { Calendar, Edit, Trash2, DollarSign, Repeat, StopCircle } from 'lucide-react'
 import type { ContaPagarReceber } from '@/types/contas'
 
 interface ContasListProps {
@@ -19,7 +19,7 @@ interface ContasListProps {
 }
 
 export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps) {
-  const { deleteConta, pagarConta } = useContas()
+  const { deleteConta, pagarConta, pararRecorrencia } = useContas()
   const [pagamentoDialog, setPagamentoDialog] = useState(false)
   const [contaSelecionada, setContaSelecionada] = useState<ContaPagarReceber | null>(null)
   const [valorPagamento, setValorPagamento] = useState('')
@@ -47,6 +47,16 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
     }
   }
 
+  const getRecorrenciaLabel = (recorrencia?: string) => {
+    switch (recorrencia) {
+      case 'mensal': return 'Mensal'
+      case 'trimestral': return 'Trimestral'
+      case 'semestral': return 'Semestral'
+      case 'anual': return 'Anual'
+      default: return null
+    }
+  }
+
   const handlePagamento = async () => {
     if (!contaSelecionada || !valorPagamento) return
 
@@ -62,6 +72,13 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta conta?')) {
       await deleteConta(id)
+      onUpdate()
+    }
+  }
+
+  const handlePararRecorrencia = async (id: string) => {
+    if (confirm('Tem certeza que deseja parar a recorrência desta conta?')) {
+      await pararRecorrencia(id)
       onUpdate()
     }
   }
@@ -99,6 +116,13 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
                     <Badge variant={getStatusColor(conta.status)}>
                       {getStatusLabel(conta.status)}
                     </Badge>
+                    
+                    {conta.recorrencia && conta.recorrencia !== 'unica' && (
+                      <Badge variant="outline" className="text-blue-600 border-blue-300">
+                        <Repeat className="h-3 w-3 mr-1" />
+                        {getRecorrenciaLabel(conta.recorrencia)}
+                      </Badge>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -113,6 +137,12 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
                     
                     {conta.categorias && (
                       <span>• {conta.categorias.nome}</span>
+                    )}
+                    
+                    {conta.data_proxima_recorrencia && (
+                      <span className="text-blue-600">
+                        • Próx: {new Date(conta.data_proxima_recorrencia).toLocaleDateString('pt-BR')}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -143,6 +173,17 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
                       }}
                     >
                       <DollarSign className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  {conta.recorrencia && conta.recorrencia !== 'unica' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handlePararRecorrencia(conta.id)}
+                      title="Parar recorrência"
+                    >
+                      <StopCircle className="h-4 w-4" />
                     </Button>
                   )}
                   

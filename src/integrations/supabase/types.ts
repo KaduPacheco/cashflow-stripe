@@ -85,13 +85,16 @@ export type Database = {
         Row: {
           category_id: string | null
           cliente_fornecedor_id: string | null
+          conta_origem_id: string | null
           created_at: string
           data_pagamento: string | null
+          data_proxima_recorrencia: string | null
           data_vencimento: string
           descricao: string
           id: string
           numero_documento: string | null
           observacoes: string | null
+          recorrencia: Database["public"]["Enums"]["tipo_recorrencia"] | null
           status: Database["public"]["Enums"]["status_conta"]
           tipo: Database["public"]["Enums"]["tipo_conta"]
           updated_at: string
@@ -102,13 +105,16 @@ export type Database = {
         Insert: {
           category_id?: string | null
           cliente_fornecedor_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           data_pagamento?: string | null
+          data_proxima_recorrencia?: string | null
           data_vencimento: string
           descricao: string
           id?: string
           numero_documento?: string | null
           observacoes?: string | null
+          recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"] | null
           status?: Database["public"]["Enums"]["status_conta"]
           tipo: Database["public"]["Enums"]["tipo_conta"]
           updated_at?: string
@@ -119,13 +125,16 @@ export type Database = {
         Update: {
           category_id?: string | null
           cliente_fornecedor_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           data_pagamento?: string | null
+          data_proxima_recorrencia?: string | null
           data_vencimento?: string
           descricao?: string
           id?: string
           numero_documento?: string | null
           observacoes?: string | null
+          recorrencia?: Database["public"]["Enums"]["tipo_recorrencia"] | null
           status?: Database["public"]["Enums"]["status_conta"]
           tipo?: Database["public"]["Enums"]["tipo_conta"]
           updated_at?: string
@@ -146,6 +155,13 @@ export type Database = {
             columns: ["cliente_fornecedor_id"]
             isOneToOne: false
             referencedRelation: "clientes_fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_receber_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar_receber"
             referencedColumns: ["id"]
           },
         ]
@@ -358,6 +374,12 @@ export type Database = {
         | "cancelado"
       tipo_conta: "pagar" | "receber"
       tipo_contato: "cliente" | "fornecedor" | "ambos"
+      tipo_recorrencia:
+        | "unica"
+        | "mensal"
+        | "trimestral"
+        | "semestral"
+        | "anual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -482,6 +504,7 @@ export const Constants = {
       ],
       tipo_conta: ["pagar", "receber"],
       tipo_contato: ["cliente", "fornecedor", "ambos"],
+      tipo_recorrencia: ["unica", "mensal", "trimestral", "semestral", "anual"],
     },
   },
 } as const

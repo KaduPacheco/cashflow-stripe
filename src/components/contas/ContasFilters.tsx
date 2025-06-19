@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Search, X } from 'lucide-react'
+import { Search, X, Repeat } from 'lucide-react'
 import type { ContasFilters as IContasFilters } from '@/types/contas'
 
 interface ContasFiltersProps {
@@ -45,6 +45,14 @@ export function ContasFilters({ filters, onFiltersChange, tipo }: ContasFiltersP
     { value: 'cancelado', label: 'Cancelado' },
   ]
 
+  const recorrenciaOptions = [
+    { value: 'unica', label: 'Única' },
+    { value: 'mensal', label: 'Mensal' },
+    { value: 'trimestral', label: 'Trimestral' },
+    { value: 'semestral', label: 'Semestral' },
+    { value: 'anual', label: 'Anual' }
+  ]
+
   const tipoContato = tipo === 'pagar' ? 'fornecedor' : 'cliente'
   const clientesFornecedoresFiltrados = clientesFornecedores.filter(cf => 
     cf.tipo === tipoContato || cf.tipo === 'ambos'
@@ -53,7 +61,7 @@ export function ContasFilters({ filters, onFiltersChange, tipo }: ContasFiltersP
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
           <div>
             <Label htmlFor="busca">Buscar</Label>
             <div className="relative">
@@ -113,6 +121,26 @@ export function ContasFilters({ filters, onFiltersChange, tipo }: ContasFiltersP
                 {clientesFornecedoresFiltrados.map((cf) => (
                   <SelectItem key={cf.id} value={cf.id}>
                     {cf.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="recorrencia" className="flex items-center gap-1">
+              <Repeat className="h-3 w-3" />
+              Recorrência
+            </Label>
+            <Select value={localFilters.recorrencia || 'all'} onValueChange={(value) => handleFilterChange('recorrencia', value === 'all' ? '' : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {recorrenciaOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>

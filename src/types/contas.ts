@@ -28,6 +28,9 @@ export interface ContaPagarReceber {
   cliente_fornecedor_id?: string
   observacoes?: string
   numero_documento?: string
+  recorrencia?: 'unica' | 'mensal' | 'trimestral' | 'semestral' | 'anual'
+  data_proxima_recorrencia?: string
+  conta_origem_id?: string
   created_at: string
   updated_at: string
   categorias?: {
@@ -53,4 +56,5 @@ export interface ContasFilters {
   categoria?: string
   cliente_fornecedor?: string
   busca?: string
+  recorrencia?: string
 }

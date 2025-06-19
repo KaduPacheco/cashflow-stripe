@@ -1,14 +1,17 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useContas } from '@/hooks/useContas'
 import { useCategories } from '@/hooks/useCategories'
 import { useClientesFornecedores } from '@/hooks/useClientesFornecedores'
+import { ClienteFornecedorQuickAdd } from './ClienteFornecedorQuickAdd'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Repeat, Calendar } from 'lucide-react'
 
 interface ContasFormProps {
   tipo: 'pagar' | 'receber'
@@ -18,7 +21,7 @@ interface ContasFormProps {
 export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
   const { createConta } = useContas()
   const { categories } = useCategories()
-  const { clientesFornecedores } = useClientesFornecedores()
+  const { clientesFornecedores, fetchClientesFornecedores } = useClientesFornecedores()
   
   const [formData, setFormData] = useState({
     descricao: '',
@@ -27,7 +30,8 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
     category_id: '',
     cliente_fornecedor_id: '',
     observacoes: '',
-    numero_documento: ''
+    numero_documento: '',
+    recorrencia: 'unica'
   })
   
   const [loading, setLoading] = useState(false)
@@ -37,6 +41,37 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
     cf.tipo === tipoContato || cf.tipo === 'ambos'
   )
 
+  const recorrenciaOptions = [
+    { value: 'unica', label: 'Única (sem recorrência)' },
+    { value: 'mensal', label: 'Mensal' },
+    { value: 'trimestral', label: 'Trimestral' },
+    { value: 'semestral', label: 'Semestral' },
+    { value: 'anual', label: 'Anual' }
+  ]
+
+  const calcularProximaRecorrencia = (dataVencimento: string, recorrencia: string): string | undefined => {
+    if (recorrencia === 'unica') return undefined
+    
+    const data = new Date(dataVencimento)
+    
+    switch (recorrencia) {
+      case 'mensal':
+        data.setMonth(data.getMonth() + 1)
+        break
+      case 'trimestral':
+        data.setMonth(data.getMonth() + 3)
+        break
+      case 'semestral':
+        data.setMonth(data.getMonth() + 6)
+        break
+      case 'anual':
+        data.setFullYear(data.getFullYear() + 1)
+        break
+    }
+    
+    return data.toISOString().split('T')[0]
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -45,6 +80,11 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
     }
 
     setLoading(true)
+
+    const dataProximaRecorrencia = calcularProximaRecorrencia(
+      formData.data_vencimento, 
+      formData.recorrencia
+    )
 
     const contaData = {
       tipo,
@@ -57,6 +97,8 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
       cliente_fornecedor_id: formData.cliente_fornecedor_id || undefined,
       observacoes: formData.observacoes || undefined,
       numero_documento: formData.numero_documento || undefined,
+      recorrencia: formData.recorrencia as 'unica' | 'mensal' | 'trimestral' | 'semestral' | 'anual',
+      data_proxima_recorrencia: dataProximaRecorrencia,
       user_id: '' // Will be set by the hook
     }
 
@@ -71,6 +113,11 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleClienteFornecedorAdded = (novoId: string) => {
+    fetchClientesFornecedores()
+    setFormData(prev => ({ ...prev, cliente_fornecedor_id: novoId }))
   }
 
   return (
@@ -133,19 +180,60 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
 
             <div>
               <Label htmlFor="cliente_fornecedor">{tipo === 'pagar' ? 'Fornecedor' : 'Cliente'}</Label>
-              <Select value={formData.cliente_fornecedor_id} onValueChange={(value) => handleChange('cliente_fornecedor_id', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={`Selecione um ${tipo === 'pagar' ? 'fornecedor' : 'cliente'}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientesFornecedoresFiltrados.map((cf) => (
-                    <SelectItem key={cf.id} value={cf.id}>
-                      {cf.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={formData.cliente_fornecedor_id} onValueChange={(value) => handleChange('cliente_fornecedor_id', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Selecione um ${tipo === 'pagar' ? 'fornecedor' : 'cliente'}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientesFornecedoresFiltrados.map((cf) => (
+                      <SelectItem key={cf.id} value={cf.id}>
+                        {cf.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <ClienteFornecedorQuickAdd 
+                  tipo={tipoContato}
+                  onSuccess={handleClienteFornecedorAdded}
+                />
+              </div>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="recorrencia" className="flex items-center gap-2">
+              <Repeat className="h-4 w-4" />
+              Recorrência
+            </Label>
+            <Select value={formData.recorrencia} onValueChange={(value) => handleChange('recorrencia', value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {recorrenciaOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {formData.recorrencia !== 'unica' && formData.data_vencimento && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    Próxima recorrência: {' '}
+                    <Badge variant="outline">
+                      {calcularProximaRecorrencia(formData.data_vencimento, formData.recorrencia) && 
+                        new Date(calcularProximaRecorrencia(formData.data_vencimento, formData.recorrencia)!).toLocaleDateString('pt-BR')
+                      }
+                    </Badge>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
