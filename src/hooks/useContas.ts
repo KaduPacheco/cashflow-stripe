@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -230,7 +231,7 @@ export function useContas() {
 
       if (!transacaoCriada) {
         console.warn('Transação não foi criada, mas pagamento foi registrado')
-        toast.warn('Pagamento registrado, mas transação não foi criada automaticamente')
+        toast.info('Pagamento registrado, mas transação não foi criada automaticamente')
       }
 
       return contaAtualizada
