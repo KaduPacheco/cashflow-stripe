@@ -2,7 +2,7 @@
 import { useSubscription } from '@/hooks/useSubscription'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Wifi, Clock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
 
@@ -17,6 +17,7 @@ export function SubscriptionBanner() {
 
   const isSessionError = subscriptionData.errorType === 'session'
   const isNetworkError = subscriptionData.errorType === 'network'
+  const isRateLimit = subscriptionData.errorType === 'rate_limit'
 
   if (isSessionError) {
     return (
@@ -43,7 +44,7 @@ export function SubscriptionBanner() {
   if (isNetworkError) {
     return (
       <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-        <AlertTriangle className="h-4 w-4 text-orange-600" />
+        <Wifi className="h-4 w-4 text-orange-600" />
         <AlertTitle className="text-orange-800 dark:text-orange-200">
           Erro de Conexão
         </AlertTitle>
@@ -57,6 +58,30 @@ export function SubscriptionBanner() {
           >
             <RefreshCw className="h-4 w-4 mr-1" />
             Tentar Novamente
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (isRateLimit) {
+    return (
+      <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+        <Clock className="h-4 w-4 text-yellow-600" />
+        <AlertTitle className="text-yellow-800 dark:text-yellow-200">
+          Muitas Tentativas
+        </AlertTitle>
+        <AlertDescription className="text-yellow-700 dark:text-yellow-300 flex items-center justify-between">
+          <span>Aguarde alguns momentos antes de tentar verificar novamente.</span>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={checkSubscription}
+            className="ml-4"
+            disabled
+          >
+            <Clock className="h-4 w-4 mr-1" />
+            Aguarde
           </Button>
         </AlertDescription>
       </Alert>

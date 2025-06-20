@@ -5,7 +5,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut } from 'lucide-react'
+import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut, Wifi, Clock } from 'lucide-react'
 
 interface SubscriptionGateProps {
   children: React.ReactNode
@@ -45,17 +45,25 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
   if (!subscriptionData.subscribed) {
     const isSessionError = subscriptionData.errorType === 'session'
     const isNetworkError = subscriptionData.errorType === 'network'
+    const isRateLimit = subscriptionData.errorType === 'rate_limit'
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 p-3 bg-orange-100 dark:bg-orange-900/20 rounded-full w-fit">
-              <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-500" />
+              {isNetworkError ? (
+                <Wifi className="h-6 w-6 text-orange-600 dark:text-orange-500" />
+              ) : isRateLimit ? (
+                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
+              ) : (
+                <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-500" />
+              )}
             </div>
             <CardTitle className="text-xl">
               {isSessionError ? 'Sessão Expirada' : 
                isNetworkError ? 'Erro de Conexão' : 
+               isRateLimit ? 'Muitas Tentativas' :
                'Assinatura Necessária'}
             </CardTitle>
           </CardHeader>
@@ -81,6 +89,18 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
                   <Button onClick={checkSubscription} className="w-full" size="lg">
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Tentar Novamente
+                  </Button>
+                </div>
+              </>
+            ) : isRateLimit ? (
+              <>
+                <p className="text-muted-foreground">
+                  Muitas tentativas de verificação. Aguarde alguns momentos antes de tentar novamente.
+                </p>
+                <div className="space-y-3">
+                  <Button onClick={checkSubscription} className="w-full" size="lg" disabled>
+                    <Clock className="mr-2 h-4 w-4" />
+                    Aguarde um Momento
                   </Button>
                 </div>
               </>
