@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useContasTransacoesSinc } from '@/hooks/useContasTransacoesSinc'
 import type { ContaPagarReceber, ContasFilters, ContasStats } from '@/types/contas'
 import { toast } from 'sonner'
 
 export function useContas() {
   const { user } = useAuth()
+  const { criarTransacaoFromConta } = useContasTransacoesSinc()
   const [contas, setContas] = useState<ContaPagarReceber[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<ContasStats>({
@@ -39,7 +41,7 @@ export function useContas() {
         .eq('user_id', user.id)
         .order('data_vencimento', { ascending: false })
 
-      // Aplicar filtros
+      // Apply filters
       if (filters.tipo) {
         query = query.eq('tipo', filters.tipo)
       }
@@ -206,11 +208,37 @@ export function useContas() {
     const novoValorPago = conta.valor_pago + valorPago
     const novoStatus = novoValorPago >= conta.valor ? 'pago' : 'parcialmente_pago'
 
-    return updateConta(id, {
-      valor_pago: novoValorPago,
-      data_pagamento: dataPagamento,
-      status: novoStatus
-    })
+    try {
+      // First, update the account
+      const contaAtualizada = await updateConta(id, {
+        valor_pago: novoValorPago,
+        data_pagamento: dataPagamento,
+        status: novoStatus
+      })
+
+      if (!contaAtualizada) {
+        throw new Error('Falha ao atualizar conta')
+      }
+
+      // Then, create the corresponding transaction
+      const contaCompleta = {
+        ...conta,
+        ...contaAtualizada
+      }
+
+      const transacaoCriada = await criarTransacaoFromConta(contaCompleta, valorPago, dataPagamento)
+
+      if (!transacaoCriada) {
+        console.warn('Transação não foi criada, mas pagamento foi registrado')
+        toast.warn('Pagamento registrado, mas transação não foi criada automaticamente')
+      }
+
+      return contaAtualizada
+    } catch (error) {
+      console.error('Erro no processo de pagamento:', error)
+      toast.error('Erro ao processar pagamento')
+      return null
+    }
   }
 
   const pararRecorrencia = async (id: string) => {
@@ -237,7 +265,7 @@ export function useContas() {
       updated_at: undefined
     }
 
-    // Calcular próxima recorrência
+    // Calculate next recurrence
     const proximaData = new Date(contaOriginal.data_proxima_recorrencia)
     switch (contaOriginal.recorrencia) {
       case 'mensal':
