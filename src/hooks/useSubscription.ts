@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
-import { toast } from 'sonner'
+import { toast } from '@/hooks/use-toast'
 
 export interface SubscriptionData {
   subscribed: boolean
@@ -10,7 +10,6 @@ export interface SubscriptionData {
   subscription_end?: string
   subscription_id?: string
   error?: string
-  errorType?: 'session' | 'subscription' | 'network' | 'unknown'
 }
 
 export function useSubscription() {
@@ -20,16 +19,11 @@ export function useSubscription() {
   })
   const [loading, setLoading] = useState(true)
   const [checking, setChecking] = useState(false)
-  const [retryAttempts, setRetryAttempts] = useState(0)
 
-  const checkSubscription = async (isRetry = false) => {
+  const checkSubscription = async () => {
     if (!user || !session?.access_token) {
       console.log('No user or session token available')
-      setSubscriptionData({ 
-        subscribed: false,
-        error: 'Sessão não encontrada',
-        errorType: 'session'
-      })
+      setSubscriptionData({ subscribed: false })
       setLoading(false)
       return
     }
@@ -37,6 +31,7 @@ export function useSubscription() {
     try {
       setChecking(true)
       console.log('Checking subscription for user:', user.id)
+      console.log('Using session token:', session.access_token.substring(0, 20) + '...')
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
@@ -46,33 +41,8 @@ export function useSubscription() {
       
       if (error) {
         console.error('Error checking subscription:', error)
-        
-        // Detectar erro de sessão expirada
-        const isSessionError = error.message?.includes('session') || 
-                              error.message?.includes('token') ||
-                              error.message?.includes('unauthorized') ||
-                              error.message?.includes('User not authenticated')
-        
-        if (isSessionError && !isRetry && retryAttempts < 2) {
-          console.log('Session error detected, attempting to refresh...')
-          setRetryAttempts(prev => prev + 1)
-          
-          // Tentar refresh da sessão
-          const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession()
-          
-          if (!refreshError && sessionData.session) {
-            console.log('Session refreshed successfully, retrying subscription check...')
-            // Aguardar um pouco para a sessão ser atualizada
-            setTimeout(() => checkSubscription(true), 1000)
-            return
-          }
-        }
-        
-        setSubscriptionData({ 
-          subscribed: false, 
-          error: isSessionError ? 'Sessão expirada. Faça login novamente.' : error.message,
-          errorType: isSessionError ? 'session' : 'subscription'
-        })
+        // Em caso de erro, assumir não subscrito
+        setSubscriptionData({ subscribed: false, error: error.message })
         return
       }
 
@@ -81,76 +51,41 @@ export function useSubscription() {
       // Se a resposta contém erro, mas status 200, tratar como não subscrito
       if (data?.error) {
         console.log('Subscription check returned error:', data.error)
-        
-        const isSessionError = data.error.includes('session') || 
-                              data.error.includes('token') ||
-                              data.error.includes('User not authenticated')
-        
-        setSubscriptionData({ 
-          subscribed: false,
-          error: isSessionError ? 'Sessão expirada. Faça login novamente.' : data.error,
-          errorType: isSessionError ? 'session' : 'subscription'
-        })
+        setSubscriptionData({ subscribed: false, error: data.error })
         return
       }
       
-      // Reset retry attempts em caso de sucesso
-      setRetryAttempts(0)
       setSubscriptionData(data || { subscribed: false })
-      
     } catch (error: any) {
       console.error('Failed to check subscription:', error)
-      
-      const isNetworkError = error.name === 'NetworkError' || 
-                            error.message?.includes('fetch') ||
-                            error.message?.includes('network')
-      
-      const isSessionError = error.message?.includes('User not authenticated') ||
-                            error.message?.includes('session') ||
-                            error.message?.includes('token')
-      
-      let errorMessage = 'Erro ao verificar assinatura'
-      let errorType: SubscriptionData['errorType'] = 'unknown'
-      
-      if (isSessionError) {
-        errorMessage = 'Sessão expirada. Faça login novamente.'
-        errorType = 'session'
-      } else if (isNetworkError) {
-        errorMessage = 'Erro de conexão. Verifique sua internet.'
-        errorType = 'network'
-      }
-      
-      // Não mostrar toast de erro para problemas de sessão
-      if (!isSessionError) {
-        toast.error("Erro ao verificar assinatura", {
-          description: errorMessage,
+      // Não mostrar toast de erro se for problema de autenticação
+      if (!error.message?.includes('User not authenticated')) {
+        toast({
+          title: "Erro ao verificar assinatura",
+          description: error.message || "Erro desconhecido ao verificar assinatura",
+          variant: "destructive",
         })
       }
-      
-      setSubscriptionData({ subscribed: false, error: errorMessage, errorType })
+      setSubscriptionData({ subscribed: false, error: error.message })
     } finally {
       setLoading(false)
       setChecking(false)
     }
   }
 
-  const forceRefresh = async () => {
-    console.log('Force refreshing subscription...')
-    setRetryAttempts(0)
-    setLoading(true)
-    await checkSubscription(false)
-  }
-
   const createCheckout = async () => {
     if (!user || !session?.access_token) {
-      toast.error("Erro de autenticação", {
+      toast({
+        title: "Erro de autenticação",
         description: "Você precisa estar logado para criar uma assinatura",
+        variant: "destructive",
       })
       return
     }
 
     try {
       console.log('Creating checkout session for user:', user.id)
+      console.log('Using session token:', session.access_token.substring(0, 20) + '...')
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         headers: {
@@ -167,7 +102,8 @@ export function useSubscription() {
         console.log('Redirecting to checkout:', data.url)
         window.open(data.url, '_blank')
         
-        toast.success("Redirecionando para pagamento", {
+        toast({
+          title: "Redirecionando para pagamento",
           description: "Abrindo nova aba com o checkout do Stripe...",
         })
       } else {
@@ -175,16 +111,20 @@ export function useSubscription() {
       }
     } catch (error: any) {
       console.error('Failed to create checkout:', error)
-      toast.error("Erro ao criar sessão de pagamento", {
+      toast({
+        title: "Erro ao criar sessão de pagamento",
         description: error.message || "Erro desconhecido ao criar checkout",
+        variant: "destructive",
       })
     }
   }
 
   const openCustomerPortal = async () => {
     if (!user || !session?.access_token) {
-      toast.error("Erro de autenticação", {
+      toast({
+        title: "Erro de autenticação",
         description: "Você precisa estar logado para acessar o portal do cliente",
+        variant: "destructive",
       })
       return
     }
@@ -209,8 +149,10 @@ export function useSubscription() {
       }
     } catch (error: any) {
       console.error('Failed to open customer portal:', error)
-      toast.error("Erro ao abrir portal do cliente", {
+      toast({
+        title: "Erro ao abrir portal do cliente",
         description: error.message || "Erro desconhecido ao abrir portal",
+        variant: "destructive",
       })
     }
   }
@@ -241,7 +183,7 @@ export function useSubscription() {
     subscriptionData,
     loading,
     checking,
-    checkSubscription: forceRefresh,
+    checkSubscription,
     createCheckout,
     openCustomerPortal,
   }
