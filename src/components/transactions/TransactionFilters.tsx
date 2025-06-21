@@ -47,9 +47,9 @@ export function TransactionFilters({
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row md:flex-row gap-3 sm:gap-4">
         <Select value={typeFilter || 'all'} onValueChange={handleTypeChange}>
-          <SelectTrigger className="w-full sm:w-[180px] h-10">
+          <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-10">
             <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
@@ -61,7 +61,7 @@ export function TransactionFilters({
         </Select>
 
         <Select value={categoryFilter || 'all'} onValueChange={handleCategoryChange} disabled={isLoading}>
-          <SelectTrigger className="w-full sm:w-[180px] h-10">
+          <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-10">
             <SelectValue placeholder={isLoading ? "Carregando..." : "Categoria"} />
           </SelectTrigger>
           <SelectContent>

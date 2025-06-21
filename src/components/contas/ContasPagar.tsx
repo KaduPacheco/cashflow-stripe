@@ -24,7 +24,7 @@ export function ContasPagar() {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Contas a Pagar</h1>
           <p className="text-sm text-muted-foreground">Gerencie suas contas a pagar</p>
@@ -32,7 +32,7 @@ export function ContasPagar() {
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button className="w-full md:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Nova Conta a Pagar
             </Button>
