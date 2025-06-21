@@ -36,48 +36,50 @@ export function TransactionFilters({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-      <div className="relative flex-1">
+    <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           placeholder="Pesquisar por estabelecimento..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9"
+          className="pl-9 h-10"
         />
       </div>
 
-      <Select value={typeFilter || 'all'} onValueChange={handleTypeChange}>
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <Filter className="h-4 w-4 mr-2" />
-          <SelectValue placeholder="Tipo" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos os tipos</SelectItem>
-          <SelectItem value="receita">Receitas</SelectItem>
-          <SelectItem value="despesa">Despesas</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <Select value={typeFilter || 'all'} onValueChange={handleTypeChange}>
+          <SelectTrigger className="w-full sm:w-[180px] h-10">
+            <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os tipos</SelectItem>
+            <SelectItem value="receita">Receitas</SelectItem>
+            <SelectItem value="despesa">Despesas</SelectItem>
+          </SelectContent>
+        </Select>
 
-      <Select value={categoryFilter || 'all'} onValueChange={handleCategoryChange} disabled={isLoading}>
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder={isLoading ? "Carregando..." : "Categoria"} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas categorias</SelectItem>
-          {categories?.map((categoria) => (
-            <SelectItem key={categoria.id} value={categoria.id}>
-              {categoria.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={categoryFilter || 'all'} onValueChange={handleCategoryChange} disabled={isLoading}>
+          <SelectTrigger className="w-full sm:w-[180px] h-10">
+            <SelectValue placeholder={isLoading ? "Carregando..." : "Categoria"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas categorias</SelectItem>
+            {categories?.map((categoria) => (
+              <SelectItem key={categoria.id} value={categoria.id}>
+                {categoria.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {hasFilters && (
-        <Button variant="outline" onClick={onClearFilters} size="icon">
-          <X className="h-4 w-4" />
-        </Button>
-      )}
+        {hasFilters && (
+          <Button variant="outline" onClick={onClearFilters} size="icon" className="h-10 w-10 flex-shrink-0">
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

@@ -100,23 +100,25 @@ export default function Transacoes() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 px-2 sm:px-6 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Transações</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gerencie suas transações financeiras
           </p>
         </div>
         
-        <ReadOnlyWrapper message="Criação de transações disponível apenas na versão premium">
-          <TransactionsActions 
-            hasTransactions={transacoes.length > 0}
-            onCreateNew={handleCreateNew}
-            onDeleteAll={deleteAllTransactions}
-            isReadOnly={isReadOnly}
-          />
-        </ReadOnlyWrapper>
+        <div className="sm:hidden">
+          <ReadOnlyWrapper message="Criação de transações disponível apenas na versão premium">
+            <TransactionsActions 
+              hasTransactions={transacoes.length > 0}
+              onCreateNew={handleCreateNew}
+              onDeleteAll={deleteAllTransactions}
+              isReadOnly={isReadOnly}
+            />
+          </ReadOnlyWrapper>
+        </div>
       </div>
 
       <SubscriptionGate>
@@ -127,10 +129,10 @@ export default function Transacoes() {
         />
         
         <Card>
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg sm:text-xl">Filtros</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <TransactionFilters 
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -144,16 +146,18 @@ export default function Transacoes() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Lista de Transações</CardTitle>
-            <TransactionsActions 
-              hasTransactions={transacoes.length > 0}
-              onCreateNew={handleCreateNew}
-              onDeleteAll={deleteAllTransactions}
-              isReadOnly={isReadOnly}
-            />
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3">
+            <CardTitle className="text-lg sm:text-xl">Lista de Transações</CardTitle>
+            <div className="hidden sm:block">
+              <TransactionsActions 
+                hasTransactions={transacoes.length > 0}
+                onCreateNew={handleCreateNew}
+                onDeleteAll={deleteAllTransactions}
+                isReadOnly={isReadOnly}
+              />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <TransactionsList 
               transacoes={transacoes}
               onEdit={handleEdit}
@@ -166,12 +170,12 @@ export default function Transacoes() {
         </Card>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">
                 {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm">
                 {editingTransaction 
                   ? 'Faça as alterações necessárias na transação.' 
                   : 'Adicione uma nova receita ou despesa.'}

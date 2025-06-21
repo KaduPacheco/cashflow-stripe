@@ -18,7 +18,7 @@ export function TransactionsActions({
   isReadOnly 
 }: TransactionsActionsProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
       {hasTransactions && (
         <ReadOnlyWrapper message="Remoção de transações disponível apenas na versão premium">
           <Button
@@ -26,6 +26,7 @@ export function TransactionsActions({
             size="sm"
             onClick={onDeleteAll}
             disabled={isReadOnly}
+            className="w-full sm:w-auto"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Remover Todas
@@ -34,7 +35,7 @@ export function TransactionsActions({
       )}
       
       <ReadOnlyWrapper message="Criação de transações disponível apenas na versão premium">
-        <Button onClick={onCreateNew} disabled={isReadOnly}>
+        <Button onClick={onCreateNew} disabled={isReadOnly} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nova Transação
         </Button>

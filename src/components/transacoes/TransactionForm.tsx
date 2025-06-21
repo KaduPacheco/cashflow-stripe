@@ -19,11 +19,11 @@ interface TransactionFormProps {
 export function TransactionForm({ formData, setFormData, onSubmit, isEditing }: TransactionFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="tipo">Tipo</Label>
+          <Label htmlFor="tipo" className="text-sm">Tipo</Label>
           <Select value={formData.tipo} onValueChange={(value) => setFormData({...formData, tipo: value})}>
-            <SelectTrigger>
+            <SelectTrigger className="h-10">
               <SelectValue placeholder="Selecione o tipo" />
             </SelectTrigger>
             <SelectContent>
@@ -33,50 +33,59 @@ export function TransactionForm({ formData, setFormData, onSubmit, isEditing }: 
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="valor">Valor</Label>
+          <Label htmlFor="valor" className="text-sm">Valor</Label>
           <CurrencyInput
             value={formData.valor}
             onChange={(value) => setFormData({...formData, valor: value})}
             required
+            className="h-10"
           />
         </div>
       </div>
+      
       <div className="space-y-2">
-        <Label htmlFor="estabelecimento">Estabelecimento</Label>
+        <Label htmlFor="estabelecimento" className="text-sm">Estabelecimento</Label>
         <Input
           id="estabelecimento"
           placeholder="Ex: Supermercado, Salário, etc."
           value={formData.estabelecimento}
           onChange={(e) => setFormData({...formData, estabelecimento: e.target.value})}
+          className="h-10"
         />
       </div>
+      
       <div className="space-y-2">
-        <Label htmlFor="categoria">Categoria</Label>
+        <Label htmlFor="categoria" className="text-sm">Categoria</Label>
         <CategorySelector
           value={formData.category_id}
           onValueChange={(value) => setFormData({...formData, category_id: value})}
           placeholder="Selecione a categoria"
         />
       </div>
+      
       <div className="space-y-2">
-        <Label htmlFor="quando">Data</Label>
+        <Label htmlFor="quando" className="text-sm">Data</Label>
         <Input
           id="quando"
           type="date"
           value={formData.quando}
           onChange={(e) => setFormData({...formData, quando: e.target.value})}
+          className="h-10"
         />
       </div>
+      
       <div className="space-y-2">
-        <Label htmlFor="detalhes">Detalhes</Label>
+        <Label htmlFor="detalhes" className="text-sm">Detalhes</Label>
         <Textarea
           id="detalhes"
           placeholder="Informações adicionais..."
           value={formData.detalhes}
           onChange={(e) => setFormData({...formData, detalhes: e.target.value})}
+          className="min-h-[80px] resize-none"
         />
       </div>
-      <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+      
+      <Button type="submit" className="w-full bg-primary hover:bg-primary/90 h-10">
         {isEditing ? 'Atualizar' : 'Adicionar'} Transação
       </Button>
     </form>
