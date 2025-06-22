@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -207,6 +206,32 @@ export default function Dashboard() {
   const proximoLembrete = lembretes
     .filter(l => l.data && new Date(l.data) >= new Date())
     .sort((a, b) => new Date(a.data!).getTime() - new Date(b.data!).getTime())[0]
+
+  // Adicionar listener para mudanças em tempo real nas transações
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel('dashboard-transactions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transacoes',
+          filter: `userId=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Dashboard: Transaction change detected:', payload)
+          fetchDashboardData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, filterMonth, filterYear])
 
   // Show loading state
   if (loading) {
