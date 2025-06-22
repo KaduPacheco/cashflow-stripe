@@ -7,18 +7,18 @@ import { ClienteFornecedorQuickAdd } from './ClienteFornecedorQuickAdd'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Repeat, Calendar } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import { X, Calendar, CreditCard, Tag, Settings } from 'lucide-react'
 
 interface ContasFormProps {
   tipo: 'pagar' | 'receber'
   onSuccess: () => void
+  onClose?: () => void
 }
 
-export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
+export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
   const { createConta } = useContas()
   const { categories } = useCategories()
   const { clientesFornecedores, fetchClientesFornecedores } = useClientesFornecedores()
@@ -31,7 +31,9 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
     cliente_fornecedor_id: '',
     observacoes: '',
     numero_documento: '',
-    recorrencia: 'unica'
+    recorrencia: 'unica',
+    recorrente: false,
+    parcelado: false
   })
   
   const [loading, setLoading] = useState(false)
@@ -40,14 +42,6 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
   const clientesFornecedoresFiltrados = clientesFornecedores.filter(cf => 
     cf.tipo === tipoContato || cf.tipo === 'ambos'
   )
-
-  const recorrenciaOptions = [
-    { value: 'unica', label: 'Única (sem recorrência)' },
-    { value: 'mensal', label: 'Mensal' },
-    { value: 'trimestral', label: 'Trimestral' },
-    { value: 'semestral', label: 'Semestral' },
-    { value: 'anual', label: 'Anual' }
-  ]
 
   const calcularProximaRecorrencia = (dataVencimento: string, recorrencia: string): string | undefined => {
     if (recorrencia === 'unica') return undefined
@@ -81,10 +75,10 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
 
     setLoading(true)
 
-    const dataProximaRecorrencia = calcularProximaRecorrencia(
+    const dataProximaRecorrencia = formData.recorrente ? calcularProximaRecorrencia(
       formData.data_vencimento, 
       formData.recorrencia
-    )
+    ) : undefined
 
     const contaData = {
       tipo,
@@ -97,9 +91,9 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
       cliente_fornecedor_id: formData.cliente_fornecedor_id || undefined,
       observacoes: formData.observacoes || undefined,
       numero_documento: formData.numero_documento || undefined,
-      recorrencia: formData.recorrencia as 'unica' | 'mensal' | 'trimestral' | 'semestral' | 'anual',
+      recorrencia: formData.recorrente ? (formData.recorrencia as 'unica' | 'mensal' | 'trimestral' | 'semestral' | 'anual') : 'unica',
       data_proxima_recorrencia: dataProximaRecorrencia,
-      user_id: '' // Will be set by the hook
+      user_id: ''
     }
 
     const result = await createConta(contaData)
@@ -111,7 +105,7 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
     setLoading(false)
   }
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -121,149 +115,207 @@ export function ContasForm({ tipo, onSuccess }: ContasFormProps) {
   }
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="descricao">Descrição *</Label>
-            <Input
-              id="descricao"
-              value={formData.descricao}
-              onChange={(e) => handleChange('descricao', e.target.value)}
-              placeholder="Digite a descrição da conta"
-              required
-            />
+    <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-green-500 rounded-sm flex items-center justify-center">
+            <span className="text-white text-sm font-bold">+</span>
           </div>
+          <h2 className="text-lg font-semibold">Novo Lançamento Futuro</h2>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="h-5 w-5" />
+          </button>
+        )}
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="valor">Valor *</Label>
-              <Input
-                id="valor"
-                type="number"
-                step="0.01"
-                value={formData.valor}
-                onChange={(e) => handleChange('valor', e.target.value)}
-                placeholder="0,00"
-                required
-              />
+      <div className="p-4">
+        <p className="text-sm text-gray-600 mb-6">
+          Registre um lançamento previsto para o futuro.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Informações Básicas */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Informações Básicas
             </div>
 
-            <div>
-              <Label htmlFor="data_vencimento">Data de Vencimento *</Label>
-              <Input
-                id="data_vencimento"
-                type="date"
-                value={formData.data_vencimento}
-                onChange={(e) => handleChange('data_vencimento', e.target.value)}
-                required
-              />
-            </div>
-          </div>
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1 h-4 bg-orange-400 rounded"></div>
+                  <Label className="text-sm font-medium">Descrição</Label>
+                </div>
+                <Input
+                  value={formData.descricao}
+                  onChange={(e) => handleChange('descricao', e.target.value)}
+                  placeholder="Ex: IPTU, Salário, Energia..."
+                  className="border-green-200 focus:border-green-400"
+                  required
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="categoria">Categoria</Label>
-              <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="cliente_fornecedor">{tipo === 'pagar' ? 'Fornecedor' : 'Cliente'}</Label>
-              <div className="flex gap-2">
-                <Select value={formData.cliente_fornecedor_id} onValueChange={(value) => handleChange('cliente_fornecedor_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={`Selecione um ${tipo === 'pagar' ? 'fornecedor' : 'cliente'}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientesFornecedoresFiltrados.map((cf) => (
-                      <SelectItem key={cf.id} value={cf.id}>
-                        {cf.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <ClienteFornecedorQuickAdd 
-                  tipo={tipoContato}
-                  onSuccess={handleClienteFornecedorAdded}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1 h-4 bg-orange-400 rounded"></div>
+                  <Label className="text-sm font-medium">Valor</Label>
+                </div>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.valor}
+                  onChange={(e) => handleChange('valor', e.target.value)}
+                  placeholder="Ex: 1.500,00"
+                  className="border-green-200 focus:border-green-400"
+                  required
                 />
               </div>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="recorrencia" className="flex items-center gap-2">
-              <Repeat className="h-4 w-4" />
-              Recorrência
-            </Label>
-            <Select value={formData.recorrencia} onValueChange={(value) => handleChange('recorrencia', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {recorrenciaOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {formData.recorrencia !== 'unica' && formData.data_vencimento && (
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-blue-700">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Próxima recorrência: {' '}
-                    <Badge variant="outline">
-                      {calcularProximaRecorrencia(formData.data_vencimento, formData.recorrencia) && 
-                        new Date(calcularProximaRecorrencia(formData.data_vencimento, formData.recorrencia)!).toLocaleDateString('pt-BR')
-                      }
-                    </Badge>
-                  </span>
+          {/* Classificação */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Classificação
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="h-4 w-4 text-blue-500" />
+                  <Label className="text-sm font-medium">Tipo</Label>
                 </div>
+                <Select value={tipo} disabled>
+                  <SelectTrigger className="border-green-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="receber">A Receber</SelectItem>
+                    <SelectItem value="pagar">A Pagar</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-4 w-4 text-orange-500" />
+                  <Label className="text-sm font-medium">Categoria</Label>
+                </div>
+                <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
+                  <SelectTrigger className="border-green-200">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="numero_documento">Número do Documento</Label>
-            <Input
-              id="numero_documento"
-              value={formData.numero_documento}
-              onChange={(e) => handleChange('numero_documento', e.target.value)}
-              placeholder="Ex: NF-001, Boleto 123..."
-            />
+          {/* Agendamento */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Agendamento
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-purple-500" />
+                <Label className="text-sm font-medium">Data Prevista</Label>
+              </div>
+              <Input
+                type="date"
+                value={formData.data_vencimento}
+                onChange={(e) => handleChange('data_vencimento', e.target.value)}
+                className="border-green-200 focus:border-green-400"
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="observacoes">Observações</Label>
-            <Textarea
-              id="observacoes"
-              value={formData.observacoes}
-              onChange={(e) => handleChange('observacoes', e.target.value)}
-              placeholder="Observações adicionais..."
-              rows={3}
-            />
+          {/* Opções Especiais */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Opções Especiais
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Settings className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <div className="text-sm font-medium">Lançamento Recorrente</div>
+                    <div className="text-xs text-gray-500">Repetir automaticamente a cada período</div>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.recorrente}
+                  onCheckedChange={(checked) => handleChange('recorrente', checked)}
+                />
+              </div>
+
+              {formData.recorrente && (
+                <Select value={formData.recorrencia} onValueChange={(value) => handleChange('recorrencia', value)}>
+                  <SelectTrigger className="border-green-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                    <SelectItem value="trimestral">Trimestral</SelectItem>
+                    <SelectItem value="semestral">Semestral</SelectItem>
+                    <SelectItem value="anual">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <div className="text-sm font-medium">Lançamento Parcelado</div>
+                    <div className="text-xs text-gray-500">Dividir em várias parcelas mensais</div>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.parcelado}
+                  onCheckedChange={(checked) => handleChange('parcelado', checked)}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar Conta'}
+          {/* Botões */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-green-500 hover:bg-green-600"
+            >
+              {loading ? 'Salvando...' : 'Adicionar'}
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
