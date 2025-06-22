@@ -2,12 +2,18 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from './AppSidebar'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
 
 interface AppLayoutProps {
   children: React.ReactNode
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const handleRefresh = () => {
+    window.location.reload()
+  }
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -27,7 +33,17 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </h1>
               </div>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleRefresh}
+                title="Atualizar página"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+              <ThemeToggle />
+            </div>
           </header>
           <div className="flex-1 p-3 sm:p-4 md:p-6 bg-background">
             {children}

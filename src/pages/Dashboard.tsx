@@ -80,6 +80,38 @@ export default function Dashboard() {
     }
   }, [user?.id, filterMonth, filterYear])
 
+  // Listener para mudanças em tempo real - movido para cima e corrigido
+  useEffect(() => {
+    if (!user?.id) return
+
+    console.log('Dashboard: Setting up real-time listener for user:', user.id)
+    
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transacoes',
+          filter: `userId=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Dashboard: Real-time transaction change detected:', payload)
+          // Recarregar dados quando houver mudanças
+          fetchDashboardData()
+        }
+      )
+      .subscribe((status) => {
+        console.log('Dashboard: Real-time subscription status:', status)
+      })
+
+    return () => {
+      console.log('Dashboard: Cleaning up real-time listener')
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
   const fetchDashboardData = async () => {
     if (!user?.id) {
       console.error('Dashboard: No user ID available')
@@ -150,9 +182,18 @@ export default function Dashboard() {
       setTransacoes(transacoes || [])
       setLembretes(lembretes || [])
 
-      // Calcular estatísticas
-      const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.valor || 0), 0) || 0
-      const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.valor || 0), 0) || 0
+      // Calcular estatísticas - corrigido para garantir que receitas sejam calculadas corretamente
+      const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => {
+        const valor = Number(t.valor) || 0
+        console.log('Dashboard: Adding receita:', valor)
+        return sum + valor
+      }, 0) || 0
+      
+      const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => {
+        const valor = Number(t.valor) || 0
+        console.log('Dashboard: Adding despesa:', valor)
+        return sum + Math.abs(valor)
+      }, 0) || 0
 
       const newStats = {
         totalReceitas: receitas,
@@ -206,32 +247,6 @@ export default function Dashboard() {
   const proximoLembrete = lembretes
     .filter(l => l.data && new Date(l.data) >= new Date())
     .sort((a, b) => new Date(a.data!).getTime() - new Date(b.data!).getTime())[0]
-
-  // Adicionar listener para mudanças em tempo real nas transações
-  useEffect(() => {
-    if (!user?.id) return
-
-    const channel = supabase
-      .channel('dashboard-transactions')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transacoes',
-          filter: `userId=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Dashboard: Transaction change detected:', payload)
-          fetchDashboardData()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user?.id, filterMonth, filterYear])
 
   // Show loading state
   if (loading) {
