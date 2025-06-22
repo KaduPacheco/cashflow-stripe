@@ -1,16 +1,13 @@
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useContas } from '@/hooks/useContas'
-import { useCategories } from '@/hooks/useCategories'
 import { useClientesFornecedores } from '@/hooks/useClientesFornecedores'
-import { ClienteFornecedorQuickAdd } from './ClienteFornecedorQuickAdd'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { X, Calendar, CreditCard, Tag, Settings } from 'lucide-react'
+import { FormBasicInfo } from './FormBasicInfo'
+import { FormClassification } from './FormClassification'
+import { FormScheduling } from './FormScheduling'
+import { FormSpecialOptions } from './FormSpecialOptions'
+import { FormActions } from './FormActions'
+import { X } from 'lucide-react'
 
 interface ContasFormProps {
   tipo: 'pagar' | 'receber'
@@ -20,8 +17,7 @@ interface ContasFormProps {
 
 export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
   const { createConta } = useContas()
-  const { categories } = useCategories()
-  const { clientesFornecedores, fetchClientesFornecedores } = useClientesFornecedores()
+  const { fetchClientesFornecedores } = useClientesFornecedores()
   
   const [formData, setFormData] = useState({
     descricao: '',
@@ -37,11 +33,6 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
   })
   
   const [loading, setLoading] = useState(false)
-
-  const tipoContato = tipo === 'pagar' ? 'fornecedor' : 'cliente'
-  const clientesFornecedoresFiltrados = clientesFornecedores.filter(cf => 
-    cf.tipo === tipoContato || cf.tipo === 'ambos'
-  )
 
   const calcularProximaRecorrencia = (dataVencimento: string, recorrencia: string): string | undefined => {
     if (recorrencia === 'unica') return undefined
@@ -109,11 +100,6 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleClienteFornecedorAdded = (novoId: string) => {
-    fetchClientesFornecedores()
-    setFormData(prev => ({ ...prev, cliente_fornecedor_id: novoId }))
-  }
-
   return (
     <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg">
       {/* Header */}
@@ -137,183 +123,37 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informações Básicas */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Informações Básicas
-            </div>
+          <FormBasicInfo
+            descricao={formData.descricao}
+            valor={formData.valor}
+            onDescricaoChange={(value) => handleChange('descricao', value)}
+            onValorChange={(value) => handleChange('valor', value)}
+          />
 
-            <div className="space-y-3">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1 h-4 bg-orange-400 rounded"></div>
-                  <Label className="text-sm font-medium">Descrição</Label>
-                </div>
-                <Input
-                  value={formData.descricao}
-                  onChange={(e) => handleChange('descricao', e.target.value)}
-                  placeholder="Ex: IPTU, Salário, Energia..."
-                  className="border-green-200 focus:border-green-400"
-                  required
-                />
-              </div>
+          <FormClassification
+            tipo={tipo}
+            categoryId={formData.category_id}
+            onCategoryChange={(value) => handleChange('category_id', value)}
+          />
 
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1 h-4 bg-orange-400 rounded"></div>
-                  <Label className="text-sm font-medium">Valor</Label>
-                </div>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.valor}
-                  onChange={(e) => handleChange('valor', e.target.value)}
-                  placeholder="Ex: 1.500,00"
-                  className="border-green-200 focus:border-green-400"
-                  required
-                />
-              </div>
-            </div>
-          </div>
+          <FormScheduling
+            dataVencimento={formData.data_vencimento}
+            onDataVencimentoChange={(value) => handleChange('data_vencimento', value)}
+          />
 
-          {/* Classificação */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Classificação
-            </div>
+          <FormSpecialOptions
+            recorrente={formData.recorrente}
+            recorrencia={formData.recorrencia}
+            parcelado={formData.parcelado}
+            onRecorrenteChange={(checked) => handleChange('recorrente', checked)}
+            onRecorrenciaChange={(value) => handleChange('recorrencia', value)}
+            onParceladoChange={(checked) => handleChange('parcelado', checked)}
+          />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <CreditCard className="h-4 w-4 text-blue-500" />
-                  <Label className="text-sm font-medium">Tipo</Label>
-                </div>
-                <Select value={tipo} disabled>
-                  <SelectTrigger className="border-green-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receber">A Receber</SelectItem>
-                    <SelectItem value="pagar">A Pagar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Tag className="h-4 w-4 text-orange-500" />
-                  <Label className="text-sm font-medium">Categoria</Label>
-                </div>
-                <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
-                  <SelectTrigger className="border-green-200">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Agendamento */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Agendamento
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="h-4 w-4 text-purple-500" />
-                <Label className="text-sm font-medium">Data Prevista</Label>
-              </div>
-              <Input
-                type="date"
-                value={formData.data_vencimento}
-                onChange={(e) => handleChange('data_vencimento', e.target.value)}
-                className="border-green-200 focus:border-green-400"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Opções Especiais */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              Opções Especiais
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Settings className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <div className="text-sm font-medium">Lançamento Recorrente</div>
-                    <div className="text-xs text-gray-500">Repetir automaticamente a cada período</div>
-                  </div>
-                </div>
-                <Switch
-                  checked={formData.recorrente}
-                  onCheckedChange={(checked) => handleChange('recorrente', checked)}
-                />
-              </div>
-
-              {formData.recorrente && (
-                <Select value={formData.recorrencia} onValueChange={(value) => handleChange('recorrencia', value)}>
-                  <SelectTrigger className="border-green-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mensal">Mensal</SelectItem>
-                    <SelectItem value="trimestral">Trimestral</SelectItem>
-                    <SelectItem value="semestral">Semestral</SelectItem>
-                    <SelectItem value="anual">Anual</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <div className="text-sm font-medium">Lançamento Parcelado</div>
-                    <div className="text-xs text-gray-500">Dividir em várias parcelas mensais</div>
-                  </div>
-                </div>
-                <Switch
-                  checked={formData.parcelado}
-                  onCheckedChange={(checked) => handleChange('parcelado', checked)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Botões */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-green-500 hover:bg-green-600"
-            >
-              {loading ? 'Salvando...' : 'Adicionar'}
-            </Button>
-          </div>
+          <FormActions
+            loading={loading}
+            onCancel={onClose}
+          />
         </form>
       </div>
     </div>
