@@ -66,23 +66,21 @@ export function SubscriptionBanner() {
 
   if (isRateLimit) {
     return (
-      <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
-        <Clock className="h-4 w-4 text-yellow-600" />
-        <AlertTitle className="text-yellow-800 dark:text-yellow-200">
-          Muitas Tentativas
+      <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+        <Clock className="h-4 w-4 text-blue-600" />
+        <AlertTitle className="text-blue-800 dark:text-blue-200">
+          Verificação Temporariamente Pausada
         </AlertTitle>
-        <AlertDescription className="text-yellow-700 dark:text-yellow-300 flex items-center justify-between">
-          <span>Aguarde alguns momentos antes de tentar verificar novamente.</span>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={checkSubscription}
-            className="ml-4"
-            disabled
-          >
-            <Clock className="h-4 w-4 mr-1" />
-            Aguarde
-          </Button>
+        <AlertDescription className="text-blue-700 dark:text-blue-300">
+          <div className="flex flex-col gap-2">
+            <span>
+              O sistema está aguardando automaticamente para evitar sobrecarga. 
+              A verificação será retomada em breve.
+            </span>
+            <div className="text-sm opacity-75">
+              Isso é normal e ajuda a manter o sistema estável para todos os usuários.
+            </div>
+          </div>
         </AlertDescription>
       </Alert>
     )

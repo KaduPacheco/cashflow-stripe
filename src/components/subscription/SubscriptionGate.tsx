@@ -55,7 +55,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
               {isNetworkError ? (
                 <Wifi className="h-6 w-6 text-orange-600 dark:text-orange-500" />
               ) : isRateLimit ? (
-                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
+                <Clock className="h-6 w-6 text-blue-600 dark:text-blue-500" />
               ) : (
                 <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-500" />
               )}
@@ -63,7 +63,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
             <CardTitle className="text-xl">
               {isSessionError ? 'Sessão Expirada' : 
                isNetworkError ? 'Erro de Conexão' : 
-               isRateLimit ? 'Muitas Tentativas' :
+               isRateLimit ? 'Verificação em Pausa' :
                'Assinatura Necessária'}
             </CardTitle>
           </CardHeader>
@@ -95,12 +95,16 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
             ) : isRateLimit ? (
               <>
                 <p className="text-muted-foreground">
-                  Muitas tentativas de verificação. Aguarde alguns momentos antes de tentar novamente.
+                  O sistema está aguardando automaticamente para evitar sobrecarga. 
+                  A verificação será retomada em breve.
                 </p>
+                <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
+                  Isso é normal e ajuda a manter o sistema estável para todos os usuários.
+                </div>
                 <div className="space-y-3">
-                  <Button onClick={checkSubscription} className="w-full" size="lg" disabled>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Aguarde um Momento
+                  <Button onClick={() => navigate('/plano')} className="w-full" size="lg">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Ver Planos Disponíveis
                   </Button>
                 </div>
               </>
@@ -145,7 +149,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
               </>
             )}
 
-            {subscriptionData.error && (
+            {subscriptionData.error && !isRateLimit && (
               <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 <p className="text-sm text-red-600 dark:text-red-400">
                   {subscriptionData.error}

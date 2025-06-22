@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -21,11 +21,48 @@ export function useSubscription() {
   const [loading, setLoading] = useState(true)
   const [checking, setChecking] = useState(false)
   const [retryAttempts, setRetryAttempts] = useState(0)
-  const [backoffDelay, setBackoffDelay] = useState(1000)
+  const [lastCheckTime, setLastCheckTime] = useState<number>(0)
+  const [isRateLimited, setIsRateLimited] = useState(false)
+  
+  // Refs para controlar timeouts e evitar memory leaks
+  const timeoutRef = useRef<NodeJS.Timeout>()
+  const rateLimitTimeoutRef = useRef<NodeJS.Timeout>()
 
-  const checkSubscription = async (isRetry = false) => {
-    console.log('Checking subscription...', { user: !!user, session: !!session })
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+      if (rateLimitTimeoutRef.current) {
+        clearTimeout(rateLimitTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const checkSubscription = async (isRetry = false, skipRateCheck = false) => {
+    console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited })
     
+    // Se estamos em rate limit e não é um skip, bloquear
+    if (isRateLimited && !skipRateCheck) {
+      console.log('Rate limited, skipping check')
+      return
+    }
+
+    // Evitar múltiplas chamadas simultâneas
+    if (checking && !skipRateCheck) {
+      console.log('Already checking, skipping')
+      return
+    }
+
+    // Controle de frequência - mínimo 3 segundos entre checks
+    const now = Date.now()
+    const timeSinceLastCheck = now - lastCheckTime
+    if (timeSinceLastCheck < 3000 && !skipRateCheck && !isRetry) {
+      console.log('Too frequent, skipping check')
+      return
+    }
+
     if (!user || !session?.access_token) {
       console.log('No user or session token available')
       setSubscriptionData({ 
@@ -40,7 +77,6 @@ export function useSubscription() {
     // Verificar se o token está próximo do vencimento (dentro de 5 minutos)
     if (session.expires_at) {
       const expiresAt = session.expires_at * 1000
-      const now = Date.now()
       const fiveMinutes = 5 * 60 * 1000
       
       if (expiresAt - now < fiveMinutes) {
@@ -49,7 +85,6 @@ export function useSubscription() {
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
           if (refreshError) {
             console.error('Failed to refresh session:', refreshError)
-            // Se falhar ao renovar, fazer logout para limpar sessão inválida
             await signOut()
             return
           }
@@ -68,6 +103,7 @@ export function useSubscription() {
 
     try {
       setChecking(true)
+      setLastCheckTime(now)
       console.log('Making subscription check request...')
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
@@ -85,14 +121,26 @@ export function useSubscription() {
         if (errorMessage.includes('Request rate limit exceeded') || 
             errorMessage.includes('rate limit') ||
             errorMessage.includes('Too Many Requests')) {
-          console.log('Rate limit detected')
+          console.log('Rate limit detected, implementing backoff')
+          
+          setIsRateLimited(true)
           setSubscriptionData({ 
             subscribed: false, 
-            error: 'Muitas tentativas. Aguarde um momento e tente novamente.',
+            error: 'Muitas tentativas. O sistema aguardará automaticamente antes da próxima verificação.',
             errorType: 'rate_limit'
           })
-          const newDelay = Math.min(backoffDelay * 2, 30000)
-          setBackoffDelay(newDelay)
+          
+          // Implementar backoff exponencial com máximo de 2 minutos
+          const backoffTime = Math.min(Math.pow(2, retryAttempts) * 5000, 120000)
+          console.log(`Rate limited, backing off for ${backoffTime}ms`)
+          
+          // Limpar rate limit após o backoff
+          rateLimitTimeoutRef.current = setTimeout(() => {
+            console.log('Rate limit period expired, re-enabling checks')
+            setIsRateLimited(false)
+            setRetryAttempts(0)
+          }, backoffTime)
+          
           setRetryAttempts(prev => prev + 1)
           setLoading(false)
           setChecking(false)
@@ -122,7 +170,10 @@ export function useSubscription() {
             
             if (!refreshError && sessionData.session) {
               console.log('Session refreshed successfully, retrying...')
-              setTimeout(() => checkSubscription(true), 1000)
+              // Delay antes de retry para evitar rate limit
+              timeoutRef.current = setTimeout(() => {
+                checkSubscription(true, true)
+              }, 2000)
               return
             } else {
               console.log('Session refresh failed, signing out...')
@@ -169,18 +220,30 @@ export function useSubscription() {
         
         const isRateLimit = data.error.includes('Request rate limit exceeded')
         
+        if (isRateLimit) {
+          setIsRateLimited(true)
+          setSubscriptionData({ 
+            subscribed: false,
+            error: 'Muitas tentativas. O sistema aguardará automaticamente.',
+            errorType: 'rate_limit'
+          })
+          
+          rateLimitTimeoutRef.current = setTimeout(() => {
+            setIsRateLimited(false)
+            setRetryAttempts(0)
+          }, 60000) // 1 minuto de backoff
+          
+          return
+        }
+        
         let errorType: SubscriptionData['errorType'] = 'subscription'
         let displayError = data.error
         
         if (isSessionError) {
           errorType = 'session'
           displayError = 'Sessão expirada. Faça login novamente.'
-          // Se erro de sessão, fazer logout para limpar estado
           await signOut()
           return
-        } else if (isRateLimit) {
-          errorType = 'rate_limit'
-          displayError = 'Muitas tentativas. Aguarde um momento.'
         }
         
         setSubscriptionData({ 
@@ -191,9 +254,13 @@ export function useSubscription() {
         return
       }
       
-      // Reset retry attempts and backoff on success
+      // Reset retry attempts and rate limit on success
       setRetryAttempts(0)
-      setBackoffDelay(1000)
+      setIsRateLimited(false)
+      if (rateLimitTimeoutRef.current) {
+        clearTimeout(rateLimitTimeoutRef.current)
+      }
+      
       setSubscriptionData(data || { subscribed: false })
       
     } catch (error: any) {
@@ -238,10 +305,15 @@ export function useSubscription() {
 
   const forceRefresh = async () => {
     console.log('Force refreshing subscription...')
+    // Reset todos os controles para permitir nova verificação
     setRetryAttempts(0)
-    setBackoffDelay(1000)
+    setIsRateLimited(false)
+    setLastCheckTime(0)
+    if (rateLimitTimeoutRef.current) {
+      clearTimeout(rateLimitTimeoutRef.current)
+    }
     setLoading(true)
-    await checkSubscription(false)
+    await checkSubscription(false, true)
   }
 
   const createCheckout = async () => {
@@ -320,30 +392,39 @@ export function useSubscription() {
 
   useEffect(() => {
     if (session && user) {
-      checkSubscription()
+      // Debounce inicial check
+      timeoutRef.current = setTimeout(() => {
+        checkSubscription()
+      }, 1000)
     } else {
       setLoading(false)
       setSubscriptionData({ subscribed: false })
     }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
   }, [user, session])
 
-  // Auto-refresh subscription status every 5 minutes when user is active and subscribed
+  // Auto-refresh subscription status every 10 minutes quando subscribed e ativo
   useEffect(() => {
-    if (!user || !subscriptionData.subscribed) return
+    if (!user || !subscriptionData.subscribed || isRateLimited) return
 
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !checking) {
         checkSubscription()
       }
-    }, 300000) // 5 minutes
+    }, 600000) // 10 minutes
 
     return () => clearInterval(interval)
-  }, [user, subscriptionData.subscribed])
+  }, [user, subscriptionData.subscribed, checking, isRateLimited])
 
   return {
     subscriptionData,
     loading,
-    checking,
+    checking: checking || isRateLimited,
     checkSubscription: forceRefresh,
     createCheckout,
     openCustomerPortal,
