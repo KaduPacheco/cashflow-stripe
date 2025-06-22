@@ -8,6 +8,7 @@ import { FormScheduling } from './FormScheduling'
 import { FormSpecialOptions } from './FormSpecialOptions'
 import { FormActions } from './FormActions'
 import { X } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface ContasFormProps {
   tipo: 'pagar' | 'receber'
@@ -29,7 +30,8 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
     numero_documento: '',
     recorrencia: 'unica',
     recorrente: false,
-    parcelado: false
+    parcelado: false,
+    numeroParcelas: 2
   })
   
   const [loading, setLoading] = useState(false)
@@ -57,46 +59,96 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
     return data.toISOString().split('T')[0]
   }
 
+  const criarParcelas = async (contaBase: any, numeroParcelas: number) => {
+    const valorParcela = parseFloat(formData.valor) / numeroParcelas
+    const dataBase = new Date(formData.data_vencimento)
+    const parcelas = []
+
+    for (let i = 0; i < numeroParcelas; i++) {
+      const dataVencimentoParcela = new Date(dataBase)
+      dataVencimentoParcela.setMonth(dataBase.getMonth() + i)
+
+      const parcela = {
+        ...contaBase,
+        descricao: `${formData.descricao} (${i + 1}/${numeroParcelas})`,
+        valor: valorParcela,
+        data_vencimento: dataVencimentoParcela.toISOString().split('T')[0],
+        recorrencia: 'unica' as const,
+        data_proxima_recorrencia: undefined
+      }
+
+      const resultado = await createConta(parcela)
+      if (resultado) {
+        parcelas.push(resultado)
+      } else {
+        toast.error(`Erro ao criar parcela ${i + 1}`)
+        return false
+      }
+    }
+
+    return parcelas.length === numeroParcelas
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!formData.descricao || !formData.valor || !formData.data_vencimento) {
+      toast.error('Preencha todos os campos obrigatórios')
+      return
+    }
+
+    if (formData.parcelado && formData.numeroParcelas < 2) {
+      toast.error('O número de parcelas deve ser maior que 1')
       return
     }
 
     setLoading(true)
 
-    const dataProximaRecorrencia = formData.recorrente ? calcularProximaRecorrencia(
-      formData.data_vencimento, 
-      formData.recorrencia
-    ) : undefined
+    try {
+      const dataProximaRecorrencia = formData.recorrente ? calcularProximaRecorrencia(
+        formData.data_vencimento, 
+        formData.recorrencia
+      ) : undefined
 
-    const contaData = {
-      tipo,
-      descricao: formData.descricao,
-      valor: parseFloat(formData.valor),
-      data_vencimento: formData.data_vencimento,
-      valor_pago: 0,
-      status: 'pendente' as const,
-      category_id: formData.category_id || undefined,
-      cliente_fornecedor_id: formData.cliente_fornecedor_id || undefined,
-      observacoes: formData.observacoes || undefined,
-      numero_documento: formData.numero_documento || undefined,
-      recorrencia: formData.recorrente ? (formData.recorrencia as 'unica' | 'mensal' | 'trimestral' | 'semestral' | 'anual') : 'unica',
-      data_proxima_recorrencia: dataProximaRecorrencia,
-      user_id: ''
-    }
+      const contaData = {
+        tipo,
+        descricao: formData.descricao,
+        valor: parseFloat(formData.valor),
+        data_vencimento: formData.data_vencimento,
+        valor_pago: 0,
+        status: 'pendente' as const,
+        category_id: formData.category_id || undefined,
+        cliente_fornecedor_id: formData.cliente_fornecedor_id || undefined,
+        observacoes: formData.observacoes || undefined,
+        numero_documento: formData.numero_documento || undefined,
+        recorrencia: formData.recorrente ? (formData.recorrencia as 'unica' | 'mensal' | 'trimestral' | 'semestral' | 'anual') : 'unica',
+        data_proxima_recorrencia: dataProximaRecorrencia,
+        user_id: ''
+      }
 
-    const result = await createConta(contaData)
-    
-    if (result) {
-      onSuccess()
+      if (formData.parcelado) {
+        // Criar parcelas
+        const sucesso = await criarParcelas(contaData, formData.numeroParcelas)
+        if (sucesso) {
+          toast.success(`${formData.numeroParcelas} parcelas criadas com sucesso!`)
+          onSuccess()
+        }
+      } else {
+        // Criar conta única
+        const result = await createConta(contaData)
+        if (result) {
+          onSuccess()
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao criar conta:', error)
+      toast.error('Erro ao criar conta')
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
 
-  const handleChange = (field: string, value: string | boolean) => {
+  const handleChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -145,9 +197,11 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
             recorrente={formData.recorrente}
             recorrencia={formData.recorrencia}
             parcelado={formData.parcelado}
+            numeroParcelas={formData.numeroParcelas}
             onRecorrenteChange={(checked) => handleChange('recorrente', checked)}
             onRecorrenciaChange={(value) => handleChange('recorrencia', value)}
             onParceladoChange={(checked) => handleChange('parcelado', checked)}
+            onNumeroParcelasChange={(value) => handleChange('numeroParcelas', value)}
           />
 
           <FormActions
