@@ -44,5 +44,5 @@ function render(ui: React.ReactElement, options?: CustomRenderOptions) {
 
 // Re-export everything from @testing-library/react
 export * from '@testing-library/react'
-// Export our custom render function
+// Override the default render with our custom one
 export { render }
