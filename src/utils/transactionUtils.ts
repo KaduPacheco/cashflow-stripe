@@ -10,7 +10,7 @@ export const calculateTotals = (transactions: any[]) => {
   
   const despesas = transactions
     .filter(t => t.tipo === 'despesa')
-    .reduce((acc, t) => acc + (t.valor || 0), 0)
+    .reduce((acc, t) => acc + Math.abs(t.valor || 0), 0)
   
   return {
     receitas,
