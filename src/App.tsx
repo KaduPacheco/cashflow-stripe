@@ -1,4 +1,5 @@
 
+import { Suspense, lazy } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,52 +8,54 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Transacoes from "./pages/Transacoes";
-import Lembretes from "./pages/Lembretes";
-import Categorias from "./pages/Categorias";
-import Relatorios from "./pages/Relatorios";
-import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
-import Plano from "./pages/Plano";
-import ContasPagarReceber from "./pages/ContasPagarReceber";
 
-const queryClient = new QueryClient();
+// Lazy loading das páginas principais
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Transacoes = lazy(() => import("./pages/Transacoes"));
+const Lembretes = lazy(() => import("./pages/Lembretes"));
+const Categorias = lazy(() => import("./pages/Categorias"));
+const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Perfil = lazy(() => import("./pages/Perfil"));
+const Plano = lazy(() => import("./pages/Plano"));
+const ContasPagarReceber = lazy(() => import("./pages/ContasPagarReceber"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      gcTime: 10 * 60 * 1000, // 10 minutos
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <AppLayout>
+      <Suspense fallback={<LoadingSpinner />}>
+        {children}
+      </Suspense>
+    </AppLayout>
+  );
 }
 
 function AppRoutes() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -63,7 +66,11 @@ function AppRoutes() {
       />
       <Route 
         path="/plano" 
-        element={<Plano />} 
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <Plano />
+          </Suspense>
+        } 
       />
       <Route 
         path="/" 

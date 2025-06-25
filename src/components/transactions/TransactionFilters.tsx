@@ -1,9 +1,6 @@
 
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Search, Filter, X } from 'lucide-react'
-import { useCategories } from '@/hooks/useCategories'
+import React from 'react'
+import { OptimizedTransactionFilters } from './OptimizedTransactionFilters'
 
 interface TransactionFiltersProps {
   searchTerm: string
@@ -15,71 +12,6 @@ interface TransactionFiltersProps {
   onClearFilters: () => void
 }
 
-export function TransactionFilters({
-  searchTerm,
-  onSearchChange,
-  typeFilter,
-  onTypeFilterChange,
-  categoryFilter,
-  onCategoryFilterChange,
-  onClearFilters
-}: TransactionFiltersProps) {
-  const { categories, isLoading } = useCategories()
-  const hasFilters = searchTerm || typeFilter || categoryFilter
-
-  const handleTypeChange = (value: string) => {
-    onTypeFilterChange(value === 'all' ? '' : value)
-  }
-
-  const handleCategoryChange = (value: string) => {
-    onCategoryFilterChange(value === 'all' ? '' : value)
-  }
-
-  return (
-    <div className="flex flex-col gap-3 sm:gap-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Pesquisar por estabelecimento..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-10"
-        />
-      </div>
-
-      <div className="flex flex-col sm:flex-row md:flex-row gap-3 sm:gap-4">
-        <Select value={typeFilter || 'all'} onValueChange={handleTypeChange}>
-          <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-10">
-            <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="receita">Receitas</SelectItem>
-            <SelectItem value="despesa">Despesas</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={categoryFilter || 'all'} onValueChange={handleCategoryChange} disabled={isLoading}>
-          <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-10">
-            <SelectValue placeholder={isLoading ? "Carregando..." : "Categoria"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas categorias</SelectItem>
-            {categories?.map((categoria) => (
-              <SelectItem key={categoria.id} value={categoria.id}>
-                {categoria.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {hasFilters && (
-          <Button variant="outline" onClick={onClearFilters} size="icon" className="h-10 w-10 flex-shrink-0">
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-    </div>
-  )
+export function TransactionFilters(props: TransactionFiltersProps) {
+  return <OptimizedTransactionFilters {...props} />
 }
