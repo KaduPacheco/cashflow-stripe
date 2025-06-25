@@ -31,7 +31,7 @@ export const handlers = [
     return HttpResponse.json([
       {
         id: '1',
-        descricao: 'Test Transaction',
+        estabelecimento: 'Test Transaction',
         valor: 100.50,
         tipo: 'receita',
         quando: '2023-01-01T00:00:00Z',

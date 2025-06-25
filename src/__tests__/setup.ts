@@ -1,6 +1,6 @@
 
 import '@testing-library/jest-dom'
-import { beforeAll, afterAll, afterEach } from 'vitest'
+import { beforeAll, afterAll, afterEach, vi } from 'vitest'
 import { server } from './mocks/server'
 
 // Setup MSW
@@ -9,20 +9,24 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-}
+const mockIntersectionObserver = vi.fn()
+mockIntersectionObserver.mockReturnValue({
+  observe: () => null,
+  unobserve: () => null,
+  disconnect: () => null
+})
+window.IntersectionObserver = mockIntersectionObserver
+global.IntersectionObserver = mockIntersectionObserver
 
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-}
+const mockResizeObserver = vi.fn()
+mockResizeObserver.mockReturnValue({
+  observe: () => null,
+  unobserve: () => null,
+  disconnect: () => null
+})
+window.ResizeObserver = mockResizeObserver
+global.ResizeObserver = mockResizeObserver
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
