@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { AuthProvider, useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
@@ -36,7 +36,10 @@ describe('useAuth', () => {
   })
 
   it('should call signInWithPassword when signing in', async () => {
-    const mockSignIn = vi.fn(() => Promise.resolve({ error: null }))
+    const mockSignIn = vi.fn(() => Promise.resolve({ 
+      data: { user: null, session: null },
+      error: null 
+    }))
     vi.mocked(supabase.auth.signInWithPassword).mockImplementation(mockSignIn)
 
     const { result } = renderHook(() => useAuth(), { wrapper })
@@ -50,7 +53,10 @@ describe('useAuth', () => {
   })
 
   it('should call signUp when registering', async () => {
-    const mockSignUp = vi.fn(() => Promise.resolve({ error: null }))
+    const mockSignUp = vi.fn(() => Promise.resolve({ 
+      data: { user: null, session: null },
+      error: null 
+    }))
     vi.mocked(supabase.auth.signUp).mockImplementation(mockSignUp)
 
     const { result } = renderHook(() => useAuth(), { wrapper })

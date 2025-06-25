@@ -1,18 +1,18 @@
 
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@/test-utils'
+import { render, screen } from '@/test-utils'
 import { CategorySelector } from '@/components/transactions/CategorySelector'
 
 // Mock the useCategories hook
 vi.mock('@/hooks/useCategories', () => ({
-  useCategories: () => ({
+  useCategories: vi.fn(() => ({
     categories: [
       { id: '1', nome: 'Alimentação', userId: 'user-1' },
       { id: '2', nome: 'Transporte', userId: 'user-1' }
     ],
     isLoading: false,
     error: null
-  })
+  }))
 }))
 
 describe('CategorySelector', () => {
@@ -48,7 +48,8 @@ describe('CategorySelector', () => {
     const mockOnValueChange = vi.fn()
     
     // Mock loading state
-    vi.mocked(require('@/hooks/useCategories').useCategories).mockReturnValue({
+    const mockUseCategories = vi.mocked(require('@/hooks/useCategories').useCategories)
+    mockUseCategories.mockReturnValue({
       categories: [],
       isLoading: true,
       error: null

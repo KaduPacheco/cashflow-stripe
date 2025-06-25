@@ -39,10 +39,11 @@ describe('TransactionService', () => {
         quando: '2023-01-01'
       }
 
+      // Mock the supabase.from().insert() chain
       const mockInsert = vi.fn(() => Promise.resolve({ data: transactionData, error: null }))
-      const mockFrom = vi.fn(() => ({ insert: mockInsert }))
-      
-      vi.mocked(supabase.from).mockImplementation(mockFrom)
+      vi.mocked(supabase.from).mockReturnValue({
+        insert: mockInsert
+      } as any)
 
       const result = await TransactionService.createTransaction('user-1', transactionData)
       
@@ -63,9 +64,9 @@ describe('TransactionService', () => {
 
       const mockError = new Error('Database error')
       const mockInsert = vi.fn(() => Promise.resolve({ data: null, error: mockError }))
-      const mockFrom = vi.fn(() => ({ insert: mockInsert }))
-      
-      vi.mocked(supabase.from).mockImplementation(mockFrom)
+      vi.mocked(supabase.from).mockReturnValue({
+        insert: mockInsert
+      } as any)
 
       await expect(TransactionService.createTransaction('user-1', transactionData)).rejects.toThrow('Database error')
     })
@@ -82,12 +83,11 @@ describe('TransactionService', () => {
         quando: '2023-01-02'
       }
 
-      const mockUpdate = vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ data: transactionData, error: null }))
-      }))
-      const mockFrom = vi.fn(() => ({ update: mockUpdate }))
-      
-      vi.mocked(supabase.from).mockImplementation(mockFrom)
+      const mockEq = vi.fn(() => Promise.resolve({ data: transactionData, error: null }))
+      const mockUpdate = vi.fn(() => ({ eq: mockEq }))
+      vi.mocked(supabase.from).mockReturnValue({
+        update: mockUpdate
+      } as any)
 
       const result = await TransactionService.updateTransaction(1, 'user-1', transactionData)
       
@@ -98,12 +98,11 @@ describe('TransactionService', () => {
 
   describe('deleteTransaction', () => {
     it('should delete a transaction successfully', async () => {
-      const mockDelete = vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ error: null }))
-      }))
-      const mockFrom = vi.fn(() => ({ delete: mockDelete }))
-      
-      vi.mocked(supabase.from).mockImplementation(mockFrom)
+      const mockEq = vi.fn(() => Promise.resolve({ error: null }))
+      const mockDelete = vi.fn(() => ({ eq: mockEq }))
+      vi.mocked(supabase.from).mockReturnValue({
+        delete: mockDelete
+      } as any)
 
       const result = await TransactionService.deleteTransaction(1)
       
