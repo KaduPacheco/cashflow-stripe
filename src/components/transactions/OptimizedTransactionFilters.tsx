@@ -1,11 +1,12 @@
 
-import React, { memo, useCallback } from 'react'
+import React, { memo, useCallback, useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Search, X } from 'lucide-react'
 import { useCategories } from '@/hooks/useCategories'
-import { useDebounce } from '@/hooks/useDebounce'
+import { useOptimizedDebounce } from '@/hooks/useOptimizedDebounce'
+import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor'
 
 interface OptimizedTransactionFiltersProps {
   searchTerm: string
@@ -26,14 +27,28 @@ export const OptimizedTransactionFilters = memo(({
   onCategoryFilterChange,
   onClearFilters
 }: OptimizedTransactionFiltersProps) => {
-  const { categories } = useCategories()
+  usePerformanceMonitor('OptimizedTransactionFilters');
   
-  // Debounce da busca para otimizar performance
-  const debouncedSearch = useDebounce(onSearchChange, 300)
+  const { categories } = useCategories()
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm)
+  
+  // Debounce search with optimized performance settings
+  const debouncedSearch = useOptimizedDebounce(
+    onSearchChange, 
+    300, 
+    { trailing: true, maxWait: 1000 }
+  )
   
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    debouncedSearch(e.target.value)
+    const value = e.target.value
+    setLocalSearchTerm(value)
+    debouncedSearch(value)
   }, [debouncedSearch])
+
+  // Sync local search term with external changes
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm)
+  }, [searchTerm])
 
   const hasActiveFilters = searchTerm || typeFilter !== 'todos' || categoryFilter !== 'todas'
 
@@ -45,7 +60,7 @@ export const OptimizedTransactionFilters = memo(({
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por estabelecimento ou detalhes..."
-            defaultValue={searchTerm}
+            value={localSearchTerm}
             onChange={handleSearchChange}
             className="pl-9"
           />

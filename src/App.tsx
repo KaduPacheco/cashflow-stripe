@@ -8,12 +8,21 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { EnhancedLoadingSpinner } from "@/components/ui/enhanced-loading-spinner";
+import { LazyWrapper } from "@/components/ui/lazy-wrapper";
+import { PerformanceMonitor } from "@/components/dev/PerformanceMonitor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
-// Lazy loading das páginas principais
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+// Lazy loading das páginas principais com preloading estratégico
+const Dashboard = lazy(() => 
+  import("./pages/Dashboard").then(module => {
+    // Preload related components
+    import("./pages/Transacoes");
+    return module;
+  })
+);
+
 const Transacoes = lazy(() => import("./pages/Transacoes"));
 const Lembretes = lazy(() => import("./pages/Lembretes"));
 const Categorias = lazy(() => import("./pages/Categorias"));
@@ -27,6 +36,13 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutos
       gcTime: 10 * 60 * 1000, // 10 minutos
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return failureCount < 3;
+      },
     },
   },
 });
@@ -35,7 +51,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <EnhancedLoadingSpinner message="Verificando autenticação..." />;
   }
 
   if (!user) {
@@ -44,9 +60,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   return (
     <AppLayout>
-      <Suspense fallback={<LoadingSpinner />}>
+      <LazyWrapper>
         {children}
-      </Suspense>
+      </LazyWrapper>
     </AppLayout>
   );
 }
@@ -55,7 +71,7 @@ function AppRoutes() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <EnhancedLoadingSpinner message="Inicializando aplicação..." />;
   }
 
   return (
@@ -67,9 +83,9 @@ function AppRoutes() {
       <Route 
         path="/plano" 
         element={
-          <Suspense fallback={<LoadingSpinner />}>
+          <LazyWrapper>
             <Plano />
-          </Suspense>
+          </LazyWrapper>
         } 
       />
       <Route 
@@ -146,6 +162,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <AppRoutes />
+            <PerformanceMonitor />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
