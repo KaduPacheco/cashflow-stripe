@@ -35,7 +35,8 @@ describe('TransactionService', () => {
         valor: 100,
         tipo: 'receita' as const,
         category_id: 'cat-1',
-        detalhes: 'Test transaction'
+        detalhes: 'Test transaction',
+        quando: '2023-01-01'
       }
 
       const mockInsert = vi.fn(() => Promise.resolve({ data: transactionData, error: null }))
@@ -56,7 +57,8 @@ describe('TransactionService', () => {
         valor: 100,
         tipo: 'receita' as const,
         category_id: 'cat-1',
-        detalhes: 'Test transaction'
+        detalhes: 'Test transaction',
+        quando: '2023-01-01'
       }
 
       const mockError = new Error('Database error')
@@ -76,7 +78,8 @@ describe('TransactionService', () => {
         valor: 200,
         tipo: 'despesa' as const,
         category_id: 'cat-2',
-        detalhes: 'Updated transaction'
+        detalhes: 'Updated transaction',
+        quando: '2023-01-02'
       }
 
       const mockUpdate = vi.fn(() => ({
