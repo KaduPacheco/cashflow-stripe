@@ -107,6 +107,7 @@ export const VirtualizedTransactionsList = memo(({
     <div className="h-[600px] w-full">
       <List
         height={600}
+        width="100%"
         itemCount={transacoes.length}
         itemSize={ITEM_HEIGHT}
         itemData={itemData}
