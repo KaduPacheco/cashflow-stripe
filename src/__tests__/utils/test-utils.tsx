@@ -1,7 +1,7 @@
 
 import React from 'react'
 import { render as rtlRender, RenderOptions } from '@testing-library/react'
-import { screen, fireEvent, waitFor } from '@testing-library/dom'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/useAuth'
