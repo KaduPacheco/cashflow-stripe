@@ -2,6 +2,8 @@
 
 import React from 'react'
 import { render as rtlRender, RenderOptions } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act } from '@testing-library/dom'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/useAuth'
@@ -47,4 +49,6 @@ function render(ui: React.ReactElement, options?: CustomRenderOptions) {
 export * from '@testing-library/react'
 // Override the default render with our custom one
 export { render }
+// Export commonly used utilities from @testing-library/dom
+export { screen, fireEvent, waitFor, act, userEvent }
 
