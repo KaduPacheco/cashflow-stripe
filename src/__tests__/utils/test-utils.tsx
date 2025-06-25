@@ -1,7 +1,6 @@
 
 import React from 'react'
 import { render as rtlRender, RenderOptions } from '@testing-library/react'
-import { screen, fireEvent, waitFor } from '@testing-library/dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/useAuth'
@@ -43,7 +42,7 @@ function render(ui: React.ReactElement, options?: CustomRenderOptions) {
   return rtlRender(ui, { wrapper: AllTheProviders, ...options })
 }
 
-// Re-export everything from @testing-library/react
+// Re-export everything from @testing-library/react including screen, fireEvent, waitFor
 export * from '@testing-library/react'
-// Export our custom render function and explicitly export commonly used utilities
-export { render, screen, fireEvent, waitFor }
+// Export our custom render function
+export { render }
