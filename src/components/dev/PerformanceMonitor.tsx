@@ -80,7 +80,7 @@ export const PerformanceMonitor = memo(() => {
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="text-xs text-muted-foreground">
-          Mostrando renders > 16ms (limiar 60fps)
+          Mostrando renders &gt; 16ms (limiar 60fps)
         </div>
         
         {slowMetrics.length === 0 ? (
