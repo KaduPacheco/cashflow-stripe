@@ -1,6 +1,8 @@
 
+
 // src/test-utils.ts
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, act } from '@testing-library/react'
+import { screen, fireEvent, waitFor } from '@testing-library/dom'
 
 // re-export everything from RTL
 export * from '@testing-library/react'
@@ -10,3 +12,4 @@ export { render }
 
 // export DOM helpers
 export { screen, fireEvent, waitFor, act }
+
