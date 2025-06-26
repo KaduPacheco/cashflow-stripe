@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import { validateTransaction, validateTransactionUpdate } from '@/lib/validations'
-import { validateAuthentication, validateResourceOwnership, validateRateLimit } from '@/lib/security'
-import { handleError, ValidationError, NetworkError } from '@/utils/errorHandler'
-import { useOptimizedDebounce } from '@/hooks/useOptimizedDebounce'
-import { toast } from 'sonner'
+import { validateAuthentication } from '@/lib/security'
+import { handleError, NetworkError } from '@/utils/errorHandler'
+import { useTransactionFilters } from '@/hooks/useTransactionFilters'
+import { useTransactionCrud } from '@/hooks/useTransactionCrud'
+import { useTransactionStats } from '@/hooks/useTransactionStats'
 
 interface Transaction {
   id: number
@@ -20,65 +21,29 @@ interface Transaction {
   updated_at: string
 }
 
-interface TransactionFilters {
-  search?: string
-  tipo?: 'receita' | 'despesa' | 'all'
-  category_id?: string
-  dateFrom?: string
-  dateTo?: string
-}
-
 export function useOptimizedTransactions() {
   const { user, session } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<TransactionFilters>({
-    tipo: 'all'
-  })
 
-  // Debounced search to avoid excessive API calls
-  const debouncedSearch = useOptimizedDebounce(
-    (searchTerm: string) => {
-      setFilters(prev => ({ ...prev, search: searchTerm }))
-    },
-    300,
-    { leading: false, trailing: true }
-  )
+  // Use the specialized hooks
+  const {
+    filters,
+    setFilters,
+    debouncedSearch,
+    filteredTransactions
+  } = useTransactionFilters(transactions)
 
-  // Memoized filtered transactions
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(transaction => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase()
-        if (!transaction.estabelecimento.toLowerCase().includes(searchLower) &&
-            !transaction.detalhes?.toLowerCase().includes(searchLower)) {
-          return false
-        }
-      }
+  const {
+    createTransaction: createTransactionCrud,
+    updateTransaction: updateTransactionCrud,
+    deleteTransaction: deleteTransactionCrud,
+    error: crudError,
+    setError: setCrudError
+  } = useTransactionCrud()
 
-      // Type filter - corrigido para case-insensitive
-      if (filters.tipo && filters.tipo !== 'all' && transaction.tipo?.toLowerCase() !== filters.tipo.toLowerCase()) {
-        return false
-      }
-
-      // Category filter
-      if (filters.category_id && transaction.category_id !== filters.category_id) {
-        return false
-      }
-
-      // Date filters
-      if (filters.dateFrom && transaction.quando < filters.dateFrom) {
-        return false
-      }
-      if (filters.dateTo && transaction.quando > filters.dateTo) {
-        return false
-      }
-
-      return true
-    })
-  }, [transactions, filters])
+  const stats = useTransactionStats(filteredTransactions)
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -115,120 +80,30 @@ export function useOptimizedTransactions() {
     }
   }, [user, session])
 
+  // Wrap CRUD operations to update local state
   const createTransaction = useCallback(async (data: Omit<Transaction, 'id' | 'userId' | 'created_at' | 'updated_at'>) => {
-    try {
-      validateAuthentication(user, session)
-      validateRateLimit(`create_transaction_${user?.id}`) // Remove the 30 parameter to use default
-
-      // Validate input data
-      const validation = validateTransaction(data)
-      if (!validation.success) {
-        throw new ValidationError(
-          validation.error.errors[0].message,
-          validation.error.errors[0].path[0] as string
-        )
-      }
-
-      const transactionData = {
-        ...validation.data,
-        userId: user!.id
-      }
-
-      const { data: newTransaction, error: createError } = await supabase
-        .from('transacoes')
-        .insert([transactionData])
-        .select()
-        .single()
-
-      if (createError) {
-        throw new NetworkError(createError.message, 500, 'CREATE_ERROR')
-      }
-
-      // Optimistically update local state
-      setTransactions(prev => [newTransaction, ...prev])
-
-      toast.success('Transação criada com sucesso!')
-      return { success: true, data: newTransaction }
-    } catch (err) {
-      const appError = handleError(err, true)
-      return { success: false, error: appError.message }
+    const result = await createTransactionCrud(data)
+    if (result.success && result.data) {
+      setTransactions(prev => [result.data, ...prev])
     }
-  }, [user, session])
+    return result
+  }, [createTransactionCrud])
 
   const updateTransaction = useCallback(async (id: number, data: Partial<Omit<Transaction, 'id' | 'userId' | 'created_at' | 'updated_at'>>) => {
-    try {
-      validateAuthentication(user, session)
-      validateRateLimit(`update_transaction_${user?.id}`) // Remove the 60 parameter to use default
-
-      // Validate input data
-      const validation = validateTransactionUpdate(data)
-      if (!validation.success) {
-        throw new ValidationError(
-          validation.error.errors[0].message,
-          validation.error.errors[0].path[0] as string
-        )
-      }
-
-      // Check ownership
-      const existingTransaction = transactions.find(t => t.id === id)
-      if (existingTransaction) {
-        validateResourceOwnership(existingTransaction.userId, user!.id)
-      }
-
-      const { data: updatedTransaction, error: updateError } = await supabase
-        .from('transacoes')
-        .update(validation.data)
-        .eq('id', id)
-        .eq('userId', user!.id)
-        .select()
-        .single()
-
-      if (updateError) {
-        throw new NetworkError(updateError.message, 500, 'UPDATE_ERROR')
-      }
-
-      // Optimistically update local state
-      setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t))
-
-      toast.success('Transação atualizada com sucesso!')
-      return { success: true, data: updatedTransaction }
-    } catch (err) {
-      const appError = handleError(err, true)
-      return { success: false, error: appError.message }
+    const result = await updateTransactionCrud(id, data, transactions)
+    if (result.success && result.data) {
+      setTransactions(prev => prev.map(t => t.id === id ? result.data : t))
     }
-  }, [user, session, transactions])
+    return result
+  }, [updateTransactionCrud, transactions])
 
   const deleteTransaction = useCallback(async (id: number) => {
-    try {
-      validateAuthentication(user, session)
-      validateRateLimit(`delete_transaction_${user?.id}`) // Remove the 30 parameter to use default
-
-      // Check ownership
-      const existingTransaction = transactions.find(t => t.id === id)
-      if (existingTransaction) {
-        validateResourceOwnership(existingTransaction.userId, user!.id)
-      }
-
-      const { error: deleteError } = await supabase
-        .from('transacoes')
-        .delete()
-        .eq('id', id)
-        .eq('userId', user!.id)
-
-      if (deleteError) {
-        throw new NetworkError(deleteError.message, 500, 'DELETE_ERROR')
-      }
-
-      // Optimistically update local state
+    const result = await deleteTransactionCrud(id, transactions)
+    if (result.success) {
       setTransactions(prev => prev.filter(t => t.id !== id))
-
-      toast.success('Transação excluída com sucesso!')
-      return { success: true }
-    } catch (err) {
-      const appError = handleError(err, true)
-      return { success: false, error: appError.message }
     }
-  }, [user, session, transactions])
+    return result
+  }, [deleteTransactionCrud, transactions])
 
   // Initial fetch
   useEffect(() => {
@@ -236,6 +111,14 @@ export function useOptimizedTransactions() {
       fetchTransactions()
     }
   }, [fetchTransactions, user])
+
+  // Sync CRUD errors with main error state
+  useEffect(() => {
+    if (crudError) {
+      setError(crudError)
+      setCrudError(null)
+    }
+  }, [crudError, setCrudError])
 
   return {
     transactions: filteredTransactions,
@@ -249,12 +132,8 @@ export function useOptimizedTransactions() {
     updateTransaction,
     deleteTransaction,
     // Statistics - corrigido para case-insensitive
-    totalReceita: filteredTransactions
-      .filter(t => t.tipo?.toLowerCase() === 'receita')
-      .reduce((sum, t) => sum + (Number(t.valor) || 0), 0),
-    totalDespesa: filteredTransactions
-      .filter(t => t.tipo?.toLowerCase() === 'despesa')
-      .reduce((sum, t) => sum + Math.abs(Number(t.valor) || 0), 0),
-    transactionCount: filteredTransactions.length
+    totalReceita: stats.totalReceita,
+    totalDespesa: stats.totalDespesa,
+    transactionCount: stats.transactionCount
   }
 }
