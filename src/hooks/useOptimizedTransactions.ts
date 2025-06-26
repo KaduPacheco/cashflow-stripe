@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -113,7 +112,7 @@ export function useOptimizedTransactions() {
   const createTransaction = useCallback(async (data: Omit<Transaction, 'id' | 'userId' | 'created_at' | 'updated_at'>) => {
     try {
       validateAuthentication(user, session)
-      validateRateLimit(`create_transaction_${user?.id}`, 30) // 30 per minute
+      validateRateLimit(`create_transaction_${user?.id}`) // Remove the 30 parameter to use default
 
       // Validate input data
       const validation = validateTransaction(data)
@@ -153,7 +152,7 @@ export function useOptimizedTransactions() {
   const updateTransaction = useCallback(async (id: number, data: Partial<Omit<Transaction, 'id' | 'userId' | 'created_at' | 'updated_at'>>) => {
     try {
       validateAuthentication(user, session)
-      validateRateLimit(`update_transaction_${user?.id}`, 60) // 60 per minute
+      validateRateLimit(`update_transaction_${user?.id}`) // Remove the 60 parameter to use default
 
       // Validate input data
       const validation = validateTransactionUpdate(data)
@@ -196,7 +195,7 @@ export function useOptimizedTransactions() {
   const deleteTransaction = useCallback(async (id: number) => {
     try {
       validateAuthentication(user, session)
-      validateRateLimit(`delete_transaction_${user?.id}`, 30) // 30 per minute
+      validateRateLimit(`delete_transaction_${user?.id}`) // Remove the 30 parameter to use default
 
       // Check ownership
       const existingTransaction = transactions.find(t => t.id === id)

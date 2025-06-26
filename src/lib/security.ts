@@ -90,7 +90,7 @@ export function sanitizeInput(input: string): string {
 }
 
 export function validateFileUpload(file: File): void {
-  if (!SecurityConfig.ALLOWED_FILE_TYPES.includes(file.type)) {
+  if (!SecurityConfig.ALLOWED_FILE_TYPES.includes(file.type as typeof SecurityConfig.ALLOWED_FILE_TYPES[number])) {
     throw new SecurityError(
       'Tipo de arquivo não permitido',
       'INVALID_FILE_TYPE',
