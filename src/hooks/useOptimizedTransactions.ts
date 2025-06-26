@@ -58,8 +58,8 @@ export function useOptimizedTransactions() {
         }
       }
 
-      // Type filter
-      if (filters.tipo && filters.tipo !== 'all' && transaction.tipo !== filters.tipo) {
+      // Type filter - corrigido para case-insensitive
+      if (filters.tipo && filters.tipo !== 'all' && transaction.tipo?.toLowerCase() !== filters.tipo.toLowerCase()) {
         return false
       }
 
@@ -99,6 +99,12 @@ export function useOptimizedTransactions() {
       if (fetchError) {
         throw new NetworkError(fetchError.message, 500, 'FETCH_ERROR')
       }
+
+      console.log('useOptimizedTransactions: Transactions fetched:', data?.length || 0)
+      
+      // Log tipos encontrados para auditoria
+      const tiposEncontrados = data?.map(t => t.tipo).filter(Boolean)
+      console.log('useOptimizedTransactions: Tipos encontrados:', [...new Set(tiposEncontrados)])
 
       setTransactions(data || [])
     } catch (err) {
@@ -242,13 +248,13 @@ export function useOptimizedTransactions() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    // Statistics
+    // Statistics - corrigido para case-insensitive
     totalReceita: filteredTransactions
-      .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + t.valor, 0),
+      .filter(t => t.tipo?.toLowerCase() === 'receita')
+      .reduce((sum, t) => sum + (Number(t.valor) || 0), 0),
     totalDespesa: filteredTransactions
-      .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + t.valor, 0),
+      .filter(t => t.tipo?.toLowerCase() === 'despesa')
+      .reduce((sum, t) => sum + Math.abs(Number(t.valor) || 0), 0),
     transactionCount: filteredTransactions.length
   }
 }

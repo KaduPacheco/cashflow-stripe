@@ -179,19 +179,23 @@ export default function Dashboard() {
       console.log('Dashboard: Transactions fetched:', transacoes?.length || 0)
       console.log('Dashboard: Lembretes fetched:', lembretes?.length || 0)
 
+      // Log temporário para auditoria dos tipos encontrados
+      const tiposEncontrados = transacoes?.map(t => t.tipo).filter(Boolean)
+      console.log('Dashboard: Tipos encontrados nas transações:', [...new Set(tiposEncontrados)])
+
       setTransacoes(transacoes || [])
       setLembretes(lembretes || [])
 
-      // Calcular estatísticas - corrigido para garantir que receitas sejam calculadas corretamente
-      const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => {
+      // Calcular estatísticas - corrigido com case-insensitive e conversão adequada
+      const receitas = transacoes?.filter(t => t.tipo?.toLowerCase() === 'receita').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding receita:', valor)
+        console.log('Dashboard: Adding receita:', valor, 'from transaction:', t.estabelecimento)
         return sum + valor
       }, 0) || 0
       
-      const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => {
+      const despesas = transacoes?.filter(t => t.tipo?.toLowerCase() === 'despesa').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding despesa:', valor)
+        console.log('Dashboard: Adding despesa:', valor, 'from transaction:', t.estabelecimento)
         return sum + Math.abs(valor)
       }, 0) || 0
 
@@ -222,7 +226,7 @@ export default function Dashboard() {
     const categorias: { [key: string]: number } = {}
     
     transacoes.forEach(t => {
-      if (t.categorias?.nome && t.valor && t.tipo === 'despesa') {
+      if (t.categorias?.nome && t.valor && t.tipo?.toLowerCase() === 'despesa') {
         const categoryName = t.categorias.nome
         categorias[categoryName] = (categorias[categoryName] || 0) + Math.abs(t.valor)
       }
@@ -235,8 +239,8 @@ export default function Dashboard() {
   }
 
   const getPieData = () => {
-    const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.valor || 0), 0)
-    const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.valor || 0), 0)
+    const receitas = transacoes.filter(t => t.tipo?.toLowerCase() === 'receita').reduce((sum, t) => sum + (Number(t.valor) || 0), 0)
+    const despesas = transacoes.filter(t => t.tipo?.toLowerCase() === 'despesa').reduce((sum, t) => sum + (Number(t.valor) || 0), 0)
 
     return [
       { name: 'Receitas', value: receitas },
@@ -350,7 +354,7 @@ export default function Dashboard() {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className={`text-2xl font-bold ${stats.totalReceitas > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
               {formatCurrency(stats.totalReceitas)}
             </div>
             <p className="text-xs text-muted-foreground">
