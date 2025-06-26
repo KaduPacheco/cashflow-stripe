@@ -59,7 +59,6 @@ const dicas = [
 export default function Dashboard() {
   const { user } = useAuth()
   const { subscriptionData } = useSubscription()
-  const { receitas } = useOptimizedTransactions(filterMonth, filterYear)
   
   const [stats, setStats] = useState<DashboardStats>({
     totalDespesas: 0,
@@ -73,6 +72,9 @@ export default function Dashboard() {
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth().toString())
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString())
   const [dicaDoDia] = useState(dicas[new Date().getDate() % dicas.length])
+
+  // Now we can use the hook after filterMonth and filterYear are declared
+  const { receitas } = useOptimizedTransactions(filterMonth, filterYear)
 
   useEffect(() => {
     if (user?.id) {
