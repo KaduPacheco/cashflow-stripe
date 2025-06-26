@@ -179,13 +179,14 @@ export default function Dashboard() {
 
       const receitas = transacoes?.filter(t => t.tipo?.toLowerCase() === 'receita').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding receita:', valor, 'from transaction:', t.estabelecimento)
-        return sum + valor
+        const valorAbsoluto = Math.abs(valor)
+        console.log('Dashboard: Adding receita:', valorAbsoluto, 'from transaction:', t.estabelecimento)
+        return sum + valorAbsoluto
       }, 0) || 0
       
       const despesas = transacoes?.filter(t => t.tipo?.toLowerCase() === 'despesa').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding despesa:', valor, 'from transaction:', t.estabelecimento)
+        console.log('Dashboard: Adding despesa:', Math.abs(valor), 'from transaction:', t.estabelecimento)
         return sum + Math.abs(valor)
       }, 0) || 0
 
