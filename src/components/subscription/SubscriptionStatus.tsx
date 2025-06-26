@@ -53,7 +53,7 @@ export function SubscriptionStatus() {
           <Button
             variant="outline"
             size="sm"
-            onClick={checkSubscription}
+            onClick={() => checkSubscription(true)}
             disabled={checking}
           >
             {checking ? (
