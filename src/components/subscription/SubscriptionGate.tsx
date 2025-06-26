@@ -5,6 +5,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut, Wifi, Clock } from 'lucide-react'
 
 interface SubscriptionGateProps {
@@ -22,22 +23,40 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     if (urlParams.get('checkout') === 'success') {
       // Remove the param and refresh subscription
       navigate(window.location.pathname, { replace: true })
-      window.location.reload()
+      // Force refresh after checkout success
+      setTimeout(() => {
+        checkSubscription(true)
+      }, 2000)
     }
-  }, [navigate])
+  }, [navigate, checkSubscription])
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/auth')
   }
 
+  // Show loading skeleton instead of blocking screen
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Verificando assinatura...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-xl">Verificando Assinatura</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Aguarde enquanto verificamos seu status de assinatura...
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -86,7 +105,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
                   Não foi possível verificar sua assinatura. Verifique sua conexão com a internet.
                 </p>
                 <div className="space-y-3">
-                  <Button onClick={checkSubscription} className="w-full" size="lg">
+                  <Button onClick={() => checkSubscription(true)} className="w-full" size="lg">
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Tentar Novamente
                   </Button>
@@ -138,7 +157,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
 
                   <Button 
                     variant="ghost" 
-                    onClick={checkSubscription} 
+                    onClick={() => checkSubscription(true)} 
                     className="w-full"
                     size="sm"
                   >

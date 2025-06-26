@@ -2,7 +2,7 @@
 import { useSubscription } from '@/hooks/useSubscription'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw, Wifi, Clock } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Wifi, Clock, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
 
@@ -11,6 +11,7 @@ export function SubscriptionBanner() {
   const { isReadOnly } = useReadOnlyMode()
   const navigate = useNavigate()
 
+  // Don't show banner while loading or if subscription is active
   if (loading || subscriptionData.subscribed) {
     return null
   }
@@ -53,7 +54,7 @@ export function SubscriptionBanner() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={checkSubscription}
+            onClick={() => checkSubscription(true)}
             className="ml-4"
           >
             <RefreshCw className="h-4 w-4 mr-1" />
@@ -109,7 +110,7 @@ export function SubscriptionBanner() {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={checkSubscription}
+          onClick={() => checkSubscription(true)}
           className="ml-4"
         >
           <RefreshCw className="h-4 w-4 mr-1" />

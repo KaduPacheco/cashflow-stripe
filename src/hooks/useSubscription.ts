@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
@@ -40,7 +39,7 @@ export function useSubscription() {
     }
   }, [])
 
-  const checkSubscription = async (isRetry = false, skipRateCheck = false) => {
+  const checkSubscription = async (isRetry = false, skipRateCheck = false, showToast = false) => {
     console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited })
     
     // Se estamos em rate limit e não é um skip, bloquear
@@ -55,10 +54,10 @@ export function useSubscription() {
       return
     }
 
-    // Controle de frequência - mínimo 3 segundos entre checks
+    // Controle de frequência - mínimo 2 segundos entre checks (reduzido de 3)
     const now = Date.now()
     const timeSinceLastCheck = now - lastCheckTime
-    if (timeSinceLastCheck < 3000 && !skipRateCheck && !isRetry) {
+    if (timeSinceLastCheck < 2000 && !skipRateCheck && !isRetry) {
       console.log('Too frequent, skipping check')
       return
     }
@@ -130,8 +129,8 @@ export function useSubscription() {
             errorType: 'rate_limit'
           })
           
-          // Implementar backoff exponencial com máximo de 2 minutos
-          const backoffTime = Math.min(Math.pow(2, retryAttempts) * 5000, 120000)
+          // Implementar backoff exponencial com máximo de 1 minuto (reduzido de 2)
+          const backoffTime = Math.min(Math.pow(2, retryAttempts) * 3000, 60000)
           console.log(`Rate limited, backing off for ${backoffTime}ms`)
           
           // Limpar rate limit após o backoff
@@ -172,8 +171,8 @@ export function useSubscription() {
               console.log('Session refreshed successfully, retrying...')
               // Delay antes de retry para evitar rate limit
               timeoutRef.current = setTimeout(() => {
-                checkSubscription(true, true)
-              }, 2000)
+                checkSubscription(true, true, showToast)
+              }, 1500)
               return
             } else {
               console.log('Session refresh failed, signing out...')
@@ -231,7 +230,7 @@ export function useSubscription() {
           rateLimitTimeoutRef.current = setTimeout(() => {
             setIsRateLimited(false)
             setRetryAttempts(0)
-          }, 60000) // 1 minuto de backoff
+          }, 45000) // 45 segundos de backoff (reduzido de 1 minuto)
           
           return
         }
@@ -261,7 +260,15 @@ export function useSubscription() {
         clearTimeout(rateLimitTimeoutRef.current)
       }
       
-      setSubscriptionData(data || { subscribed: false })
+      const newSubscriptionData = data || { subscribed: false }
+      setSubscriptionData(newSubscriptionData)
+      
+      // Show success toast if requested and subscription is active
+      if (showToast && newSubscriptionData.subscribed) {
+        toast.success("Assinatura verificada com sucesso!", {
+          description: `Plano ${newSubscriptionData.subscription_tier} ativo`,
+        })
+      }
       
     } catch (error: any) {
       console.error('Failed to check subscription:', error)
@@ -290,7 +297,7 @@ export function useSubscription() {
         displayError = 'Erro de conexão. Verifique sua internet.'
       }
       
-      if (!isSessionError) {
+      if (!isSessionError && showToast) {
         toast.error("Erro ao verificar assinatura", {
           description: displayError,
         })
@@ -303,7 +310,7 @@ export function useSubscription() {
     }
   }
 
-  const forceRefresh = async () => {
+  const forceRefresh = async (showToast = true) => {
     console.log('Force refreshing subscription...')
     // Reset todos os controles para permitir nova verificação
     setRetryAttempts(0)
@@ -313,7 +320,7 @@ export function useSubscription() {
       clearTimeout(rateLimitTimeoutRef.current)
     }
     setLoading(true)
-    await checkSubscription(false, true)
+    await checkSubscription(false, true, showToast)
   }
 
   const createCheckout = async () => {
@@ -395,7 +402,7 @@ export function useSubscription() {
       // Debounce inicial check
       timeoutRef.current = setTimeout(() => {
         checkSubscription()
-      }, 1000)
+      }, 500) // Reduzido de 1000ms para 500ms
     } else {
       setLoading(false)
       setSubscriptionData({ subscribed: false })
@@ -408,7 +415,7 @@ export function useSubscription() {
     }
   }, [user, session])
 
-  // Auto-refresh subscription status every 10 minutes quando subscribed e ativo
+  // Auto-refresh subscription status every 5 minutes quando subscribed e ativo (reduzido de 10)
   useEffect(() => {
     if (!user || !subscriptionData.subscribed || isRateLimited) return
 
@@ -416,7 +423,7 @@ export function useSubscription() {
       if (document.visibilityState === 'visible' && !checking) {
         checkSubscription()
       }
-    }, 600000) // 10 minutes
+    }, 300000) // 5 minutes
 
     return () => clearInterval(interval)
   }, [user, subscriptionData.subscribed, checking, isRateLimited])
