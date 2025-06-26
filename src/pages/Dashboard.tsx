@@ -171,39 +171,21 @@ export default function Dashboard() {
       console.log('Dashboard: Transactions fetched:', transacoes?.length || 0)
       console.log('Dashboard: Lembretes fetched:', lembretes?.length || 0)
 
-      // Log detalhado das transações para debug
-      console.log('Dashboard: All transactions data:', transacoes)
-      
       const tiposEncontrados = transacoes?.map(t => t.tipo).filter(Boolean)
       console.log('Dashboard: Tipos encontrados nas transações:', [...new Set(tiposEncontrados)])
-
-      // Log específico das receitas encontradas
-      const receitasEncontradas = transacoes?.filter(t => {
-        const tipoLower = t.tipo?.toLowerCase()
-        console.log('Dashboard: Checking transaction tipo:', t.tipo, 'lowercase:', tipoLower, 'equals receita?', tipoLower === 'receita')
-        return tipoLower === 'receita'
-      })
-      console.log('Dashboard: Receitas found:', receitasEncontradas?.length || 0, receitasEncontradas)
 
       setTransacoes(transacoes || [])
       setLembretes(lembretes || [])
 
-      const receitas = transacoes?.filter(t => {
-        const isReceita = t.tipo?.toLowerCase() === 'receita'
-        if (isReceita) {
-          console.log('Dashboard: Found receita transaction:', t.estabelecimento, 'valor:', t.valor, 'tipo:', t.tipo)
-        }
-        return isReceita
-      }).reduce((sum, t) => {
+      const receitas = transacoes?.filter(t => t.tipo?.toLowerCase() === 'receita').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        const valorAbsoluto = Math.abs(valor)
-        console.log('Dashboard: Adding receita:', valorAbsoluto, 'from transaction:', t.estabelecimento, 'original valor:', t.valor)
-        return sum + valorAbsoluto
+        console.log('Dashboard: Adding receita:', valor, 'from transaction:', t.estabelecimento)
+        return sum + valor
       }, 0) || 0
       
       const despesas = transacoes?.filter(t => t.tipo?.toLowerCase() === 'despesa').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding despesa:', Math.abs(valor), 'from transaction:', t.estabelecimento)
+        console.log('Dashboard: Adding despesa:', valor, 'from transaction:', t.estabelecimento)
         return sum + Math.abs(valor)
       }, 0) || 0
 
@@ -216,7 +198,6 @@ export default function Dashboard() {
       }
 
       console.log('Dashboard: Calculated stats:', newStats)
-      console.log('Dashboard: Receitas calculation result:', receitas)
       setStats(newStats)
 
     } catch (error: any) {
