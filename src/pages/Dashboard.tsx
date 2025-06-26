@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useOptimizedTransactions } from '@/hooks/useOptimizedTransactions'
 import { toast } from '@/hooks/use-toast'
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
@@ -13,7 +14,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
 
 interface DashboardStats {
-  totalReceitas: number
   totalDespesas: number
   saldo: number
   transacoesCount: number
@@ -59,8 +59,9 @@ const dicas = [
 export default function Dashboard() {
   const { user } = useAuth()
   const { subscriptionData } = useSubscription()
+  const { receitas } = useOptimizedTransactions(filterMonth, filterYear)
+  
   const [stats, setStats] = useState<DashboardStats>({
-    totalReceitas: 0,
     totalDespesas: 0,
     saldo: 0,
     transacoesCount: 0,
@@ -182,13 +183,7 @@ export default function Dashboard() {
       setTransacoes(transacoes || [])
       setLembretes(lembretes || [])
 
-      // Calcular estatísticas - corrigido para garantir que receitas sejam calculadas corretamente
-      const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => {
-        const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding receita:', valor)
-        return sum + valor
-      }, 0) || 0
-      
+      // Calcular apenas despesas - receitas vem do hook
       const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
         console.log('Dashboard: Adding despesa:', valor)
@@ -196,7 +191,6 @@ export default function Dashboard() {
       }, 0) || 0
 
       const newStats = {
-        totalReceitas: receitas,
         totalDespesas: despesas,
         saldo: receitas - despesas,
         transacoesCount: transacoes?.length || 0,
@@ -235,7 +229,6 @@ export default function Dashboard() {
   }
 
   const getPieData = () => {
-    const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.valor || 0), 0)
     const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.valor || 0), 0)
 
     return [
@@ -351,7 +344,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(stats.totalReceitas)}
+              {formatCurrency(receitas)}
             </div>
             <p className="text-xs text-muted-foreground">
               {subscriptionData.subscribed ? "Mês atual" : "Últimos registros"}
@@ -525,7 +518,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Receitas</span>
                 <span className="text-green-600 font-semibold">
-                  {formatCurrency(stats.totalReceitas)}
+                  {formatCurrency(receitas)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
