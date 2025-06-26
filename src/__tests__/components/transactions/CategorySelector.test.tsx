@@ -1,5 +1,6 @@
+
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen } from '@/__tests__/utils/test-utils'
 import { CategorySelector } from '@/components/transactions/CategorySelector'
 
 // Mock the useCategories hook
