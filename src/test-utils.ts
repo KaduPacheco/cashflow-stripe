@@ -2,9 +2,6 @@
 // src/test-utils.ts
 import {
   render,
-  screen,
-  fireEvent,
-  waitFor,
   act,
 } from '@testing-library/react'
 
@@ -14,5 +11,5 @@ export * from '@testing-library/react'
 // override render
 export { render }
 
-// export explicitly other helpers
-export { screen, fireEvent, waitFor, act }
+// export explicitly other helpers that are available through re-export
+export { act }
