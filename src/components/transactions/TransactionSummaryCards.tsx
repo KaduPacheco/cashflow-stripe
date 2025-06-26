@@ -10,8 +10,6 @@ interface TransactionSummaryCardsProps {
 }
 
 export function TransactionSummaryCards({ receitas, despesas, saldo }: TransactionSummaryCardsProps) {
-  console.log('TransactionSummaryCards: Received values -', { receitas, despesas, saldo })
-
   return (
     <div className="grid gap-4 md:grid-cols-3 mb-6">
       <Card className="border-l-4 border-l-green-500">
@@ -20,7 +18,7 @@ export function TransactionSummaryCards({ receitas, despesas, saldo }: Transacti
           <TrendingUp className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${receitas > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+          <div className="text-2xl font-bold text-green-600">
             {formatCurrency(receitas)}
           </div>
         </CardContent>
