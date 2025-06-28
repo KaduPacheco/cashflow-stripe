@@ -7,74 +7,74 @@
 
 @layer base {
   :root {
-    /* Fintech Design System - Light Theme */
-    --background: 249 250 251; /* #F9FAFB */
-    --foreground: 17 24 39; /* #111827 */
-    --card: 255 255 255; /* #FFFFFF */
-    --card-foreground: 17 24 39; /* #111827 */
-    --popover: 255 255 255;
-    --popover-foreground: 17 24 39;
-    --primary: 15 76 129; /* #0F4C81 - Azul petróleo */
-    --primary-foreground: 255 255 255;
-    --secondary: 0 109 91; /* #006D5B - Verde escuro */
-    --secondary-foreground: 255 255 255;
-    --muted: 249 250 251;
-    --muted-foreground: 107 114 128;
-    --accent: 229 231 235; /* #E5E7EB - Cinza claro neutro */
-    --accent-foreground: 17 24 39;
-    --destructive: 220 38 38; /* #DC2626 */
-    --destructive-foreground: 255 255 255;
-    --border: 229 231 235; /* #E5E7EB */
-    --input: 229 231 235;
-    --ring: 15 76 129;
+    /* Fintech Design System - Light Theme - Design Tokens Aplicados */
+    --background: 210 20 98; /* #F9FAFB */
+    --foreground: 222 84 5; /* #111827 */
+    --card: 0 0 100; /* #FFFFFF */
+    --card-foreground: 222 84 5; /* #111827 */
+    --popover: 0 0 100; /* #FFFFFF */
+    --popover-foreground: 222 84 5; /* #111827 */
+    --primary: 207 78 28; /* #0F4C81 - Azul petróleo */
+    --primary-foreground: 0 0 100; /* #FFFFFF */
+    --secondary: 174 100 21; /* #006D5B - Verde escuro */
+    --secondary-foreground: 0 0 100; /* #FFFFFF */
+    --muted: 220 13 91; /* #E5E7EB */
+    --muted-foreground: 220 9 46; /* #9CA3AF */
+    --accent: 207 78 28; /* #0F4C81 - Azul petróleo */
+    --accent-foreground: 0 0 100; /* #FFFFFF */
+    --destructive: 0 84 60; /* #DC2626 */
+    --destructive-foreground: 0 0 100; /* #FFFFFF */
+    --border: 220 13 91; /* #E5E7EB */
+    --input: 220 13 91; /* #E5E7EB */
+    --ring: 207 78 28; /* #0F4C81 */
     --radius: 1rem;
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 17 24 39;
-    --sidebar-primary: 15 76 129;
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 229 231 235;
-    --sidebar-accent-foreground: 17 24 39;
-    --sidebar-border: 229 231 235;
-    --sidebar-ring: 15 76 129;
-    --success: 22 163 74; /* #16A34A */
-    --success-foreground: 255 255 255;
-    --warning: 202 138 4; /* #CA8A04 - Amarelo mostarda suave */
-    --warning-foreground: 255 255 255;
+    --sidebar-background: 0 0 100; /* #FFFFFF */
+    --sidebar-foreground: 222 84 5; /* #111827 */
+    --sidebar-primary: 207 78 28; /* #0F4C81 */
+    --sidebar-primary-foreground: 0 0 100; /* #FFFFFF */
+    --sidebar-accent: 220 13 91; /* #E5E7EB */
+    --sidebar-accent-foreground: 222 84 5; /* #111827 */
+    --sidebar-border: 220 13 91; /* #E5E7EB */
+    --sidebar-ring: 207 78 28; /* #0F4C81 */
+    --success: 142 76 36; /* #16A34A */
+    --success-foreground: 0 0 100; /* #FFFFFF */
+    --warning: 43 96 56; /* #CA8A04 - Amarelo mostarda suave */
+    --warning-foreground: 0 0 100; /* #FFFFFF */
   }
 
   .dark {
-    /* Fintech Design System - Dark Theme */
-    --background: 18 18 18; /* #121212 */
-    --foreground: 229 231 235; /* #E5E7EB */
-    --card: 30 30 30; /* #1E1E1E */
-    --card-foreground: 229 231 235;
-    --popover: 30 30 30;
-    --popover-foreground: 229 231 235;
-    --primary: 15 76 129; /* #0F4C81 - Azul petróleo */
-    --primary-foreground: 255 255 255;
-    --secondary: 0 109 91; /* #006D5B - Verde escuro */
-    --secondary-foreground: 255 255 255;
-    --muted: 30 30 30;
-    --muted-foreground: 156 163 175;
-    --accent: 44 44 44; /* #2C2C2C - Cinza escuro neutro */
-    --accent-foreground: 229 231 235;
-    --destructive: 220 38 38; /* #DC2626 */
-    --destructive-foreground: 255 255 255;
-    --border: 44 44 44; /* #2C2C2C */
-    --input: 44 44 44;
-    --ring: 15 76 129;
-    --sidebar-background: 30 30 30;
-    --sidebar-foreground: 156 163 175;
-    --sidebar-primary: 15 76 129;
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 44 44 44;
-    --sidebar-accent-foreground: 229 231 235;
-    --sidebar-border: 44 44 44;
-    --sidebar-ring: 15 76 129;
-    --success: 22 163 74; /* #16A34A */
-    --success-foreground: 255 255 255;
-    --warning: 202 138 4; /* #CA8A04 - Amarelo mostarda suave */
-    --warning-foreground: 255 255 255;
+    /* Fintech Design System - Dark Theme - Design Tokens Aplicados */
+    --background: 0 0 7; /* #121212 */
+    --foreground: 220 13 91; /* #E5E7EB */
+    --card: 0 0 12; /* #1E1E1E */
+    --card-foreground: 220 13 91; /* #E5E7EB */
+    --popover: 0 0 12; /* #1E1E1E */
+    --popover-foreground: 220 13 91; /* #E5E7EB */
+    --primary: 207 78 28; /* #0F4C81 - Azul petróleo */
+    --primary-foreground: 0 0 100; /* #FFFFFF */
+    --secondary: 174 100 21; /* #006D5B - Verde escuro */
+    --secondary-foreground: 0 0 100; /* #FFFFFF */
+    --muted: 0 0 17; /* #2C2C2C */
+    --muted-foreground: 220 9 68; /* #9CA3AF */
+    --accent: 207 78 28; /* #0F4C81 - Azul petróleo */
+    --accent-foreground: 0 0 100; /* #FFFFFF */
+    --destructive: 0 84 60; /* #DC2626 */
+    --destructive-foreground: 0 0 100; /* #FFFFFF */
+    --border: 0 0 17; /* #2C2C2C */
+    --input: 0 0 17; /* #2C2C2C */
+    --ring: 207 78 28; /* #0F4C81 */
+    --sidebar-background: 0 0 12; /* #1E1E1E */
+    --sidebar-foreground: 220 9 68; /* #9CA3AF */
+    --sidebar-primary: 207 78 28; /* #0F4C81 */
+    --sidebar-primary-foreground: 0 0 100; /* #FFFFFF */
+    --sidebar-accent: 0 0 17; /* #2C2C2C */
+    --sidebar-accent-foreground: 220 13 91; /* #E5E7EB */
+    --sidebar-border: 0 0 17; /* #2C2C2C */
+    --sidebar-ring: 207 78 28; /* #0F4C81 */
+    --success: 142 76 36; /* #16A34A */
+    --success-foreground: 0 0 100; /* #FFFFFF */
+    --warning: 43 96 56; /* #CA8A04 - Amarelo mostarda suave */
+    --warning-foreground: 0 0 100; /* #FFFFFF */
   }
 }
 
@@ -116,7 +116,7 @@
     @apply inline-flex items-center justify-center rounded-2xl border border-border bg-background text-foreground px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 ease-in-out hover:bg-accent hover:text-accent-foreground hover:shadow-fintech hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
 
-  /* Status Colors - Usando apenas cores neutras e definidas */
+  /* Status Colors - Usando design tokens definidos */
   .fintech-success {
     @apply text-success;
   }
