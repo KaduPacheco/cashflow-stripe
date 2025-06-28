@@ -75,21 +75,33 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
-				// Fintech palette colors
+				// Fintech Design System Colors
 				fintech: {
-					'dark-bg': '#121212',
-					'light-bg': '#F9FAFB',
-					'dark-surface': '#1E1E1E',
-					'light-surface': '#FFFFFF',
-					'dark-text': '#E5E7EB',
-					'light-text': '#111827',
+					// Backgrounds
+					'bg-dark': '#121212',
+					'bg-light': '#F9FAFB',
+					// Surfaces  
+					'surface-dark': '#1E1E1E',
+					'surface-light': '#FFFFFF',
+					// Text Colors
+					'text-dark': '#E5E7EB',
+					'text-light': '#111827',
+					// Primary Colors
 					'primary': '#0F4C81',
+					'primary-foreground': '#FFFFFF',
+					// Secondary Colors
 					'secondary': '#006D5B',
-					'dark-border': '#2C2C2C',
-					'light-border': '#E5E7EB',
-					'alert': '#DC2626',
+					'secondary-foreground': '#FFFFFF',
+					// Status Colors
+					'error': '#DC2626',
+					'error-foreground': '#FFFFFF',
 					'success': '#16A34A',
-					'warning': '#CA8A04'
+					'success-foreground': '#FFFFFF',
+					'warning': '#CA8A04',
+					'warning-foreground': '#FFFFFF',
+					// Borders
+					'border-dark': '#2C2C2C',
+					'border-light': '#E5E7EB'
 				}
 			},
 			borderRadius: {

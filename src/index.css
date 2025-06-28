@@ -7,7 +7,7 @@
 
 @layer base {
   :root {
-    /* Fintech Light Theme */
+    /* Fintech Design System - Light Theme */
     --background: 249 250 251; /* #F9FAFB */
     --foreground: 17 24 39; /* #111827 */
     --card: 255 255 255; /* #FFFFFF */
@@ -36,15 +36,14 @@
     --sidebar-accent-foreground: 17 24 39;
     --sidebar-border: 229 231 235;
     --sidebar-ring: 15 76 129;
-    --title-color: 17 24 39;
     --success: 22 163 74; /* #16A34A */
     --success-foreground: 255 255 255;
-    --warning: 202 138 4; /* #CA8A04 */
+    --warning: 202 138 4; /* #CA8A04 - Amarelo mostarda suave */
     --warning-foreground: 255 255 255;
   }
 
   .dark {
-    /* Fintech Dark Theme */
+    /* Fintech Design System - Dark Theme */
     --background: 18 18 18; /* #121212 */
     --foreground: 229 231 235; /* #E5E7EB */
     --card: 30 30 30; /* #1E1E1E */
@@ -72,10 +71,9 @@
     --sidebar-accent-foreground: 229 231 235;
     --sidebar-border: 44 44 44;
     --sidebar-ring: 15 76 129;
-    --title-color: 229 231 235;
     --success: 22 163 74; /* #16A34A */
     --success-foreground: 255 255 255;
-    --warning: 202 138 4; /* #CA8A04 */
+    --warning: 202 138 4; /* #CA8A04 - Amarelo mostarda suave */
     --warning-foreground: 255 255 255;
   }
 }
@@ -95,26 +93,45 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: hsl(var(--title-color));
-    font-weight: 600;
+    @apply text-foreground font-semibold;
   }
 }
 
 @layer components {
+  /* Fintech Card Component */
   .fintech-card {
-    @apply bg-card border border-border rounded-2xl shadow-md hover:shadow-fintech-lg transition-all duration-200 ease-in-out;
+    @apply bg-card border border-border rounded-2xl shadow-md transition-all duration-200 ease-in-out hover:shadow-fintech-lg hover:-translate-y-0.5;
   }
   
+  /* Fintech Button Components */
   .fintech-button {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl shadow-fintech hover:shadow-fintech-lg transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-2xl bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-fintech transition-all duration-200 ease-in-out hover:shadow-fintech-lg hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
 
   .fintech-button-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-2xl shadow-fintech hover:shadow-fintech-lg transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-2xl bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-fintech transition-all duration-200 ease-in-out hover:shadow-fintech-lg hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2;
   }
 
+  .fintech-button-outline {
+    @apply inline-flex items-center justify-center rounded-2xl border border-border bg-background text-foreground px-4 py-2 text-sm font-medium shadow-sm transition-all duration-200 ease-in-out hover:bg-accent hover:text-accent-foreground hover:shadow-fintech hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+
+  /* Status Colors */
+  .fintech-success {
+    @apply text-success;
+  }
+
+  .fintech-error {
+    @apply text-destructive;
+  }
+
+  .fintech-warning {
+    @apply text-warning;
+  }
+
+  /* Surface and Layout */
   .fintech-surface {
-    @apply bg-card border border-border rounded-2xl p-6;
+    @apply bg-card border border-border rounded-2xl p-6 shadow-md;
   }
 
   .fintech-text {
@@ -125,32 +142,22 @@
     @apply text-muted-foreground;
   }
 
+  /* Interactive Elements */
   .fintech-hover {
-    @apply transition-transform transition-shadow duration-200 ease-in-out hover:shadow-fintech-lg hover:-translate-y-0.5;
+    @apply transition-all duration-200 ease-in-out hover:shadow-fintech-lg hover:-translate-y-0.5;
   }
 
   .fintech-interactive {
     @apply transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98];
   }
 
-  .success-color {
-    @apply text-success;
-  }
-
-  .warning-color {
-    @apply text-warning;
-  }
-
-  .alert-color {
-    @apply text-destructive;
-  }
-
+  /* Animation Classes */
   .smooth-transition {
     @apply transition-all duration-200 ease-in-out;
   }
 }
 
-/* Custom scrollbar with fintech colors */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -170,12 +177,12 @@
   background: hsl(var(--primary) / 0.5);
 }
 
-/* Focus styles with fintech primary color */
+/* Focus Styles */
 .focus-visible:focus-visible {
   @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
 }
 
-/* Animation keyframes */
+/* Animation Keyframes */
 @keyframes fadeIn {
   from {
     opacity: 0;
