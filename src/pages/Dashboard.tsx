@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useOptimizedTransactions } from '@/hooks/useOptimizedTransactions'
+import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from '@/hooks/use-toast'
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock, FileText } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
@@ -77,61 +77,28 @@ export default function Dashboard() {
   // Now we can use the hook after filterMonth and filterYear are declared
   const { receitas } = useOptimizedTransactions(filterMonth, filterYear)
 
-  useEffect(() => {
-    if (user?.id) {
-      console.log('Dashboard: Loading data for user:', user.id)
-      fetchDashboardData()
-    }
-  }, [user?.id, filterMonth, filterYear])
-
-  // Listener para mudanças em tempo real - movido para cima e corrigido
-  useEffect(() => {
-    if (!user?.id) return
-
-    console.log('Dashboard: Setting up real-time listener for user:', user.id)
-    
-    const channel = supabase
-      .channel('dashboard-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transacoes',
-          filter: `userId=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Dashboard: Real-time transaction change detected:', payload)
-          // Recarregar dados quando houver mudanças
-          fetchDashboardData()
-        }
-      )
-      .subscribe((status) => {
-        console.log('Dashboard: Real-time subscription status:', status)
-      })
-
-    return () => {
-      console.log('Dashboard: Cleaning up real-time listener')
-      supabase.removeChannel(channel)
-    }
-  }, [user?.id])
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!user?.id) {
-      console.error('Dashboard: No user ID available')
+      console.error('❌ Dashboard: No user ID available')
       setLoading(false)
       return
     }
 
     try {
       setLoading(true)
-      console.log('Dashboard: Fetching data for filters:', { month: filterMonth, year: filterYear })
+      console.log('🔄 Dashboard: fetchDashboardData acionado', { 
+        filterMonth, 
+        filterYear, 
+        userId: user.id,
+        isSubscribed: subscriptionData.subscribed,
+        timestamp: new Date().toISOString()
+      })
 
       // Criar datas de início e fim do período
       const startDate = new Date(parseInt(filterYear), parseInt(filterMonth), 1)
       const endDate = new Date(parseInt(filterYear), parseInt(filterMonth) + 1, 0, 23, 59, 59)
       
-      console.log('Dashboard: Date range:', { startDate, endDate })
+      console.log('📅 Dashboard: Date range calculated', { startDate, endDate })
 
       // Para usuários sem assinatura, limitar aos últimos 30 dias
       let transacoesQuery = supabase
@@ -171,17 +138,20 @@ export default function Dashboard() {
       const { data: lembretes, error: lembretesError } = await lembretesQuery
 
       if (transacoesError) {
-        console.error('Dashboard: Error fetching transactions:', transacoesError)
+        console.error('❌ Dashboard: Error fetching transactions:', transacoesError)
         throw transacoesError
       }
 
       if (lembretesError) {
-        console.error('Dashboard: Error fetching lembretes:', lembretesError)
+        console.error('❌ Dashboard: Error fetching lembretes:', lembretesError)
         throw lembretesError
       }
 
-      console.log('Dashboard: Transactions fetched:', transacoes?.length || 0)
-      console.log('Dashboard: Lembretes fetched:', lembretes?.length || 0)
+      console.log('📊 Dashboard: Data fetched successfully', {
+        transacoesCount: transacoes?.length || 0,
+        lembretesCount: lembretes?.length || 0,
+        isSubscribed: subscriptionData.subscribed
+      })
 
       setTransacoes(transacoes || [])
       setLembretes(lembretes || [])
@@ -189,7 +159,6 @@ export default function Dashboard() {
       // Calcular apenas despesas - receitas vem do hook
       const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
-        console.log('Dashboard: Adding despesa:', valor)
         return sum + Math.abs(valor)
       }, 0) || 0
 
@@ -200,11 +169,18 @@ export default function Dashboard() {
         lembretesCount: lembretes?.length || 0,
       }
 
-      console.log('Dashboard: Calculated stats:', newStats)
+      console.log('📈 Dashboard: Stats calculated', {
+        receitas,
+        despesas,
+        saldo: newStats.saldo,
+        transacoesCount: newStats.transacoesCount,
+        lembretesCount: newStats.lembretesCount
+      })
+
       setStats(newStats)
 
     } catch (error: any) {
-      console.error('Dashboard: Error loading data:', error)
+      console.error('❌ Dashboard: Error loading data:', error)
       toast({
         title: "Erro ao carregar dados",
         description: error.message || "Erro desconhecido ao carregar dados do dashboard",
@@ -213,7 +189,54 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterMonth, filterYear, user?.id, subscriptionData.subscribed, receitas])
+
+  // Implementar debounce para fetchDashboardData
+  const debouncedFetchDashboardData = useDebounce(fetchDashboardData, 300)
+
+  useEffect(() => {
+    if (user?.id) {
+      console.log('🔄 Dashboard: Initial data load for user:', user.id)
+      fetchDashboardData()
+    }
+  }, [user?.id, filterMonth, filterYear, subscriptionData.subscribed])
+
+  // Listener para mudanças em tempo real - com debounce
+  useEffect(() => {
+    if (!user?.id) return
+
+    console.log('🔄 Dashboard: Setting up real-time listener for user:', user.id)
+    
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transacoes',
+          filter: `userId=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('⚡ Dashboard: Real-time transaction change detected:', {
+            event: payload.eventType,
+            table: payload.table,
+            userId: user.id,
+            timestamp: new Date().toISOString()
+          })
+          // Usar debounced function para evitar múltiplas chamadas
+          debouncedFetchDashboardData()
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔌 Dashboard: Real-time subscription status:', status)
+      })
+
+    return () => {
+      console.log('🔌 Dashboard: Cleaning up real-time listener')
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, debouncedFetchDashboardData])
 
   const getChartData = () => {
     const categorias: { [key: string]: number } = {}
