@@ -74,6 +74,22 @@ export default {
 				warning: {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
+				},
+				// Fintech palette colors
+				fintech: {
+					'dark-bg': '#121212',
+					'light-bg': '#F9FAFB',
+					'dark-surface': '#1E1E1E',
+					'light-surface': '#FFFFFF',
+					'dark-text': '#E5E7EB',
+					'light-text': '#111827',
+					'primary': '#0F4C81',
+					'secondary': '#006D5B',
+					'dark-border': '#2C2C2C',
+					'light-border': '#E5E7EB',
+					'alert': '#DC2626',
+					'success': '#16A34A',
+					'warning': '#CA8A04'
 				}
 			},
 			borderRadius: {
@@ -129,14 +145,6 @@ export default {
 						opacity: '1',
 						transform: 'scale(1)'
 					}
-				},
-				'pulse-slow': {
-					'0%, 100%': {
-						opacity: '1'
-					},
-					'50%': {
-						opacity: '0.5'
-					}
 				}
 			},
 			animation: {
@@ -144,13 +152,12 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.5s ease-out',
 				'slide-in': 'slide-in 0.3s ease-out',
-				'scale-in': 'scale-in 0.2s ease-out',
-				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+				'scale-in': 'scale-in 0.2s ease-out'
 			},
 			boxShadow: {
-				'modern': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-				'modern-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-				'modern-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+				'fintech': '0 4px 6px -1px rgba(15, 76, 129, 0.1), 0 2px 4px -1px rgba(15, 76, 129, 0.06)',
+				'fintech-lg': '0 10px 15px -3px rgba(15, 76, 129, 0.1), 0 4px 6px -2px rgba(15, 76, 129, 0.05)',
+				'fintech-xl': '0 20px 25px -5px rgba(15, 76, 129, 0.1), 0 10px 10px -5px rgba(15, 76, 129, 0.04)',
 			}
 		}
 	},

@@ -7,73 +7,75 @@
 
 @layer base {
   :root {
-    --background: 248 250 252;
-    --foreground: 15 23 42;
-    --card: 255 255 255;
-    --card-foreground: 15 23 42;
+    /* Fintech Light Theme */
+    --background: 249 250 251; /* #F9FAFB */
+    --foreground: 17 24 39; /* #111827 */
+    --card: 255 255 255; /* #FFFFFF */
+    --card-foreground: 17 24 39; /* #111827 */
     --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
-    --primary: 59 130 246;
+    --popover-foreground: 17 24 39;
+    --primary: 15 76 129; /* #0F4C81 - Azul petróleo */
     --primary-foreground: 255 255 255;
-    --secondary: 241 245 249;
-    --secondary-foreground: 15 23 42;
-    --muted: 241 245 249;
-    --muted-foreground: 100 116 139;
-    --accent: 241 245 249;
-    --accent-foreground: 15 23 42;
-    --destructive: 239 68 68;
+    --secondary: 0 109 91; /* #006D5B - Verde escuro */
+    --secondary-foreground: 255 255 255;
+    --muted: 249 250 251;
+    --muted-foreground: 107 114 128;
+    --accent: 249 250 251;
+    --accent-foreground: 17 24 39;
+    --destructive: 220 38 38; /* #DC2626 */
     --destructive-foreground: 255 255 255;
-    --border: 226 232 240;
-    --input: 226 232 240;
-    --ring: 59 130 246;
+    --border: 229 231 235; /* #E5E7EB */
+    --input: 229 231 235;
+    --ring: 15 76 129;
     --radius: 1rem;
     --sidebar-background: 255 255 255;
-    --sidebar-foreground: 15 23 42;
-    --sidebar-primary: 59 130 246;
+    --sidebar-foreground: 17 24 39;
+    --sidebar-primary: 15 76 129;
     --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 241 245 249;
-    --sidebar-accent-foreground: 15 23 42;
-    --sidebar-border: 226 232 240;
-    --sidebar-ring: 59 130 246;
-    --title-color: 15 23 42;
-    --success: 34 197 94;
+    --sidebar-accent: 249 250 251;
+    --sidebar-accent-foreground: 17 24 39;
+    --sidebar-border: 229 231 235;
+    --sidebar-ring: 15 76 129;
+    --title-color: 17 24 39;
+    --success: 22 163 74; /* #16A34A */
     --success-foreground: 255 255 255;
-    --warning: 245 158 11;
+    --warning: 202 138 4; /* #CA8A04 */
     --warning-foreground: 255 255 255;
   }
 
   .dark {
-    --background: 2 6 23;
-    --foreground: 248 250 252;
-    --card: 15 23 42;
-    --card-foreground: 248 250 252;
-    --popover: 15 23 42;
-    --popover-foreground: 248 250 252;
-    --primary: 59 130 246;
+    /* Fintech Dark Theme */
+    --background: 18 18 18; /* #121212 */
+    --foreground: 229 231 235; /* #E5E7EB */
+    --card: 30 30 30; /* #1E1E1E */
+    --card-foreground: 229 231 235;
+    --popover: 30 30 30;
+    --popover-foreground: 229 231 235;
+    --primary: 15 76 129; /* #0F4C81 - Azul petróleo */
     --primary-foreground: 255 255 255;
-    --secondary: 30 41 59;
-    --secondary-foreground: 248 250 252;
-    --muted: 30 41 59;
-    --muted-foreground: 148 163 184;
-    --accent: 30 41 59;
-    --accent-foreground: 248 250 252;
-    --destructive: 239 68 68;
+    --secondary: 0 109 91; /* #006D5B - Verde escuro */
+    --secondary-foreground: 255 255 255;
+    --muted: 30 30 30;
+    --muted-foreground: 156 163 175;
+    --accent: 30 30 30;
+    --accent-foreground: 229 231 235;
+    --destructive: 220 38 38; /* #DC2626 */
     --destructive-foreground: 255 255 255;
-    --border: 51 65 85;
-    --input: 51 65 85;
-    --ring: 59 130 246;
-    --sidebar-background: 15 23 42;
-    --sidebar-foreground: 148 163 184;
-    --sidebar-primary: 59 130 246;
+    --border: 44 44 44; /* #2C2C2C */
+    --input: 44 44 44;
+    --ring: 15 76 129;
+    --sidebar-background: 30 30 30;
+    --sidebar-foreground: 156 163 175;
+    --sidebar-primary: 15 76 129;
     --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 30 41 59;
-    --sidebar-accent-foreground: 248 250 252;
-    --sidebar-border: 51 65 85;
-    --sidebar-ring: 59 130 246;
-    --title-color: 248 250 252;
-    --success: 34 197 94;
+    --sidebar-accent: 44 44 44;
+    --sidebar-accent-foreground: 229 231 235;
+    --sidebar-border: 44 44 44;
+    --sidebar-ring: 15 76 129;
+    --title-color: 229 231 235;
+    --success: 22 163 74; /* #16A34A */
     --success-foreground: 255 255 255;
-    --warning: 245 158 11;
+    --warning: 202 138 4; /* #CA8A04 */
     --warning-foreground: 255 255 255;
   }
 }
@@ -99,64 +101,56 @@
 }
 
 @layer components {
-  .gradient-primary {
-    @apply bg-gradient-to-r from-primary to-blue-600;
+  .fintech-card {
+    @apply bg-card border border-border rounded-2xl shadow-md hover:shadow-fintech-lg transition-all duration-200 ease-in-out;
   }
   
-  .gradient-card {
-    @apply bg-gradient-to-br from-card to-card/95;
-  }
-  
-  .hover-lift {
-    @apply transition-all duration-300 ease-out hover:shadow-xl hover:-translate-y-1 hover:shadow-primary/10;
+  .fintech-button {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl shadow-fintech hover:shadow-fintech-lg transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98];
   }
 
-  .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50;
+  .fintech-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-2xl shadow-fintech hover:shadow-fintech-lg transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98];
   }
 
-  .modern-card {
-    @apply bg-card border border-border/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/20;
+  .fintech-surface {
+    @apply bg-card border border-border rounded-2xl p-6;
   }
 
-  .interactive-element {
-    @apply transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98];
+  .fintech-text {
+    @apply text-card-foreground;
   }
 
-  .success-gradient {
-    @apply bg-gradient-to-r from-emerald-500 to-green-600;
+  .fintech-muted {
+    @apply text-muted-foreground;
   }
 
-  .error-gradient {
-    @apply bg-gradient-to-r from-red-500 to-pink-600;
+  .fintech-hover {
+    @apply transition-transform transition-shadow duration-200 ease-in-out hover:shadow-fintech-lg hover:-translate-y-0.5;
   }
 
-  .warning-gradient {
-    @apply bg-gradient-to-r from-amber-500 to-orange-600;
+  .fintech-interactive {
+    @apply transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-[0.98];
   }
 
-  .title-color {
-    color: hsl(var(--title-color));
+  .success-color {
+    @apply text-success;
+  }
+
+  .warning-color {
+    @apply text-warning;
+  }
+
+  .alert-color {
+    @apply text-destructive;
   }
 
   .smooth-transition {
-    @apply transition-all duration-300 ease-in-out;
-  }
-
-  .card-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  .card-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .text-shadow {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    @apply transition-all duration-200 ease-in-out;
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar with fintech colors */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -168,31 +162,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--primary) / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--primary) / 0.5);
 }
 
-/* Loading animations */
-@keyframes shimmer {
-  0% {
-    background-position: -468px 0;
-  }
-  100% {
-    background-position: 468px 0;
-  }
-}
-
-.shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  background-size: 468px 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* Focus styles */
+/* Focus styles with fintech primary color */
 .focus-visible:focus-visible {
   @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
 }

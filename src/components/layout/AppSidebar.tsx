@@ -55,8 +55,8 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
+    <Sidebar collapsible="icon" className="border-r border-border">
+      <SidebarHeader className="p-4 border-b border-border">
         <div className="flex items-center justify-center">
           {isCollapsed ? (
             <div className="min-w-8">
@@ -76,26 +76,26 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="p-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider fintech-muted font-medium px-3 py-2">
             Menu
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     className={`${
                       isActive(item.url)
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                        : 'hover:bg-accent'
-                    }`}
+                        ? 'bg-primary text-primary-foreground border-l-4 border-l-primary shadow-fintech fintech-interactive'
+                        : 'hover:bg-accent fintech-interactive hover:border-l-4 hover:border-l-primary/30'
+                    } rounded-xl mx-1 transition-all duration-200`}
                   >
-                    <NavLink to={item.url} end>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                    <NavLink to={item.url} end className="flex items-center gap-3 px-3 py-2">
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -105,14 +105,14 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 space-y-4">
+      <SidebarFooter className="p-4 space-y-4 border-t border-border">
         <UserProfile />
         
         <Button
           onClick={signOut}
           variant="outline"
           size={isCollapsed ? "icon" : "default"}
-          className="w-full"
+          className="w-full fintech-interactive"
         >
           <LogOut className="h-4 w-4" />
           <span className="group-data-[collapsible=icon]:hidden ml-2">Sair</span>
