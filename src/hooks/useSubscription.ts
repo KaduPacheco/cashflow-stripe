@@ -8,8 +8,10 @@ export interface SubscriptionData {
   subscription_tier?: string
   subscription_end?: string
   subscription_id?: string
+  status?: string
+  message?: string
   error?: string
-  errorType?: 'session' | 'subscription' | 'network' | 'rate_limit' | 'unknown'
+  errorType?: 'session' | 'subscription' | 'network' | 'rate_limit' | 'configuration' | 'service' | 'unknown'
 }
 
 export function useSubscription() {
@@ -26,18 +28,36 @@ export function useSubscription() {
   // Refs para controlar timeouts e evitar memory leaks
   const timeoutRef = useRef<NodeJS.Timeout>()
   const rateLimitTimeoutRef = useRef<NodeJS.Timeout>()
+  const checkTimeoutRef = useRef<NodeJS.Timeout>()
 
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-      if (rateLimitTimeoutRef.current) {
-        clearTimeout(rateLimitTimeoutRef.current)
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      if (rateLimitTimeoutRef.current) clearTimeout(rateLimitTimeoutRef.current)
+      if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
     }
   }, [])
+
+  // Função para mapear status para mensagens amigáveis
+  const getStatusMessage = (status: string, subscribed: boolean): string => {
+    if (subscribed) {
+      switch (status) {
+        case 'active': return 'Assinatura ativa'
+        case 'trialing': return 'Período de teste ativo'
+        case 'past_due': return 'Pagamento em atraso'
+        default: return 'Assinatura ativa'
+      }
+    } else {
+      switch (status) {
+        case 'canceled': return 'Assinatura cancelada'
+        case 'expired': return 'Assinatura expirada'
+        case 'no_customer': return 'Nenhuma assinatura encontrada'
+        case 'no_subscription': return 'Nenhuma assinatura ativa'
+        default: return 'Assinatura inativa'
+      }
+    }
+  }
 
   const checkSubscription = async (isRetry = false, skipRateCheck = false, showToast = false) => {
     console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited })
@@ -54,7 +74,7 @@ export function useSubscription() {
       return
     }
 
-    // Controle de frequência - mínimo 2 segundos entre checks (reduzido de 3)
+    // Controle de frequência - mínimo 2 segundos entre checks
     const now = Date.now()
     const timeSinceLastCheck = now - lastCheckTime
     if (timeSinceLastCheck < 2000 && !skipRateCheck && !isRetry) {
@@ -105,16 +125,43 @@ export function useSubscription() {
       setLastCheckTime(now)
       console.log('Making subscription check request...')
       
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
+      // Timeout para a verificação (10 segundos)
+      const checkPromise = supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       })
       
+      const timeoutPromise = new Promise((_, reject) => {
+        checkTimeoutRef.current = setTimeout(() => {
+          reject(new Error('Verificação de assinatura expirou. Tente novamente.'))
+        }, 10000) // 10 segundos timeout
+      })
+      
+      const { data, error } = await Promise.race([checkPromise, timeoutPromise]) as any
+      
+      // Limpar timeout se completou
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current)
+        checkTimeoutRef.current = undefined
+      }
+      
       if (error) {
         console.error('Error checking subscription:', error)
         
         const errorMessage = error.message || String(error)
+        
+        // Detectar timeout
+        if (errorMessage.includes('expirou') || errorMessage.includes('timeout')) {
+          setSubscriptionData({ 
+            subscribed: false, 
+            error: 'Verificação demorou muito. Tente novamente em alguns segundos.',
+            errorType: 'service'
+          })
+          setLoading(false)
+          setChecking(false)
+          return
+        }
         
         // Detectar rate limiting
         if (errorMessage.includes('Request rate limit exceeded') || 
@@ -125,20 +172,16 @@ export function useSubscription() {
           setIsRateLimited(true)
           setSubscriptionData({ 
             subscribed: false, 
-            error: 'Muitas tentativas. O sistema aguardará automaticamente antes da próxima verificação.',
+            error: 'Muitas tentativas. Aguardando automaticamente...',
             errorType: 'rate_limit'
           })
           
-          // Implementar backoff exponencial com máximo de 1 minuto (reduzido de 2)
-          const backoffTime = Math.min(Math.pow(2, retryAttempts) * 3000, 60000)
-          console.log(`Rate limited, backing off for ${backoffTime}ms`)
-          
-          // Limpar rate limit após o backoff
+          // Backoff de 30 segundos
           rateLimitTimeoutRef.current = setTimeout(() => {
             console.log('Rate limit period expired, re-enabling checks')
             setIsRateLimited(false)
             setRetryAttempts(0)
-          }, backoffTime)
+          }, 30000)
           
           setRetryAttempts(prev => prev + 1)
           setLoading(false)
@@ -218,20 +261,30 @@ export function useSubscription() {
                               data.error.includes('User not authenticated')
         
         const isRateLimit = data.error.includes('Request rate limit exceeded')
+        const isConfiguration = data.errorType === 'configuration'
         
         if (isRateLimit) {
           setIsRateLimited(true)
           setSubscriptionData({ 
             subscribed: false,
-            error: 'Muitas tentativas. O sistema aguardará automaticamente.',
+            error: 'Muitas tentativas. Aguardando automaticamente.',
             errorType: 'rate_limit'
           })
           
           rateLimitTimeoutRef.current = setTimeout(() => {
             setIsRateLimited(false)
             setRetryAttempts(0)
-          }, 45000) // 45 segundos de backoff (reduzido de 1 minuto)
+          }, 30000)
           
+          return
+        }
+        
+        if (isConfiguration) {
+          setSubscriptionData({ 
+            subscribed: false,
+            error: 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.',
+            errorType: 'configuration'
+          })
           return
         }
         
@@ -261,24 +314,41 @@ export function useSubscription() {
       }
       
       const newSubscriptionData = data || { subscribed: false }
+      
+      // Adicionar mensagem amigável baseada no status
+      if (newSubscriptionData.status) {
+        newSubscriptionData.message = getStatusMessage(newSubscriptionData.status, newSubscriptionData.subscribed)
+      }
+      
       setSubscriptionData(newSubscriptionData)
       
       // Show success toast if requested and subscription is active
       if (showToast && newSubscriptionData.subscribed) {
         toast.success("Assinatura verificada com sucesso!", {
-          description: `Plano ${newSubscriptionData.subscription_tier} ativo`,
+          description: newSubscriptionData.message || `Plano ${newSubscriptionData.subscription_tier} ativo`,
+        })
+      } else if (showToast && !newSubscriptionData.subscribed) {
+        toast.info("Status da assinatura", {
+          description: newSubscriptionData.message || "Nenhuma assinatura ativa encontrada",
         })
       }
       
     } catch (error: any) {
       console.error('Failed to check subscription:', error)
       
+      // Limpar timeout em caso de erro
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current)
+        checkTimeoutRef.current = undefined
+      }
+      
       const errorMessage = error.message || String(error)
       
       const isNetworkError = error.name === 'NetworkError' || 
                             errorMessage.includes('fetch') ||
                             errorMessage.includes('network') ||
-                            errorMessage.includes('connection')
+                            errorMessage.includes('connection') ||
+                            errorMessage.includes('timeout')
       
       const isSessionError = errorMessage.includes('User not authenticated') ||
                             errorMessage.includes('session') ||
@@ -294,7 +364,7 @@ export function useSubscription() {
         return
       } else if (isNetworkError) {
         errorType = 'network'
-        displayError = 'Erro de conexão. Verifique sua internet.'
+        displayError = 'Erro de conexão ou timeout. Verifique sua internet.'
       }
       
       if (!isSessionError && showToast) {
@@ -318,6 +388,9 @@ export function useSubscription() {
     setLastCheckTime(0)
     if (rateLimitTimeoutRef.current) {
       clearTimeout(rateLimitTimeoutRef.current)
+    }
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current)
     }
     setLoading(true)
     await checkSubscription(false, true, showToast)
@@ -402,7 +475,7 @@ export function useSubscription() {
       // Debounce inicial check
       timeoutRef.current = setTimeout(() => {
         checkSubscription()
-      }, 500) // Reduzido de 1000ms para 500ms
+      }, 500)
     } else {
       setLoading(false)
       setSubscriptionData({ subscribed: false })
@@ -415,7 +488,7 @@ export function useSubscription() {
     }
   }, [user, session])
 
-  // Auto-refresh subscription status every 5 minutes quando subscribed e ativo (reduzido de 10)
+  // Auto-refresh subscription status every 5 minutes quando subscribed e ativo
   useEffect(() => {
     if (!user || !subscriptionData.subscribed || isRateLimited) return
 

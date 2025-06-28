@@ -1,12 +1,13 @@
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut, Wifi, Clock } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut, Wifi, Clock, XCircle, Settings } from 'lucide-react'
 
 interface SubscriptionGateProps {
   children: React.ReactNode
@@ -16,6 +17,8 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
   const { subscriptionData, loading, createCheckout, checkSubscription } = useSubscription()
   const { signOut } = useAuth()
   const navigate = useNavigate()
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
 
   useEffect(() => {
     // Check for checkout success in URL params
@@ -30,12 +33,66 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     }
   }, [navigate, checkSubscription])
 
+  // Simular progresso de loading com timeout
+  useEffect(() => {
+    if (loading) {
+      setLoadingProgress(0)
+      setShowTimeoutWarning(false)
+      
+      const interval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval)
+            return 100
+          }
+          return prev + 2
+        })
+      }, 100)
+
+      // Mostrar aviso de timeout após 8 segundos
+      const timeoutWarning = setTimeout(() => {
+        if (loading) {
+          setShowTimeoutWarning(true)
+        }
+      }, 8000)
+
+      return () => {
+        clearInterval(interval)
+        clearTimeout(timeoutWarning)
+      }
+    }
+  }, [loading])
+
   const handleSignOut = async () => {
     await signOut()
     navigate('/auth')
   }
 
-  // Show loading skeleton instead of blocking screen
+  const getErrorIcon = () => {
+    const errorType = subscriptionData.errorType
+    switch (errorType) {
+      case 'network': return <Wifi className="h-6 w-6 text-red-600 dark:text-red-500" />
+      case 'rate_limit': return <Clock className="h-6 w-6 text-blue-600 dark:text-blue-500" />
+      case 'session': return <LogOut className="h-6 w-6 text-orange-600 dark:text-orange-500" />
+      case 'configuration': 
+      case 'service': return <Settings className="h-6 w-6 text-purple-600 dark:text-purple-500" />
+      default: return <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-500" />
+    }
+  }
+
+  const getErrorTitle = () => {
+    const errorType = subscriptionData.errorType
+    switch (errorType) {
+      case 'session': return 'Sessão Expirada'
+      case 'network': return 'Erro de Conexão'
+      case 'rate_limit': return 'Verificação em Pausa'
+      case 'configuration': return 'Serviço Indisponível'
+      case 'service': return 'Erro no Serviço'
+      default: return 'Assinatura Necessária'
+    }
+  }
+
+  // Show loading with progress and timeout handling
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
@@ -48,12 +105,26 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <div className="text-center text-sm text-muted-foreground">
-              Aguarde enquanto verificamos seu status de assinatura...
+              <Progress value={loadingProgress} className="w-full" />
+              <div className="text-center text-sm text-muted-foreground">
+                {showTimeoutWarning ? (
+                  <div className="space-y-2">
+                    <p className="text-orange-600 dark:text-orange-400">
+                      A verificação está demorando mais que o esperado...
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => checkSubscription(true)}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Tentar Novamente
+                    </Button>
+                  </div>
+                ) : (
+                  `Aguarde enquanto verificamos seu status... ${Math.round(loadingProgress)}%`
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -65,25 +136,17 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     const isSessionError = subscriptionData.errorType === 'session'
     const isNetworkError = subscriptionData.errorType === 'network'
     const isRateLimit = subscriptionData.errorType === 'rate_limit'
+    const isServiceError = subscriptionData.errorType === 'service' || subscriptionData.errorType === 'configuration'
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 p-3 bg-orange-100 dark:bg-orange-900/20 rounded-full w-fit">
-              {isNetworkError ? (
-                <Wifi className="h-6 w-6 text-orange-600 dark:text-orange-500" />
-              ) : isRateLimit ? (
-                <Clock className="h-6 w-6 text-blue-600 dark:text-blue-500" />
-              ) : (
-                <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-500" />
-              )}
+              {getErrorIcon()}
             </div>
             <CardTitle className="text-xl">
-              {isSessionError ? 'Sessão Expirada' : 
-               isNetworkError ? 'Erro de Conexão' : 
-               isRateLimit ? 'Verificação em Pausa' :
-               'Assinatura Necessária'}
+              {getErrorTitle()}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-center">
@@ -123,6 +186,26 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
                 <div className="space-y-3">
                   <Button onClick={() => navigate('/plano')} className="w-full" size="lg">
                     <CreditCard className="mr-2 h-4 w-4" />
+                    Ver Planos Disponíveis
+                  </Button>
+                </div>
+              </>
+            ) : isServiceError ? (
+              <>
+                <p className="text-muted-foreground">
+                  O serviço de verificação está temporariamente indisponível. 
+                  Tente novamente em alguns minutos.
+                </p>
+                <div className="space-y-3">
+                  <Button onClick={() => checkSubscription(true)} className="w-full" size="lg">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Tentar Novamente
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/plano')} 
+                    className="w-full"
+                  >
                     Ver Planos Disponíveis
                   </Button>
                 </div>
