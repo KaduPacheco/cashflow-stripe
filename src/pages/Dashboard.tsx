@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useOptimizedTransactions } from '@/hooks/useOptimizedTransactions'
 import { toast } from '@/hooks/use-toast'
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock, FileText } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
