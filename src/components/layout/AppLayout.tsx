@@ -19,16 +19,16 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <SidebarInset>
-          <header className="h-16 flex items-center justify-between px-4 sm:px-6 fintech-surface shadow-fintech sticky top-0 z-40 backdrop-blur-sm bg-card/95">
+          <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-card border-b border-border shadow-fintech sticky top-0 z-40 backdrop-blur-sm">
             <div className="flex items-center gap-3 sm:gap-4">
               <SidebarTrigger className="hover:bg-accent rounded-xl p-2 transition-colors" />
               <div className="hidden sm:block">
-                <h1 className="text-lg md:text-xl font-semibold fintech-text bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <h1 className="text-lg md:text-xl font-semibold text-foreground bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                   Cash Flow - Sistema de Gestão Financeira
                 </h1>
               </div>
               <div className="sm:hidden">
-                <h1 className="text-sm font-semibold fintech-text bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <h1 className="text-sm font-semibold text-foreground bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                   Cash Flow
                 </h1>
               </div>

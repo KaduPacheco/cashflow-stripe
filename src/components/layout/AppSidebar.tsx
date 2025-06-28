@@ -55,8 +55,8 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="p-4 border-b border-border">
+    <Sidebar collapsible="icon" className="border-r border-border bg-card">
+      <SidebarHeader className="p-4 border-b border-border bg-card">
         <div className="flex items-center justify-center">
           {isCollapsed ? (
             <div className="min-w-8">
@@ -76,9 +76,9 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-2">
+      <SidebarContent className="p-2 bg-card">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider fintech-muted font-medium px-3 py-2">
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-2">
             Menu
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -90,7 +90,7 @@ export function AppSidebar() {
                     className={`${
                       isActive(item.url)
                         ? 'bg-primary text-primary-foreground border-l-4 border-l-primary shadow-fintech fintech-interactive'
-                        : 'hover:bg-accent fintech-interactive hover:border-l-4 hover:border-l-primary/30'
+                        : 'hover:bg-accent fintech-interactive hover:border-l-4 hover:border-l-primary/30 text-foreground'
                     } rounded-xl mx-1 transition-all duration-200`}
                   >
                     <NavLink to={item.url} end className="flex items-center gap-3 px-3 py-2">
@@ -105,7 +105,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 space-y-4 border-t border-border">
+      <SidebarFooter className="p-4 space-y-4 border-t border-border bg-card">
         <UserProfile />
         
         <Button
