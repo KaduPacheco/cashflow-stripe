@@ -246,23 +246,23 @@ export default function Dashboard() {
   // Show loading state
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="space-y-8 animate-fade-in">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">Carregando suas finanças pessoais...</p>
+            <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Dashboard</h2>
+            <p className="text-muted-foreground mt-2">Carregando suas finanças pessoais...</p>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="animate-pulse modern-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 bg-muted rounded w-20"></div>
-                <div className="h-4 w-4 bg-muted rounded"></div>
+                <div className="h-4 bg-muted rounded-lg w-20 shimmer"></div>
+                <div className="h-4 w-4 bg-muted rounded-full shimmer"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-muted rounded w-24 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-32"></div>
+                <div className="h-8 bg-muted rounded-lg w-24 mb-2 shimmer"></div>
+                <div className="h-3 bg-muted rounded-lg w-32 shimmer"></div>
               </CardContent>
             </Card>
           ))}
@@ -274,23 +274,27 @@ export default function Dashboard() {
   // Show error state if no user
   if (!user?.id) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col items-center justify-center py-12">
-          <h2 className="text-2xl font-bold text-muted-foreground mb-2">Usuário não encontrado</h2>
-          <p className="text-muted-foreground">Faça login para visualizar seu dashboard</p>
+      <div className="space-y-8 animate-fade-in">
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-muted-foreground">Usuário não encontrado</h2>
+            <p className="text-muted-foreground">Faça login para visualizar seu dashboard</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       <SubscriptionBanner />
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            Dashboard
+          </h2>
+          <p className="text-muted-foreground text-lg">
             Visão geral das suas finanças pessoais
             {transacoes.length > 0 && ` • ${transacoes.length} transações encontradas`}
             {!subscriptionData.subscribed && " • Versão gratuita (últimos 5 registros)"}
@@ -298,29 +302,29 @@ export default function Dashboard() {
         </div>
         
         {subscriptionData.subscribed ? (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-3 items-center bg-card/50 backdrop-blur-sm rounded-2xl p-3 border border-border/50">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={filterMonth} onValueChange={setFilterMonth}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-36 rounded-xl border-border/50">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 {Array.from({ length: 12 }, (_, i) => (
-                  <SelectItem key={i} value={i.toString()}>
+                  <SelectItem key={i} value={i.toString()} className="rounded-lg">
                     {new Date(0, i).toLocaleDateString('pt-BR', { month: 'long' })}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-28 rounded-xl border-border/50">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 {Array.from({ length: 5 }, (_, i) => {
                   const year = new Date().getFullYear() - 2 + i
                   return (
-                    <SelectItem key={year} value={year.toString()}>
+                    <SelectItem key={year} value={year.toString()} className="rounded-lg">
                       {year}
                     </SelectItem>
                   )
@@ -329,23 +333,25 @@ export default function Dashboard() {
             </Select>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 px-4 py-2 rounded-2xl">
             <Lock className="h-4 w-4" />
             <span className="text-sm">Filtros disponíveis com assinatura</span>
           </div>
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-l-4 border-l-emerald-500 modern-card hover-lift animate-slide-in">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total de Receitas
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-3xl font-bold text-emerald-600 mb-1">
               {formatCurrency(receitas)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -354,15 +360,17 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="border-l-4 border-l-red-500 modern-card hover-lift animate-slide-in" style={{animationDelay: '0.1s'}}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total de Despesas
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-xl">
+              <TrendingDown className="h-5 w-5 text-red-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-3xl font-bold text-red-600 mb-1">
               {formatCurrency(stats.totalDespesas)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -371,15 +379,17 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="border-l-4 border-l-primary modern-card hover-lift animate-slide-in" style={{animationDelay: '0.2s'}}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Saldo Atual
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
+            <div className={`p-2 rounded-xl ${stats.saldo >= 0 ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-red-100 dark:bg-red-900/20'}`}>
+              <DollarSign className={`h-5 w-5 ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`} />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`}>
+            <div className={`text-3xl font-bold mb-1 ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`}>
               {formatCurrency(stats.saldo)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -388,15 +398,17 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <Card className="border-l-4 border-l-purple-500 modern-card hover-lift animate-slide-in" style={{animationDelay: '0.3s'}}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Lembretes Ativos
             </CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-xl">
+              <Calendar className="h-5 w-5 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-3xl font-bold text-purple-600 mb-1">
               {stats.lembretesCount}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -406,14 +418,17 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="lg:col-span-2 modern-card animate-scale-in">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
               Gastos por Categoria
               {!subscriptionData.subscribed && <Lock className="h-4 w-4 text-muted-foreground" />}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               {subscriptionData.subscribed 
                 ? "Distribuição dos seus gastos no período selecionado"
                 : "Distribuição dos últimos gastos registrados"
@@ -421,14 +436,22 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[320px] rounded-xl overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={getChartData()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="categoria" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Bar dataKey="valor" fill="#4361ee" />
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="categoria" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -436,63 +459,80 @@ export default function Dashboard() {
         </Card>
 
         <div className="space-y-6">
-          <Card>
+          <Card className="modern-card animate-slide-in">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                </div>
                 Próximo Lembrete
               </CardTitle>
             </CardHeader>
             <CardContent>
               {proximoLembrete ? (
-                <div className="space-y-2">
-                  <p className="font-medium">{proximoLembrete.descricao}</p>
-                  <p className="text-sm text-muted-foreground">
+                <div className="space-y-3">
+                  <p className="font-medium text-card-foreground">{proximoLembrete.descricao}</p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
                     {new Date(proximoLembrete.data!).toLocaleDateString('pt-BR')}
-                  </p>
+                  </div>
                   {proximoLembrete.valor && (
-                    <p className="text-sm font-medium text-primary">
+                    <div className="text-lg font-semibold text-primary">
                       {formatCurrency(proximoLembrete.valor)}
-                    </p>
+                    </div>
                   )}
                 </div>
               ) : (
-                <p className="text-muted-foreground">Nenhum lembrete próximo</p>
+                <div className="text-center py-4">
+                  <div className="p-3 bg-muted/50 rounded-xl mb-3 w-fit mx-auto">
+                    <Calendar className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground">Nenhum lembrete próximo</p>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="modern-card animate-slide-in" style={{animationDelay: '0.2s'}}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-xl">
+                  <Lightbulb className="h-5 w-5 text-amber-600" />
+                </div>
                 Dica do Dia
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm">{dicaDoDia}</p>
+              <p className="text-sm leading-relaxed text-card-foreground bg-gradient-to-r from-primary/5 to-blue-600/5 p-4 rounded-xl border border-primary/10">
+                {dicaDoDia}
+              </p>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card className="modern-card animate-scale-in">
           <CardHeader>
-            <CardTitle>Receitas vs Despesas</CardTitle>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-xl">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              </div>
+              Receitas vs Despesas
+            </CardTitle>
             <CardDescription>
               Proporção entre receitas e despesas do período
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
+            <div className="h-[240px] rounded-xl overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={getPieData()}
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                     label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
@@ -501,50 +541,67 @@ export default function Dashboard() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Tooltip 
+                    formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="modern-card animate-scale-in" style={{animationDelay: '0.1s'}}>
           <CardHeader>
-            <CardTitle>Resumo do Período</CardTitle>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <DollarSign className="h-5 w-5 text-primary" />
+              </div>
+              Resumo do Período
+            </CardTitle>
             <CardDescription>
               Estatísticas detalhadas do período selecionado
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Receitas</span>
-                <span className="text-green-600 font-semibold">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800/30">
+                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Receitas</span>
+                <span className="text-emerald-600 font-bold text-lg">
                   {formatCurrency(receitas)}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Despesas</span>
-                <span className="text-red-600 font-semibold">
+              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800/30">
+                <span className="text-sm font-medium text-red-700 dark:text-red-300">Despesas</span>
+                <span className="text-red-600 font-bold text-lg">
                   {formatCurrency(stats.totalDespesas)}
                 </span>
               </div>
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Saldo</span>
-                  <span className={`font-bold ${stats.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="border-t pt-6">
+                <div className={`flex items-center justify-between p-4 rounded-xl border ${
+                  stats.saldo >= 0 
+                    ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/30' 
+                    : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30'
+                }`}>
+                  <span className={`text-sm font-medium ${stats.saldo >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>Saldo</span>
+                  <span className={`font-bold text-xl ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`}>
                     {formatCurrency(stats.saldo)}
                   </span>
                 </div>
               </div>
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Total de Transações</span>
-                  <span className="font-semibold">{stats.transacoesCount}</span>
+              <div className="pt-4 border-t space-y-4">
+                <div className="flex items-center justify-between text-sm bg-muted/30 p-3 rounded-lg">
+                  <span className="text-muted-foreground">Total de Transações</span>
+                  <span className="font-semibold text-card-foreground">{stats.transacoesCount}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <span>Lembretes Ativos</span>
-                  <span className="font-semibold">{stats.lembretesCount}</span>
+                <div className="flex items-center justify-between text-sm bg-muted/30 p-3 rounded-lg">
+                  <span className="text-muted-foreground">Lembretes Ativos</span>
+                  <span className="font-semibold text-card-foreground">{stats.lembretesCount}</span>
                 </div>
               </div>
             </div>
