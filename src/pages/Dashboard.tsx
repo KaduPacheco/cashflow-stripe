@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import { toast } from '@/hooks/use-toast'
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock, FileText } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
@@ -15,6 +16,7 @@ import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner
 import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards'
 
 interface DashboardStats {
+  totalReceitas: number
   totalDespesas: number
   saldo: number
   transacoesCount: number
@@ -67,6 +69,21 @@ export default function Dashboard() {
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth().toString())
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString())
   const [dicaDoDia] = useState(dicas[new Date().getDate() % dicas.length])
+
+  // Calculate stats from transacoes
+  const stats: DashboardStats = {
+    totalReceitas: transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + Math.abs(t.valor || 0), 0),
+    totalDespesas: transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + Math.abs(t.valor || 0), 0),
+    saldo: 0, // Will be calculated below
+    transacoesCount: transacoes.length,
+    lembretesCount: lembretes.length
+  }
+
+  // Calculate saldo
+  stats.saldo = stats.totalReceitas - stats.totalDespesas
+
+  // Calculate receitas for compatibility
+  const receitas = stats.totalReceitas
 
   const fetchDashboardData = useCallback(async () => {
     if (!user?.id) {
