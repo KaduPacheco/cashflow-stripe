@@ -14,6 +14,11 @@ interface DashboardMetricCardProps {
   borderColor: string
   valueColor: string
   delay?: number
+  isCurrency?: boolean
+}
+
+const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR').format(value)
 }
 
 export function DashboardMetricCard({
@@ -25,7 +30,8 @@ export function DashboardMetricCard({
   iconBgColor,
   borderColor,
   valueColor,
-  delay = 0
+  delay = 0,
+  isCurrency = true
 }: DashboardMetricCardProps) {
   return (
     <motion.div
@@ -49,7 +55,7 @@ export function DashboardMetricCard({
             transition={{ duration: 0.3, delay: delay + 0.1 }}
             className={`text-3xl font-bold mb-1 ${valueColor}`}
           >
-            {formatCurrency(value)}
+            {isCurrency ? formatCurrency(value) : formatNumber(value)}
           </motion.div>
           <p className="text-xs text-muted-foreground">
             {description}

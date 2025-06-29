@@ -54,6 +54,7 @@ export function DashboardMetricsCards({ filterMonth, filterYear }: DashboardMetr
         borderColor="border-l-4 border-l-emerald-500"
         valueColor="text-emerald-600"
         delay={0}
+        isCurrency={true}
       />
 
       <DashboardMetricCard
@@ -66,6 +67,7 @@ export function DashboardMetricsCards({ filterMonth, filterYear }: DashboardMetr
         borderColor="border-l-4 border-l-red-500"
         valueColor="text-red-600"
         delay={0.1}
+        isCurrency={true}
       />
 
       <DashboardMetricCard
@@ -78,6 +80,7 @@ export function DashboardMetricsCards({ filterMonth, filterYear }: DashboardMetr
         borderColor="border-l-4 border-l-primary"
         valueColor={metrics.saldo >= 0 ? 'text-primary' : 'text-red-600'}
         delay={0.2}
+        isCurrency={true}
       />
 
       <DashboardMetricCard
@@ -90,6 +93,7 @@ export function DashboardMetricsCards({ filterMonth, filterYear }: DashboardMetr
         borderColor="border-l-4 border-l-purple-500"
         valueColor="text-purple-600"
         delay={0.3}
+        isCurrency={false}
       />
     </div>
   )

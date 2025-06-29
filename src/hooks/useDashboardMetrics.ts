@@ -52,13 +52,13 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
       const startDate = new Date(parseInt(filterYear), parseInt(filterMonth), 1)
       const endDate = new Date(parseInt(filterYear), parseInt(filterMonth) + 1, 0, 23, 59, 59)
 
-      // Query para transações
+      // Query para transações - mesma lógica da aba Transações
       let transacoesQuery = supabase
         .from('transacoes')
         .select('valor, tipo')
         .eq('userId', user.id)
 
-      // Query para lembretes
+      // Query para lembretes - mesma lógica da aba Transações
       let lembretesQuery = supabase
         .from('lembretes')
         .select('id')
@@ -85,7 +85,7 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
       if (transacoesError) throw transacoesError
       if (lembretesError) throw lembretesError
 
-      // Calcular métricas
+      // Calcular métricas - mesma lógica da aba Transações
       const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
         return sum + Math.abs(valor)
@@ -122,7 +122,7 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
     }
   }, [user?.id, filterMonth, filterYear, subscriptionData.subscribed])
 
-  // Listener para mudanças em tempo real
+  // Listener para mudanças em tempo real - mesma lógica da aba Transações
   useEffect(() => {
     if (!user?.id) return
 
@@ -140,6 +140,19 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
         },
         (payload) => {
           console.log('⚡ useDashboardMetrics - Mudança tempo real detectada:', payload.eventType)
+          debouncedFetchMetrics()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lembretes',
+          filter: `userId=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('⚡ useDashboardMetrics - Mudança lembretes tempo real detectada:', payload.eventType)
           debouncedFetchMetrics()
         }
       )
