@@ -40,7 +40,6 @@ export function DashboardMetricsCards({ filterMonth, filterYear }: DashboardMetr
   }
 
   const description = subscriptionData.subscribed ? "Mês atual" : "Últimos registros"
-  const lembretesDescription = subscriptionData.subscribed ? "Este mês" : "Próximos"
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -86,7 +85,7 @@ export function DashboardMetricsCards({ filterMonth, filterYear }: DashboardMetr
       <DashboardMetricCard
         title="Lembretes Ativos"
         value={metrics.lembretes}
-        description={lembretesDescription}
+        description="Total de lembretes"
         icon={Calendar}
         iconColor="text-purple-600"
         iconBgColor="bg-purple-100 dark:bg-purple-900/20"

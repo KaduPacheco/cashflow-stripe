@@ -58,7 +58,7 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
         .select('valor, tipo')
         .eq('userId', user.id)
 
-      // Query para lembretes - mesma lógica da aba Transações
+      // Query para todos os lembretes registrados (total)
       let lembretesQuery = supabase
         .from('lembretes')
         .select('id')
@@ -69,14 +69,9 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
         transacoesQuery = transacoesQuery
           .gte('quando', startDate.toISOString().split('T')[0])
           .lte('quando', endDate.toISOString().split('T')[0])
-        
-        lembretesQuery = lembretesQuery
-          .gte('data', startDate.toISOString().split('T')[0])
-          .lte('data', endDate.toISOString().split('T')[0])
       } else {
         // Usuários gratuitos veem apenas últimos registros
         transacoesQuery = transacoesQuery.limit(5)
-        lembretesQuery = lembretesQuery.limit(3)
       }
 
       const [{ data: transacoes, error: transacoesError }, { data: lembretes, error: lembretesError }] = 

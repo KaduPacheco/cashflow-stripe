@@ -14,6 +14,7 @@ import { formatCurrency } from '@/utils/currency'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
 import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards'
+import { LembretesDoDiaCard } from '@/components/dashboard/LembretesDoDiaCard'
 
 interface DashboardStats {
   totalReceitas: number
@@ -360,39 +361,7 @@ export default function Dashboard() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="modern-card animate-slide-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-xl">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                </div>
-                Próximo Lembrete
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {proximoLembrete ? (
-                <div className="space-y-3">
-                  <p className="font-medium text-card-foreground">{proximoLembrete.descricao}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(proximoLembrete.data!).toLocaleDateString('pt-BR')}
-                  </div>
-                  {proximoLembrete.valor && (
-                    <div className="text-lg font-semibold text-primary">
-                      {formatCurrency(proximoLembrete.valor)}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <div className="p-3 bg-muted/50 rounded-xl mb-3 w-fit mx-auto">
-                    <Calendar className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground">Nenhum lembrete próximo</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <LembretesDoDiaCard />
 
           <Card className="modern-card animate-slide-in" style={{animationDelay: '0.2s'}}>
             <CardHeader>
