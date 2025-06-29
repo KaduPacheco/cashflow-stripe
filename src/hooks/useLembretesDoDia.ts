@@ -9,6 +9,7 @@ interface Lembrete {
   descricao: string | null
   data: string | null
   valor: number | null
+  whatsapp: string | null
 }
 
 interface UseLembretesDoDiaReturn {
@@ -37,7 +38,7 @@ export function useLembretesDoDia(): UseLembretesDoDiaReturn {
 
       const { data: lembretes, error: lembretesError } = await supabase
         .from('lembretes')
-        .select('id, descricao, data, valor')
+        .select('id, descricao, data, valor, whatsapp')
         .eq('userId', user.id)
         .eq('data', hoje)
         .order('data', { ascending: true })

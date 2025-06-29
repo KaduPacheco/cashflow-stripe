@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,12 +30,32 @@ export function useLembretes() {
     }
   }
 
+  const getUserWhatsApp = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('whatsapp')
+        .eq('id', user?.id)
+        .single()
+
+      if (error) throw error
+      return data?.whatsapp || null
+    } catch (error: any) {
+      console.log('Erro ao buscar WhatsApp do usuário:', error.message)
+      return null
+    }
+  }
+
   const createLembrete = async (formData: LembreteFormData) => {
     try {
+      // Buscar o WhatsApp do usuário para auto-preenchimento
+      const whatsappNumber = await getUserWhatsApp()
+
       const lembreteData = {
         descricao: formData.descricao,
         data: formData.data,
         valor: formData.valor ? parseFloat(formData.valor) : null,
+        whatsapp: whatsappNumber,
         userId: user?.id,
       }
 
@@ -60,10 +79,14 @@ export function useLembretes() {
 
   const updateLembrete = async (id: number, formData: LembreteFormData) => {
     try {
+      // Buscar o WhatsApp atual do usuário para manter atualizado
+      const whatsappNumber = await getUserWhatsApp()
+
       const lembreteData = {
         descricao: formData.descricao,
         data: formData.data,
         valor: formData.valor ? parseFloat(formData.valor) : null,
+        whatsapp: whatsappNumber,
         userId: user?.id,
       }
 

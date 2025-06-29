@@ -6,6 +6,7 @@ export interface Lembrete {
   descricao: string | null
   data: string | null
   valor: number | null
+  whatsapp: string | null
 }
 
 export interface LembreteFormData {
