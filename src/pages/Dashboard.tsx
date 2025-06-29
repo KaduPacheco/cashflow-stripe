@@ -6,13 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
-import { useOptimizedTransactions } from '@/hooks/useOptimizedTransactions'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from '@/hooks/use-toast'
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock, FileText } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
+import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards'
 
 interface DashboardStats {
   totalDespesas: number
@@ -61,21 +61,12 @@ export default function Dashboard() {
   const { user } = useAuth()
   const { subscriptionData } = useSubscription()
   
-  const [stats, setStats] = useState<DashboardStats>({
-    totalDespesas: 0,
-    saldo: 0,
-    transacoesCount: 0,
-    lembretesCount: 0,
-  })
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
   const [lembretes, setLembretes] = useState<Lembrete[]>([])
   const [loading, setLoading] = useState(true)
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth().toString())
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString())
   const [dicaDoDia] = useState(dicas[new Date().getDate() % dicas.length])
-
-  // Now we can use the hook after filterMonth and filterYear are declared
-  const { receitas } = useOptimizedTransactions(filterMonth, filterYear)
 
   const fetchDashboardData = useCallback(async () => {
     if (!user?.id) {
@@ -94,13 +85,11 @@ export default function Dashboard() {
         timestamp: new Date().toISOString()
       })
 
-      // Criar datas de início e fim do período
       const startDate = new Date(parseInt(filterYear), parseInt(filterMonth), 1)
       const endDate = new Date(parseInt(filterYear), parseInt(filterMonth) + 1, 0, 23, 59, 59)
       
       console.log('📅 Dashboard: Date range calculated', { startDate, endDate })
 
-      // Para usuários sem assinatura, limitar aos últimos 30 dias
       let transacoesQuery = supabase
         .from('transacoes')
         .select(`
@@ -120,7 +109,6 @@ export default function Dashboard() {
         .order('data', { ascending: true })
 
       if (subscriptionData.subscribed) {
-        // Usuários assinantes podem filtrar por período
         transacoesQuery = transacoesQuery
           .gte('quando', startDate.toISOString().split('T')[0])
           .lte('quando', endDate.toISOString().split('T')[0])
@@ -129,7 +117,6 @@ export default function Dashboard() {
           .gte('data', startDate.toISOString().split('T')[0])
           .lte('data', endDate.toISOString().split('T')[0])
       } else {
-        // Usuários gratuitos veem apenas últimos 5 registros
         transacoesQuery = transacoesQuery.limit(5)
         lembretesQuery = lembretesQuery.limit(3)
       }
@@ -156,29 +143,6 @@ export default function Dashboard() {
       setTransacoes(transacoes || [])
       setLembretes(lembretes || [])
 
-      // Calcular apenas despesas - receitas vem do hook
-      const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => {
-        const valor = Number(t.valor) || 0
-        return sum + Math.abs(valor)
-      }, 0) || 0
-
-      const newStats = {
-        totalDespesas: despesas,
-        saldo: receitas - despesas,
-        transacoesCount: transacoes?.length || 0,
-        lembretesCount: lembretes?.length || 0,
-      }
-
-      console.log('📈 Dashboard: Stats calculated', {
-        receitas,
-        despesas,
-        saldo: newStats.saldo,
-        transacoesCount: newStats.transacoesCount,
-        lembretesCount: newStats.lembretesCount
-      })
-
-      setStats(newStats)
-
     } catch (error: any) {
       console.error('❌ Dashboard: Error loading data:', error)
       toast({
@@ -189,9 +153,8 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [filterMonth, filterYear, user?.id, subscriptionData.subscribed, receitas])
+  }, [filterMonth, filterYear, user?.id, subscriptionData.subscribed])
 
-  // Implementar debounce para fetchDashboardData
   const debouncedFetchDashboardData = useDebounce(fetchDashboardData, 300)
 
   useEffect(() => {
@@ -201,7 +164,6 @@ export default function Dashboard() {
     }
   }, [user?.id, filterMonth, filterYear, subscriptionData.subscribed])
 
-  // Listener para mudanças em tempo real - com debounce
   useEffect(() => {
     if (!user?.id) return
 
@@ -224,7 +186,6 @@ export default function Dashboard() {
             userId: user.id,
             timestamp: new Date().toISOString()
           })
-          // Usar debounced function para evitar múltiplas chamadas
           debouncedFetchDashboardData()
         }
       )
@@ -255,6 +216,7 @@ export default function Dashboard() {
   }
 
   const getPieData = () => {
+    const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.valor || 0), 0)
     const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.valor || 0), 0)
 
     return [
@@ -267,35 +229,6 @@ export default function Dashboard() {
     .filter(l => l.data && new Date(l.data) >= new Date())
     .sort((a, b) => new Date(a.data!).getTime() - new Date(b.data!).getTime())[0]
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Dashboard</h2>
-            <p className="text-muted-foreground mt-2">Carregando suas finanças pessoais...</p>
-          </div>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse modern-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 bg-muted rounded-lg w-20 shimmer"></div>
-                <div className="h-4 w-4 bg-muted rounded-full shimmer"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-muted rounded-lg w-24 mb-2 shimmer"></div>
-                <div className="h-3 bg-muted rounded-lg w-32 shimmer"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  // Show error state if no user
   if (!user?.id) {
     return (
       <div className="space-y-8 animate-fade-in">
@@ -364,83 +297,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-emerald-500 modern-card hover-lift animate-slide-in">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Receitas
-            </CardTitle>
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-emerald-600 mb-1">
-              {formatCurrency(receitas)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {subscriptionData.subscribed ? "Mês atual" : "Últimos registros"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500 modern-card hover-lift animate-slide-in" style={{animationDelay: '0.1s'}}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Despesas
-            </CardTitle>
-            <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-xl">
-              <TrendingDown className="h-5 w-5 text-red-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600 mb-1">
-              {formatCurrency(stats.totalDespesas)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {subscriptionData.subscribed ? "Mês atual" : "Últimos registros"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-primary modern-card hover-lift animate-slide-in" style={{animationDelay: '0.2s'}}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saldo Atual
-            </CardTitle>
-            <div className={`p-2 rounded-xl ${stats.saldo >= 0 ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-red-100 dark:bg-red-900/20'}`}>
-              <DollarSign className={`h-5 w-5 ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold mb-1 ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`}>
-              {formatCurrency(stats.saldo)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Receitas - Despesas
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500 modern-card hover-lift animate-slide-in" style={{animationDelay: '0.3s'}}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Lembretes Ativos
-            </CardTitle>
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-xl">
-              <Calendar className="h-5 w-5 text-purple-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600 mb-1">
-              {stats.lembretesCount}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {subscriptionData.subscribed ? "Este mês" : "Próximos"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardMetricsCards 
+        filterMonth={filterMonth} 
+        filterYear={filterYear} 
+      />
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         <Card className="lg:col-span-2 modern-card animate-scale-in">
