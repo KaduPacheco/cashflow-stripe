@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { useContas } from '@/hooks/useContas'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,7 +54,7 @@ export function ContasRelatorios() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Relatórios</h1>
+        <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Relatórios</h1>
         <p className="text-muted-foreground">Gere relatórios detalhados das suas contas</p>
       </div>
 

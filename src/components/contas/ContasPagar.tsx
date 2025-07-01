@@ -26,7 +26,7 @@ export function ContasPagar() {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Contas a Pagar</h1>
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Contas a Pagar</h1>
           <p className="text-sm text-muted-foreground">Gerencie suas contas a pagar</p>
         </div>
         
