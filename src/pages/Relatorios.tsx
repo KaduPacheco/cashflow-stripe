@@ -77,7 +77,7 @@ export default function Relatorios() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Relatórios Financeiros</h2>
+          <h2 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Relatórios Financeiros</h2>
           <p className="text-muted-foreground">
             Análises personalizadas das suas transações
           </p>

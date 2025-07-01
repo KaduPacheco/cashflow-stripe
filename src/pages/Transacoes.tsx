@@ -103,7 +103,7 @@ export default function Transacoes() {
     <div className="space-y-4 px-2 sm:px-6 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Transações</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
             Gerencie suas transações financeiras
           </p>

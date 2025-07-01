@@ -100,7 +100,7 @@ export default function Categorias() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categorias</h1>
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Categorias</h1>
           <p className="text-muted-foreground">
             Organize suas transações por categorias
           </p>

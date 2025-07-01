@@ -68,8 +68,8 @@ export default function Lembretes() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">Lembretes</h2>
-          <p className="text-gray-600">Gerencie seus lembretes de pagamentos e compromissos</p>
+          <h2 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Lembretes</h2>
+          <p className="text-muted-foreground">Gerencie seus lembretes de pagamentos e compromissos</p>
         </div>
         
         <LembretesActions 
