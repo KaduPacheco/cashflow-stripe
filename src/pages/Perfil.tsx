@@ -324,7 +324,7 @@ export default function Perfil() {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <div className="text-center md:text-left">
-        <h1 className="text-4xl font-bold tracking-tight">Meu Perfil</h1>
+        <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Meu Perfil</h1>
         <p className="text-muted-foreground mt-2">Gerencie suas informações pessoais, assinatura e configurações de segurança</p>
       </div>
 
