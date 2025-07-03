@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -234,12 +235,12 @@ export default function Dashboard() {
   }
 
   const getPieData = () => {
-    const receitas = transacoes.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + (t.valor || 0), 0)
-    const despesas = transacoes.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + (t.valor || 0), 0)
+    const receitasValue = Math.abs(stats.totalReceitas)
+    const despesasValue = Math.abs(stats.totalDespesas)
 
     return [
-      { name: 'Receitas', value: receitas },
-      { name: 'Despesas', value: Math.abs(despesas) }
+      { name: 'Receitas', value: receitasValue },
+      { name: 'Despesas', value: despesasValue }
     ]
   }
 
@@ -394,15 +395,19 @@ export default function Dashboard() {
               Proporção entre receitas e despesas do período
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[240px] rounded-xl overflow-hidden">
+          <CardContent className="h-[180px] p-4">
+            {stats.totalReceitas === 0 && stats.totalDespesas === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                Sem dados para exibir
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={getPieData()}
                     cx="50%"
                     cy="50%"
-                    outerRadius={90}
+                    outerRadius={60}
                     fill="#8884d8"
                     dataKey="value"
                     label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
@@ -422,7 +427,7 @@ export default function Dashboard() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
+            )}
           </CardContent>
         </Card>
 
