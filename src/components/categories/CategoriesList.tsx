@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Edit, Trash2 } from 'lucide-react'
@@ -18,6 +19,14 @@ export function CategoriesList({ categories, onEdit, onDelete, isReadOnly = fals
       </div>
     )
   }
+
+  const handleDelete = (category: any) => {
+    if (category?.id) {
+      onDelete(category.id);
+    } else {
+      console.error('ID da categoria não encontrado:', category);
+    }
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -48,7 +57,7 @@ export function CategoriesList({ categories, onEdit, onDelete, isReadOnly = fals
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(category.id)}
+                    onClick={() => handleDelete(category)}
                     disabled={isReadOnly}
                   >
                     <Trash2 className="h-4 w-4" />

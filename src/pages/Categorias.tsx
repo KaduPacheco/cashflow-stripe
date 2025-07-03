@@ -6,7 +6,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
 import { useCategories } from '@/hooks/useCategories'
 import { CategoriesList } from '@/components/categories/CategoriesList'
 import { SubscriptionGate } from '@/components/subscription/SubscriptionGate'
@@ -19,81 +18,40 @@ export default function Categorias() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<any>(null)
 
-  const { categories, createCategory, updateCategory, deleteCategory, isLoading } = useCategories()
-  const { toast } = useToast()
+  const { categories, createCategory, updateCategory, deleteCategory, isLoading, isCreating, isUpdating, isDeleting } = useCategories()
   const { isReadOnly } = useReadOnlyMode()
 
   const handleCreate = async () => {
-    if (newCategoryName.trim() === '') {
-      toast({
-        title: 'Erro',
-        description: 'O nome da categoria não pode estar vazio.',
-        variant: 'destructive',
-      })
-      return
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      return;
     }
 
-    try {
-      await createCategory({ nome: newCategoryName })
-      toast({
-        title: 'Sucesso',
-        description: 'Categoria criada com sucesso.',
-      })
-      setIsCreateDialogOpen(false)
-      setNewCategoryName('')
-    } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao criar categoria.',
-        variant: 'destructive',
-      })
-    }
+    createCategory({ nome: trimmedName });
+    setIsCreateDialogOpen(false);
+    setNewCategoryName('');
   }
 
   const handleUpdate = async () => {
-    if (!editingCategory || editingCategory.nome.trim() === '') {
-      toast({
-        title: 'Erro',
-        description: 'O nome da categoria não pode estar vazio.',
-        variant: 'destructive',
-      })
-      return
+    if (!editingCategory || !editingCategory.nome?.trim()) {
+      return;
     }
 
-    try {
-      await updateCategory({
-        id: editingCategory.id,
-        updates: { nome: editingCategory.nome }
-      })
-      toast({
-        title: 'Sucesso',
-        description: 'Categoria atualizada com sucesso.',
-      })
-      setIsEditDialogOpen(false)
-      setEditingCategory(null)
-    } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao atualizar categoria.',
-        variant: 'destructive',
-      })
-    }
+    updateCategory({
+      id: editingCategory.id,
+      updates: { nome: editingCategory.nome.trim() }
+    });
+    setIsEditDialogOpen(false);
+    setEditingCategory(null);
   }
 
   const handleDelete = async (id: string) => {
-    try {
-      await deleteCategory(id)
-      toast({
-        title: 'Sucesso',
-        description: 'Categoria excluída com sucesso.',
-      })
-    } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao excluir categoria.',
-        variant: 'destructive',
-      })
+    if (!id) {
+      console.error('ID da categoria é obrigatório para exclusão');
+      return;
     }
+    
+    deleteCategory(id);
   }
 
   return (
@@ -131,6 +89,11 @@ export default function Categorias() {
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     className="col-span-3"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreate();
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -138,7 +101,13 @@ export default function Categorias() {
                 <Button type="button" variant="secondary" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" onClick={handleCreate}>Criar</Button>
+                <Button 
+                  type="submit" 
+                  onClick={handleCreate}
+                  disabled={!newCategoryName.trim() || isCreating}
+                >
+                  {isCreating ? 'Criando...' : 'Criar'}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -159,11 +128,7 @@ export default function Categorias() {
                   setIsEditDialogOpen(true)
                 }
               }}
-              onDelete={(id) => {
-                if (!isReadOnly) {
-                  handleDelete(id)
-                }
-              }}
+              onDelete={handleDelete}
               isReadOnly={isReadOnly}
             />
           </CardContent>
@@ -187,6 +152,11 @@ export default function Categorias() {
                   value={editingCategory?.nome || ''}
                   onChange={(e) => setEditingCategory({ ...editingCategory, nome: e.target.value })}
                   className="col-span-3"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleUpdate();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -194,7 +164,13 @@ export default function Categorias() {
               <Button type="button" variant="secondary" onClick={() => setIsEditDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" onClick={handleUpdate}>Atualizar</Button>
+              <Button 
+                type="submit" 
+                onClick={handleUpdate}
+                disabled={!editingCategory?.nome?.trim() || isUpdating}
+              >
+                {isUpdating ? 'Atualizando...' : 'Atualizar'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -39,15 +39,41 @@ export function useCategories() {
     enabled: !!user?.id,
   });
 
+  // Função para verificar duplicatas
+  const checkDuplicateCategory = async (nome: string): Promise<boolean> => {
+    if (!user?.id) return false;
+
+    const { data, error } = await supabase
+      .from('categorias')
+      .select('id')
+      .eq('userid', user.id)
+      .ilike('nome', nome.trim());
+
+    if (error) {
+      console.error('Erro ao verificar duplicata:', error);
+      return false;
+    }
+
+    return data && data.length > 0;
+  };
+
   const createCategory = useMutation({
     mutationFn: async (newCategory: { nome: string; tags?: string }) => {
       if (!user?.id) throw new Error('Usuário não autenticado');
+
+      const trimmedName = newCategory.nome.trim();
+      
+      // Verificar duplicata
+      const isDuplicate = await checkDuplicateCategory(trimmedName);
+      if (isDuplicate) {
+        throw new Error('Essa categoria já existe');
+      }
 
       const { data, error } = await supabase
         .from('categorias')
         .insert([
           {
-            nome: newCategory.nome,
+            nome: trimmedName,
             tags: newCategory.tags || null,
             userid: user.id,
           },
@@ -62,22 +88,36 @@ export function useCategories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Categoria criada com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Erro ao criar categoria:', error);
-      toast.error('Erro ao criar categoria');
+      toast.error(error.message || 'Erro ao criar categoria');
     },
   });
 
   const updateCategory = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: { nome: string; tags?: string } }) => {
+      if (!user?.id) throw new Error('Usuário não autenticado');
+
+      const trimmedName = updates.nome.trim();
+      
+      // Verificar duplicata apenas se o nome foi alterado
+      const currentCategory = categories.find(cat => cat.id === id);
+      if (currentCategory && currentCategory.nome.toLowerCase() !== trimmedName.toLowerCase()) {
+        const isDuplicate = await checkDuplicateCategory(trimmedName);
+        if (isDuplicate) {
+          throw new Error('Essa categoria já existe');
+        }
+      }
+
       const { data, error } = await supabase
         .from('categorias')
         .update({
-          nome: updates.nome,
+          nome: trimmedName,
           tags: updates.tags || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
+        .eq('userid', user.id) // Garantir que só atualize categorias do usuário atual
         .select()
         .single();
 
@@ -88,18 +128,22 @@ export function useCategories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Categoria atualizada com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Erro ao atualizar categoria:', error);
-      toast.error('Erro ao atualizar categoria');
+      toast.error(error.message || 'Erro ao atualizar categoria');
     },
   });
 
   const deleteCategory = useMutation({
     mutationFn: async (id: string) => {
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      if (!id) throw new Error('ID da categoria é obrigatório');
+
       const { error } = await supabase
         .from('categorias')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('userid', user.id); // Garantir que só delete categorias do usuário atual
 
       if (error) throw error;
     },
@@ -107,9 +151,9 @@ export function useCategories() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Categoria excluída com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Erro ao excluir categoria:', error);
-      toast.error('Erro ao excluir categoria');
+      toast.error(`Erro ao excluir categoria: ${error.message}`);
     },
   });
 
