@@ -17,7 +17,7 @@ export function FormBasicInfo({
 }: FormBasicInfoProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
         Informações Básicas
       </div>
@@ -26,13 +26,13 @@ export function FormBasicInfo({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-4 bg-orange-400 rounded"></div>
-            <Label className="text-sm font-medium">Descrição</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Descrição</Label>
           </div>
           <Input
             value={descricao}
             onChange={(e) => onDescricaoChange(e.target.value)}
             placeholder="Ex: IPTU, Salário, Energia..."
-            className="border-green-200 focus:border-green-400"
+            className="bg-input text-foreground dark:bg-[#1e293b] dark:text-white border-border placeholder:text-muted-foreground"
             required
           />
         </div>
@@ -40,7 +40,7 @@ export function FormBasicInfo({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-1 h-4 bg-orange-400 rounded"></div>
-            <Label className="text-sm font-medium">Valor</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Valor</Label>
           </div>
           <Input
             type="number"
@@ -48,7 +48,7 @@ export function FormBasicInfo({
             value={valor}
             onChange={(e) => onValorChange(e.target.value)}
             placeholder="Ex: 1.500,00"
-            className="border-green-200 focus:border-green-400"
+            className="bg-input text-foreground dark:bg-[#1e293b] dark:text-white border-border placeholder:text-muted-foreground"
             required
           />
         </div>

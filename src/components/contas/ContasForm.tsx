@@ -24,7 +24,7 @@ export function ContasForm({ tipo, conta, onSuccess, onClose }: ContasFormProps)
   )
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg">
+    <div className="w-full max-w-md mx-auto bg-background dark:bg-[#111827] rounded-lg shadow-lg">
       <ContasFormHeader conta={conta} onClose={onClose} />
 
       <div className="p-4">

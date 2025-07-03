@@ -25,7 +25,7 @@ export function FormActions({ loading, onCancel, isEditing = false }: FormAction
       <Button 
         type="submit"
         disabled={loading}
-        className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
       >
         {loading ? 'Processando...' : (isEditing ? 'Atualizar' : 'Salvar')}
       </Button>

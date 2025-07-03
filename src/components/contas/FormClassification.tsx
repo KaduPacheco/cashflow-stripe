@@ -19,7 +19,7 @@ export function FormClassification({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
         Classificação
       </div>
@@ -28,10 +28,10 @@ export function FormClassification({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <CreditCard className="h-4 w-4 text-blue-500" />
-            <Label className="text-sm font-medium">Tipo</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Tipo</Label>
           </div>
           <Select value={tipo} disabled>
-            <SelectTrigger className="border-green-200">
+            <SelectTrigger className="border-border bg-input dark:bg-[#1e293b]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -44,10 +44,10 @@ export function FormClassification({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Tag className="h-4 w-4 text-orange-500" />
-            <Label className="text-sm font-medium">Categoria</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Categoria</Label>
           </div>
           <Select value={categoryId} onValueChange={onCategoryChange}>
-            <SelectTrigger className="border-green-200">
+            <SelectTrigger className="border-border bg-input dark:bg-[#1e293b]">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>

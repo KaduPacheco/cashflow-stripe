@@ -28,18 +28,18 @@ export function FormSpecialOptions({
 }: FormSpecialOptionsProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
         Opções Especiais
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-[#1e293b]/50 rounded-lg">
           <div className="flex items-center gap-3">
             <Settings className="h-5 w-5 text-blue-500" />
             <div>
-              <div className="text-sm font-medium">Lançamento Recorrente</div>
-              <div className="text-xs text-gray-500">Repetir automaticamente a cada período</div>
+              <div className="text-sm font-medium text-foreground">Lançamento Recorrente</div>
+              <div className="text-xs text-muted-foreground">Repetir automaticamente a cada período</div>
             </div>
           </div>
           <Switch
@@ -50,7 +50,7 @@ export function FormSpecialOptions({
 
         {recorrente && (
           <Select value={recorrencia} onValueChange={onRecorrenciaChange}>
-            <SelectTrigger className="border-green-200">
+            <SelectTrigger className="border-border bg-input dark:bg-[#1e293b]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -62,12 +62,12 @@ export function FormSpecialOptions({
           </Select>
         )}
 
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-[#1e293b]/50 rounded-lg">
           <div className="flex items-center gap-3">
             <CreditCard className="h-5 w-5 text-blue-500" />
             <div>
-              <div className="text-sm font-medium">Lançamento Parcelado</div>
-              <div className="text-xs text-gray-500">Dividir em várias parcelas mensais</div>
+              <div className="text-sm font-medium text-foreground">Lançamento Parcelado</div>
+              <div className="text-xs text-muted-foreground">Dividir em várias parcelas mensais</div>
             </div>
           </div>
           <Switch
@@ -78,7 +78,7 @@ export function FormSpecialOptions({
 
         {parcelado && (
           <div>
-            <Label className="text-sm font-medium mb-2 block">Número de Parcelas</Label>
+            <Label className="text-sm font-medium text-muted-foreground mb-2 block">Número de Parcelas</Label>
             <Input
               type="number"
               min="2"
@@ -86,7 +86,7 @@ export function FormSpecialOptions({
               value={numeroParcelas}
               onChange={(e) => onNumeroParcelasChange(Number(e.target.value))}
               placeholder="Ex: 12"
-              className="border-green-200 focus:border-green-400"
+              className="bg-input text-foreground dark:bg-[#1e293b] dark:text-white border-border placeholder:text-muted-foreground"
             />
           </div>
         )}
