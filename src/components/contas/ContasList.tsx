@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar, Edit, Trash2, DollarSign, Repeat, StopCircle } from 'lucide-react'
+import { ContasForm } from './ContasForm'
 import type { ContaPagarReceber } from '@/types/contas'
 
 interface ContasListProps {
@@ -19,8 +20,9 @@ interface ContasListProps {
 }
 
 export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps) {
-  const { deleteConta, pagarConta, pararRecorrencia } = useContas()
+  const { deleteConta, pagarConta, pararRecorrencia, gerarRecorrencia } = useContas()
   const [pagamentoDialog, setPagamentoDialog] = useState(false)
+  const [editDialog, setEditDialog] = useState(false)
   const [contaSelecionada, setContaSelecionada] = useState<ContaPagarReceber | null>(null)
   const [valorPagamento, setValorPagamento] = useState('')
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().split('T')[0])
@@ -61,12 +63,28 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
     if (!contaSelecionada || !valorPagamento) return
 
     const valor = parseFloat(valorPagamento)
-    await pagarConta(contaSelecionada.id, valor, dataPagamento)
+    const resultado = await pagarConta(contaSelecionada.id, valor, dataPagamento)
+    
+    // Se o pagamento foi bem-sucedido e a conta é recorrente, gerar próxima ocorrência
+    if (resultado && contaSelecionada.recorrencia && contaSelecionada.recorrencia !== 'unica') {
+      const valorTotal = contaSelecionada.valor
+      const valorJaPago = contaSelecionada.valor_pago + valor
+      
+      // Se a conta foi completamente paga, gerar próxima recorrência
+      if (valorJaPago >= valorTotal) {
+        await gerarRecorrencia(contaSelecionada)
+      }
+    }
     
     setPagamentoDialog(false)
     setContaSelecionada(null)
     setValorPagamento('')
     onUpdate()
+  }
+
+  const handleEdit = (conta: ContaPagarReceber) => {
+    setContaSelecionada(conta)
+    setEditDialog(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -187,7 +205,11 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
                     </Button>
                   )}
                   
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleEdit(conta)}
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
                   
@@ -251,6 +273,25 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialog} onOpenChange={setEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Conta</DialogTitle>
+          </DialogHeader>
+          {contaSelecionada && (
+            <ContasForm 
+              tipo={contaSelecionada.tipo} 
+              conta={contaSelecionada}
+              onSuccess={() => {
+                setEditDialog(false)
+                setContaSelecionada(null)
+                onUpdate()
+              }} 
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>

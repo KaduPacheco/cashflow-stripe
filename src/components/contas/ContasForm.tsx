@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useContas } from '@/hooks/useContas'
 import { useClientesFornecedores } from '@/hooks/useClientesFornecedores'
 import { FormBasicInfo } from './FormBasicInfo'
@@ -9,15 +9,17 @@ import { FormSpecialOptions } from './FormSpecialOptions'
 import { FormActions } from './FormActions'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
+import type { ContaPagarReceber } from '@/types/contas'
 
 interface ContasFormProps {
   tipo: 'pagar' | 'receber'
+  conta?: ContaPagarReceber
   onSuccess: () => void
   onClose?: () => void
 }
 
-export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
-  const { createConta } = useContas()
+export function ContasForm({ tipo, conta, onSuccess, onClose }: ContasFormProps) {
+  const { createConta, updateConta } = useContas()
   const { fetchClientesFornecedores } = useClientesFornecedores()
   
   const [formData, setFormData] = useState({
@@ -35,6 +37,25 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
   })
   
   const [loading, setLoading] = useState(false)
+
+  // Preencher formulário quando estiver editando
+  useEffect(() => {
+    if (conta) {
+      setFormData({
+        descricao: conta.descricao || '',
+        valor: conta.valor.toString(),
+        data_vencimento: conta.data_vencimento || '',
+        category_id: conta.category_id || '',
+        cliente_fornecedor_id: conta.cliente_fornecedor_id || '',
+        observacoes: conta.observacoes || '',
+        numero_documento: conta.numero_documento || '',
+        recorrencia: conta.recorrencia || 'unica',
+        recorrente: conta.recorrencia !== 'unica',
+        parcelado: false,
+        numeroParcelas: 2
+      })
+    }
+  }, [conta])
 
   const calcularProximaRecorrencia = (dataVencimento: string, recorrencia: string): string | undefined => {
     if (recorrencia === 'unica') return undefined
@@ -115,8 +136,8 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
         descricao: formData.descricao,
         valor: parseFloat(formData.valor),
         data_vencimento: formData.data_vencimento,
-        valor_pago: 0,
-        status: 'pendente' as const,
+        valor_pago: conta?.valor_pago || 0,
+        status: conta?.status || 'pendente' as const,
         category_id: formData.category_id || undefined,
         cliente_fornecedor_id: formData.cliente_fornecedor_id || undefined,
         observacoes: formData.observacoes || undefined,
@@ -126,23 +147,32 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
         user_id: ''
       }
 
-      if (formData.parcelado) {
-        // Criar parcelas
-        const sucesso = await criarParcelas(contaData, formData.numeroParcelas)
-        if (sucesso) {
-          toast.success(`${formData.numeroParcelas} parcelas criadas com sucesso!`)
-          onSuccess()
-        }
-      } else {
-        // Criar conta única
-        const result = await createConta(contaData)
+      if (conta) {
+        // Editando conta existente
+        const result = await updateConta(conta.id, contaData)
         if (result) {
           onSuccess()
         }
+      } else {
+        // Criando nova conta
+        if (formData.parcelado) {
+          // Criar parcelas
+          const sucesso = await criarParcelas(contaData, formData.numeroParcelas)
+          if (sucesso) {
+            toast.success(`${formData.numeroParcelas} parcelas criadas com sucesso!`)
+            onSuccess()
+          }
+        } else {
+          // Criar conta única
+          const result = await createConta(contaData)
+          if (result) {
+            onSuccess()
+          }
+        }
       }
     } catch (error) {
-      console.error('Erro ao criar conta:', error)
-      toast.error('Erro ao criar conta')
+      console.error('Erro ao processar conta:', error)
+      toast.error('Erro ao processar conta')
     } finally {
       setLoading(false)
     }
@@ -158,9 +188,11 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-green-500 rounded-sm flex items-center justify-center">
-            <span className="text-white text-sm font-bold">+</span>
+            <span className="text-white text-sm font-bold">{conta ? '✏️' : '+'}</span>
           </div>
-          <h2 className="text-lg font-semibold">Novo Lançamento Futuro</h2>
+          <h2 className="text-lg font-semibold">
+            {conta ? 'Editar Lançamento' : 'Novo Lançamento Futuro'}
+          </h2>
         </div>
         {onClose && (
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -171,7 +203,7 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
 
       <div className="p-4">
         <p className="text-sm text-gray-600 mb-6">
-          Registre um lançamento previsto para o futuro.
+          {conta ? 'Edite os dados do lançamento.' : 'Registre um lançamento previsto para o futuro.'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -193,20 +225,23 @@ export function ContasForm({ tipo, onSuccess, onClose }: ContasFormProps) {
             onDataVencimentoChange={(value) => handleChange('data_vencimento', value)}
           />
 
-          <FormSpecialOptions
-            recorrente={formData.recorrente}
-            recorrencia={formData.recorrencia}
-            parcelado={formData.parcelado}
-            numeroParcelas={formData.numeroParcelas}
-            onRecorrenteChange={(checked) => handleChange('recorrente', checked)}
-            onRecorrenciaChange={(value) => handleChange('recorrencia', value)}
-            onParceladoChange={(checked) => handleChange('parcelado', checked)}
-            onNumeroParcelasChange={(value) => handleChange('numeroParcelas', value)}
-          />
+          {!conta && (
+            <FormSpecialOptions
+              recorrente={formData.recorrente}
+              recorrencia={formData.recorrencia}
+              parcelado={formData.parcelado}
+              numeroParcelas={formData.numeroParcelas}
+              onRecorrenteChange={(checked) => handleChange('recorrente', checked)}
+              onRecorrenciaChange={(value) => handleChange('recorrencia', value)}
+              onParceladoChange={(checked) => handleChange('parcelado', checked)}
+              onNumeroParcelasChange={(value) => handleChange('numeroParcelas', value)}
+            />
+          )}
 
           <FormActions
             loading={loading}
             onCancel={onClose}
+            isEditing={!!conta}
           />
         </form>
       </div>
