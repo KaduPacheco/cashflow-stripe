@@ -1,122 +1,70 @@
 
 import { useSubscription } from '@/hooks/useSubscription'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw, Wifi, Clock, CheckCircle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
+import { Card, CardContent } from '@/components/ui/card'
+import { Crown, AlertCircle, RefreshCw } from 'lucide-react'
 
 export function SubscriptionBanner() {
-  const { subscriptionData, loading, checkSubscription } = useSubscription()
-  const { isReadOnly } = useReadOnlyMode()
-  const navigate = useNavigate()
+  const { subscriptionData, loading, refetch, createCheckoutSession } = useSubscription()
 
-  // Don't show banner while loading or if subscription is active
-  if (loading || subscriptionData.subscribed) {
+  if (loading) {
     return null
   }
 
-  const isSessionError = subscriptionData.errorType === 'session'
-  const isNetworkError = subscriptionData.errorType === 'network'
-  const isRateLimit = subscriptionData.errorType === 'rate_limit'
-
-  if (isSessionError) {
+  if (subscriptionData.subscribed) {
     return (
-      <Alert className="border-red-200 bg-red-50 dark:bg-red-950/20">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
-        <AlertTitle className="text-red-800 dark:text-red-200">
-          Sessão Expirada
-        </AlertTitle>
-        <AlertDescription className="text-red-700 dark:text-red-300 flex items-center justify-between">
-          <span>Sua sessão expirou. Faça login novamente para continuar.</span>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/auth')}
-            className="ml-4"
-          >
-            Fazer Login
-          </Button>
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (isNetworkError) {
-    return (
-      <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-        <Wifi className="h-4 w-4 text-orange-600" />
-        <AlertTitle className="text-orange-800 dark:text-orange-200">
-          Erro de Conexão
-        </AlertTitle>
-        <AlertDescription className="text-orange-700 dark:text-orange-300 flex items-center justify-between">
-          <span>Não foi possível verificar sua assinatura. Verifique sua conexão.</span>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => checkSubscription(true)}
-            className="ml-4"
-          >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Tentar Novamente
-          </Button>
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (isRateLimit) {
-    return (
-      <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-        <Clock className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800 dark:text-blue-200">
-          Verificação Temporariamente Pausada
-        </AlertTitle>
-        <AlertDescription className="text-blue-700 dark:text-blue-300">
-          <div className="flex flex-col gap-2">
-            <span>
-              O sistema está aguardando automaticamente para evitar sobrecarga. 
-              A verificação será retomada em breve.
-            </span>
-            <div className="text-sm opacity-75">
-              Isso é normal e ajuda a manter o sistema estável para todos os usuários.
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border-blue-200 dark:border-blue-800">
+        <CardContent className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+              <Crown className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                Assinatura Ativa
+              </h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                {subscriptionData.message || 'Você tem acesso completo ao Cash Flow'}
+              </p>
             </div>
           </div>
-        </AlertDescription>
-      </Alert>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refetch}
+            className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/50"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
-      <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertTitle className="text-amber-800 dark:text-amber-200">
-        {isReadOnly ? 'Modo Apenas Visualização' : 'Acesso Limitado'}
-      </AlertTitle>
-      <AlertDescription className="text-amber-700 dark:text-amber-300 flex items-center justify-between">
-        <span>
-          {isReadOnly 
-            ? 'Você está no modo apenas visualização. Para criar, editar ou deletar registros, '
-            : 'Você tem acesso limitado. Para liberar todos os recursos, '
-          }
-          <button 
-            onClick={() => navigate('/plano')}
-            className="underline font-medium hover:no-underline"
-          >
-            faça upgrade para a versão premium
-          </button>
-          .
-        </span>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => checkSubscription(true)}
-          className="ml-4"
+    <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-amber-200 dark:border-amber-800">
+      <CardContent className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-full">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+              Versão Gratuita
+            </h3>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Assine o plano premium para funcionalidades completas
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={createCheckoutSession}
+          className="bg-amber-600 hover:bg-amber-700 text-white"
         >
-          <RefreshCw className="h-4 w-4 mr-1" />
-          Verificar
+          Assinar Agora
         </Button>
-      </AlertDescription>
-    </Alert>
+      </CardContent>
+    </Card>
   )
 }
