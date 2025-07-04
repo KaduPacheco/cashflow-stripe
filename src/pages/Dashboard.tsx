@@ -1,20 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+
+import { useState, useEffect, useCallback } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useDebounce } from '@/hooks/useDebounce'
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import { toast } from '@/hooks/use-toast'
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Lightbulb, Lock, FileText } from 'lucide-react'
-import { formatCurrency } from '@/utils/currency'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Filter, Lock } from 'lucide-react'
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
 import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards'
 import { LembretesDoDiaCard } from '@/components/dashboard/LembretesDoDiaCard'
+import { DashboardStats } from '@/components/dashboard/DashboardStats'
+import { ExpensesByCategoryChart } from '@/components/dashboard/ExpensesByCategoryChart'
+import { RevenueVsExpensesChart } from '@/components/dashboard/RevenueVsExpensesChart'
+import { DashboardTipCard } from '@/components/dashboard/DashboardTipCard'
 
 interface DashboardStats {
   totalReceitas: number
@@ -49,20 +48,6 @@ interface Lembrete {
   valor: number | null
 }
 
-const COLORS = ['#4361ee', '#7209b7', '#f72585', '#4cc9f0', '#4895ef', '#4361ee']
-
-// Paleta de cores para categorias de despesas
-const CATEGORY_COLORS = {
-  'Habitação': '#6366F1',
-  'Alimentação': '#22C55E', 
-  'Transporte': '#EAB308',
-  'Saúde': '#F97316',
-  'Educação': '#10B981',
-  'Lazer': '#8B5CF6',
-  'Outros': '#F43F5E',
-  'default': '#64748B'
-}
-
 const dicas = [
   "💡 Sempre registre suas despesas no mesmo dia para não esquecer",
   "💡 Defina metas mensais de economia e acompanhe seu progresso",
@@ -94,9 +79,6 @@ export default function Dashboard() {
 
   // Calculate saldo
   stats.saldo = stats.totalReceitas - stats.totalDespesas
-
-  // Calculate receitas for compatibility
-  const receitas = stats.totalReceitas
 
   const fetchDashboardData = useCallback(async () => {
     if (!user?.id) {
@@ -229,62 +211,6 @@ export default function Dashboard() {
     }
   }, [user?.id, debouncedFetchDashboardData])
 
-  const getChartData = () => {
-    const categorias: { [key: string]: number } = {}
-    
-    transacoes.forEach(t => {
-      if (t.categorias?.nome && t.valor && t.tipo === 'despesa') {
-        const categoryName = t.categorias.nome
-        categorias[categoryName] = (categorias[categoryName] || 0) + Math.abs(t.valor)
-      }
-    })
-
-    return Object.entries(categorias).map(([categoria, valor]) => ({
-      categoria,
-      valor
-    }))
-  }
-
-  const getPieData = () => {
-    const receitasValue = Math.abs(stats.totalReceitas)
-    const data = []
-
-    // Adicionar receitas como uma fatia única
-    if (receitasValue > 0) {
-      data.push({ 
-        name: 'Receitas', 
-        value: receitasValue,
-        color: '#0F4C81'
-      })
-    }
-
-    // Adicionar despesas separadas por categoria
-    const categoriasDespesas: { [key: string]: number } = {}
-    
-    transacoes.forEach(t => {
-      if (t.categorias?.nome && t.valor && t.tipo === 'despesa') {
-        const categoryName = t.categorias.nome
-        categoriasDespesas[categoryName] = (categoriasDespesas[categoryName] || 0) + Math.abs(t.valor)
-      }
-    })
-
-    Object.entries(categoriasDespesas).forEach(([categoria, valor]) => {
-      if (valor > 0) {
-        data.push({
-          name: categoria,
-          value: valor,
-          color: CATEGORY_COLORS[categoria as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.default
-        })
-      }
-    })
-
-    return data
-  }
-
-  const proximoLembrete = lembretes
-    .filter(l => l.data && new Date(l.data) >= new Date())
-    .sort((a, b) => new Date(a.data!).getTime() - new Date(b.data!).getTime())[0]
-
   if (!user?.id) {
     return (
       <div className="space-y-8 animate-fade-in">
@@ -359,186 +285,30 @@ export default function Dashboard() {
       />
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2 modern-card animate-scale-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              Gastos por Categoria
-              {!subscriptionData.subscribed && <Lock className="h-4 w-4 text-muted-foreground" />}
-            </CardTitle>
-            <CardDescription className="text-base">
-              {subscriptionData.subscribed 
-                ? "Distribuição dos seus gastos no período selecionado"
-                : "Distribuição dos últimos gastos registrados"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[320px] rounded-xl overflow-hidden">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={getChartData()}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="categoria" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    formatter={(value) => formatCurrency(Number(value))}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <ExpensesByCategoryChart 
+          transacoes={transacoes}
+          isSubscribed={subscriptionData.subscribed}
+        />
 
         <div className="space-y-6">
           <LembretesDoDiaCard />
-
-          <Card className="modern-card animate-slide-in" style={{animationDelay: '0.2s'}}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-xl">
-                  <Lightbulb className="h-5 w-5 text-amber-600" />
-                </div>
-                Dica do Dia
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed text-card-foreground bg-gradient-to-r from-primary/5 to-blue-600/5 p-4 rounded-xl border border-primary/10">
-                {dicaDoDia}
-              </p>
-            </CardContent>
-          </Card>
+          <DashboardTipCard tip={dicaDoDia} />
         </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <Card className="modern-card animate-scale-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-xl">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-              Receitas vs Despesas por Categoria
-            </CardTitle>
-            <CardDescription>
-              Distribuição detalhada entre receitas e categorias de despesas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4">
-            {getPieData().length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                Sem dados para exibir
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="h-[280px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={getPieData()}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
-                        animationDuration={500}
-                      >
-                        {getPieData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value) => formatCurrency(Number(value))}
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {/* Legenda personalizada */}
-                <div className="grid grid-cols-2 gap-2 pt-4 border-t">
-                  {getPieData().map((entry, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <div 
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                      <span className="text-card-foreground truncate">
-                        {entry.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <RevenueVsExpensesChart 
+          transacoes={transacoes}
+          totalReceitas={stats.totalReceitas}
+        />
 
-        <Card className="modern-card animate-scale-in" style={{animationDelay: '0.1s'}}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <DollarSign className="h-5 w-5 text-primary" />
-              </div>
-              Resumo do Período
-            </CardTitle>
-            <CardDescription>
-              Estatísticas detalhadas do período selecionado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800/30">
-                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Receitas</span>
-                <span className="text-emerald-600 font-bold text-lg">
-                  {formatCurrency(receitas)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800/30">
-                <span className="text-sm font-medium text-red-700 dark:text-red-300">Despesas</span>
-                <span className="text-red-600 font-bold text-lg">
-                  {formatCurrency(stats.totalDespesas)}
-                </span>
-              </div>
-              <div className="border-t pt-6">
-                <div className={`flex items-center justify-between p-4 rounded-xl border ${
-                  stats.saldo >= 0 
-                    ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/30' 
-                    : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30'
-                }`}>
-                  <span className={`text-sm font-medium ${stats.saldo >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>Saldo</span>
-                  <span className={`font-bold text-xl ${stats.saldo >= 0 ? 'text-primary' : 'text-red-600'}`}>
-                    {formatCurrency(stats.saldo)}
-                  </span>
-                </div>
-              </div>
-              <div className="pt-4 border-t space-y-4">
-                <div className="flex items-center justify-between text-sm bg-muted/30 p-3 rounded-lg">
-                  <span className="text-muted-foreground">Total de Transações</span>
-                  <span className="font-semibold text-card-foreground">{stats.transacoesCount}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm bg-muted/30 p-3 rounded-lg">
-                  <span className="text-muted-foreground">Lembretes Ativos</span>
-                  <span className="font-semibold text-card-foreground">{stats.lembretesCount}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DashboardStats
+          receitas={stats.totalReceitas}
+          despesas={stats.totalDespesas}
+          saldo={stats.saldo}
+          transacoesCount={stats.transacoesCount}
+          lembretesCount={stats.lembretesCount}
+        />
       </div>
     </div>
   )
