@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -377,7 +378,7 @@ export default function Dashboard() {
           filterYear={filterYear} 
         />
 
-        <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <Card className="lg:col-span-2 modern-card animate-scale-in">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-xl">
@@ -394,7 +395,7 @@ export default function Dashboard() {
                 }
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent>
               {getChartData().length === 0 ? (
                 <EmptyState
                   icon={<FileText className="h-8 w-8" />}
@@ -402,46 +403,22 @@ export default function Dashboard() {
                   description="Adicione algumas transações para ver os gráficos"
                 />
               ) : (
-                <div className="h-[280px] sm:h-[320px] lg:h-[350px] w-full rounded-xl overflow-hidden">
+                <div className="h-[320px] rounded-xl overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={getChartData()}
-                      margin={{ 
-                        top: 20, 
-                        right: 10, 
-                        left: 10, 
-                        bottom: 60 
-                      }}
-                    >
+                    <BarChart data={getChartData()}>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis 
-                        dataKey="categoria" 
-                        tick={{ fontSize: 10 }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        interval={0}
-                      />
-                      <YAxis 
-                        tick={{ fontSize: 10 }}
-                        width={60}
-                      />
+                      <XAxis dataKey="categoria" className="text-xs" />
+                      <YAxis className="text-xs" />
                       <Tooltip 
                         formatter={(value) => formatCurrency(Number(value))}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '12px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          fontSize: '12px'
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
                       />
-                      <Bar 
-                        dataKey="valor" 
-                        fill="hsl(var(--primary))" 
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={40}
-                      />
+                      <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -470,7 +447,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
+        <div className="grid gap-8 md:grid-cols-2">
           <Card className="modern-card animate-scale-in">
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
@@ -492,25 +469,17 @@ export default function Dashboard() {
                 />
               ) : (
                 <div className="space-y-4">
-                  <div className="h-[280px] sm:h-[320px] w-full">
+                  <div className="h-[280px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <PieChart>
                         <Pie
                           data={getPieData()}
                           cx="50%"
                           cy="50%"
-                          outerRadius="75%"
-                          innerRadius="25%"
+                          outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
-                          label={({ name, value, percent }) => {
-                            // Só mostra label se tiver espaço suficiente
-                            if (percent > 0.05) {
-                              return `${name}: ${formatCurrency(value)}`
-                            }
-                            return ''
-                          }}
-                          labelLine={false}
+                          label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
                           animationDuration={500}
                         >
                           {getPieData().map((entry, index) => (
@@ -523,8 +492,7 @@ export default function Dashboard() {
                             backgroundColor: 'hsl(var(--card))',
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '12px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                            fontSize: '12px'
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                           }}
                         />
                       </PieChart>
@@ -538,7 +506,7 @@ export default function Dashboard() {
                           className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{ backgroundColor: entry.color }}
                         />
-                        <span className="text-card-foreground truncate text-xs sm:text-sm">
+                        <span className="text-card-foreground truncate">
                           {entry.name}
                         </span>
                       </div>
