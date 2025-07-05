@@ -13,6 +13,7 @@ export interface Transaction {
   detalhes?: string
   quando: string
   userId?: string
+  archived?: boolean
 }
 
 export interface CreateTransactionData {
@@ -46,7 +47,8 @@ export class TransactionService {
         ...validation.data,
         estabelecimento: sanitizeInput(validation.data.estabelecimento),
         detalhes: validation.data.detalhes ? sanitizeInput(validation.data.detalhes) : undefined,
-        userId
+        userId,
+        archived: false // Nova transação sempre não arquivada
       }
 
       const { data: transaction, error } = await supabase
@@ -149,12 +151,18 @@ export class TransactionService {
     dateTo?: string
     limit?: number
     offset?: number
+    includeArchived?: boolean
   }) {
     try {
       let query = supabase
         .from('transacoes')
         .select('*')
         .eq('userId', userId)
+
+      // Filtrar dados arquivados por padrão
+      if (!filters?.includeArchived) {
+        query = query.eq('archived', false)
+      }
 
       // Apply filters
       if (filters?.tipo) {
@@ -197,12 +205,17 @@ export class TransactionService {
     }
   }
 
-  static async getTransactionStats(userId: string, dateFrom?: string, dateTo?: string) {
+  static async getTransactionStats(userId: string, dateFrom?: string, dateTo?: string, includeArchived?: boolean) {
     try {
       let query = supabase
         .from('transacoes')
         .select('tipo, valor')
         .eq('userId', userId)
+
+      // Filtrar dados arquivados por padrão
+      if (!includeArchived) {
+        query = query.eq('archived', false)
+      }
 
       if (dateFrom) {
         query = query.gte('quando', dateFrom)
@@ -244,6 +257,60 @@ export class TransactionService {
         throw error
       }
       throw new NetworkError('Erro ao calcular estatísticas', 500, 'UNKNOWN_ERROR')
+    }
+  }
+
+  // Nova função para arquivar transações
+  static async archiveTransaction(id: number, userId: string) {
+    try {
+      const { data: transaction, error } = await supabase
+        .from('transacoes')
+        .update({ archived: true })
+        .eq('id', id)
+        .eq('userId', userId)
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new ValidationError('Transação não encontrada ou sem permissão', 'id')
+        }
+        throw new NetworkError(error.message, 500, 'DATABASE_ERROR')
+      }
+
+      return { success: true, data: transaction }
+    } catch (error) {
+      if (error instanceof ValidationError || error instanceof NetworkError) {
+        throw error
+      }
+      throw new NetworkError('Erro ao arquivar transação', 500, 'UNKNOWN_ERROR')
+    }
+  }
+
+  // Nova função para desarquivar transações
+  static async unarchiveTransaction(id: number, userId: string) {
+    try {
+      const { data: transaction, error } = await supabase
+        .from('transacoes')
+        .update({ archived: false })
+        .eq('id', id)
+        .eq('userId', userId)
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new ValidationError('Transação não encontrada ou sem permissão', 'id')
+        }
+        throw new NetworkError(error.message, 500, 'DATABASE_ERROR')
+      }
+
+      return { success: true, data: transaction }
+    } catch (error) {
+      if (error instanceof ValidationError || error instanceof NetworkError) {
+        throw error
+      }
+      throw new NetworkError('Erro ao desarquivar transação', 500, 'UNKNOWN_ERROR')
     }
   }
 }

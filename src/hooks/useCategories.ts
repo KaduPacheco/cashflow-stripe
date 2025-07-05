@@ -1,171 +1,239 @@
 
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from './useAuth'
+import { toast } from './use-toast'
 
-export interface Category {
-  id: string;
-  nome: string;
-  tags: string | null;
-  created_at: string;
-  updated_at: string;
-  userid: string;
+interface Category {
+  id: string
+  userId: string
+  nome: string
+  tags?: string
+  created_at: string
+  updated_at: string
+  archived: boolean
 }
 
 export function useCategories() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { user } = useAuth()
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const { data: categories = [], isLoading, error } = useQuery({
-    queryKey: ['categories', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('categorias')
-        .select('*')
-        .eq('userid', user.id)
-        .order('nome');
-
-      if (error) {
-        console.error('Erro ao buscar categorias:', error);
-        throw error;
-      }
-
-      return data as Category[];
-    },
-    enabled: !!user?.id,
-  });
-
-  // Função para verificar duplicatas
-  const checkDuplicateCategory = async (nome: string): Promise<boolean> => {
-    if (!user?.id) return false;
-
-    const { data, error } = await supabase
-      .from('categorias')
-      .select('id')
-      .eq('userid', user.id)
-      .ilike('nome', nome.trim());
-
-    if (error) {
-      console.error('Erro ao verificar duplicata:', error);
-      return false;
+  const fetchCategories = async (includeArchived: boolean = false) => {
+    if (!user?.id) {
+      setLoading(false)
+      return
     }
 
-    return data && data.length > 0;
-  };
+    try {
+      let query = supabase
+        .from('categorias')
+        .select('*')
+        .eq('userId', user.id)
 
-  const createCategory = useMutation({
-    mutationFn: async (newCategory: { nome: string; tags?: string }) => {
-      if (!user?.id) throw new Error('Usuário não autenticado');
-
-      const trimmedName = newCategory.nome.trim();
-      
-      // Verificar duplicata
-      const isDuplicate = await checkDuplicateCategory(trimmedName);
-      if (isDuplicate) {
-        throw new Error('Essa categoria já existe');
+      // Filtrar arquivados por padrão
+      if (!includeArchived) {
+        query = query.eq('archived', false)
       }
 
-      const { data, error } = await supabase
-        .from('categorias')
-        .insert([
-          {
-            nome: trimmedName,
-            tags: newCategory.tags || null,
-            userid: user.id,
-          },
-        ])
-        .select()
-        .single();
+      query = query.order('nome')
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria criada com sucesso!');
-    },
-    onError: (error: Error) => {
-      console.error('Erro ao criar categoria:', error);
-      toast.error(error.message || 'Erro ao criar categoria');
-    },
-  });
+      const { data, error } = await query
 
-  const updateCategory = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: { nome: string; tags?: string } }) => {
-      if (!user?.id) throw new Error('Usuário não autenticado');
-
-      const trimmedName = updates.nome.trim();
-      
-      // Verificar duplicata apenas se o nome foi alterado
-      const currentCategory = categories.find(cat => cat.id === id);
-      if (currentCategory && currentCategory.nome.toLowerCase() !== trimmedName.toLowerCase()) {
-        const isDuplicate = await checkDuplicateCategory(trimmedName);
-        if (isDuplicate) {
-          throw new Error('Essa categoria já existe');
-        }
-      }
-
-      const { data, error } = await supabase
-        .from('categorias')
-        .update({
-          nome: trimmedName,
-          tags: updates.tags || null,
-          updated_at: new Date().toISOString(),
+      if (error) {
+        console.error('Erro ao buscar categorias:', error)
+        toast({
+          title: 'Erro ao carregar categorias',
+          description: error.message,
+          variant: 'destructive'
         })
-        .eq('id', id)
-        .eq('userid', user.id) // Garantir que só atualize categorias do usuário atual
+        return
+      }
+
+      setCategories(data || [])
+    } catch (error) {
+      console.error('Erro inesperado:', error)
+      toast({
+        title: 'Erro inesperado',
+        description: 'Erro ao carregar categorias',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createCategory = async (nome: string, tags?: string) => {
+    if (!user?.id) return null
+
+    try {
+      const { data, error } = await supabase
+        .from('categorias')
+        .insert([{
+          userId: user.id,
+          nome,
+          tags,
+          archived: false
+        }])
         .select()
-        .single();
+        .single()
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria atualizada com sucesso!');
-    },
-    onError: (error: Error) => {
-      console.error('Erro ao atualizar categoria:', error);
-      toast.error(error.message || 'Erro ao atualizar categoria');
-    },
-  });
+      if (error) {
+        console.error('Erro ao criar categoria:', error)
+        toast({
+          title: 'Erro ao criar categoria',
+          description: error.message,
+          variant: 'destructive'
+        })
+        return null
+      }
 
-  const deleteCategory = useMutation({
-    mutationFn: async (id: string) => {
-      if (!user?.id) throw new Error('Usuário não autenticado');
-      if (!id) throw new Error('ID da categoria é obrigatório');
+      await fetchCategories()
+      toast({
+        title: 'Categoria criada com sucesso!',
+        description: `A categoria "${nome}" foi criada.`
+      })
 
+      return data
+    } catch (error) {
+      console.error('Erro inesperado:', error)
+      toast({
+        title: 'Erro inesperado',
+        description: 'Erro ao criar categoria',
+        variant: 'destructive'
+      })
+      return null
+    }
+  }
+
+  const updateCategory = async (id: string, nome: string, tags?: string) => {
+    if (!user?.id) return null
+
+    try {
+      const { data, error } = await supabase
+        .from('categorias')
+        .update({ nome, tags })
+        .eq('id', id)
+        .eq('userId', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Erro ao atualizar categoria:', error)
+        toast({
+          title: 'Erro ao atualizar categoria',
+          description: error.message,
+          variant: 'destructive'
+        })
+        return null
+      }
+
+      await fetchCategories()
+      toast({
+        title: 'Categoria atualizada!',
+        description: `A categoria "${nome}" foi atualizada.`
+      })
+
+      return data
+    } catch (error) {
+      console.error('Erro inesperado:', error)
+      toast({
+        title: 'Erro inesperado',
+        description: 'Erro ao atualizar categoria',
+        variant: 'destructive'
+      })
+      return null
+    }
+  }
+
+  const deleteCategory = async (id: string) => {
+    if (!user?.id) return false
+
+    try {
       const { error } = await supabase
         .from('categorias')
         .delete()
         .eq('id', id)
-        .eq('userid', user.id); // Garantir que só delete categorias do usuário atual
+        .eq('userId', user.id)
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria excluída com sucesso!');
-    },
-    onError: (error: Error) => {
-      console.error('Erro ao excluir categoria:', error);
-      toast.error(`Erro ao excluir categoria: ${error.message}`);
-    },
-  });
+      if (error) {
+        console.error('Erro ao excluir categoria:', error)
+        toast({
+          title: 'Erro ao excluir categoria',
+          description: error.message,
+          variant: 'destructive'
+        })
+        return false
+      }
+
+      await fetchCategories()
+      toast({
+        title: 'Categoria excluída!',
+        description: 'A categoria foi removida com sucesso.'
+      })
+
+      return true
+    } catch (error) {
+      console.error('Erro inesperado:', error)
+      toast({
+        title: 'Erro inesperado',
+        description: 'Erro ao excluir categoria',
+        variant: 'destructive'
+      })
+      return false
+    }
+  }
+
+  // Nova função para arquivar categoria
+  const archiveCategory = async (id: string) => {
+    if (!user?.id) return false
+
+    try {
+      const { error } = await supabase
+        .from('categorias')
+        .update({ archived: true })
+        .eq('id', id)
+        .eq('userId', user.id)
+
+      if (error) {
+        console.error('Erro ao arquivar categoria:', error)
+        toast({
+          title: 'Erro ao arquivar categoria',
+          description: error.message,
+          variant: 'destructive'
+        })
+        return false
+      }
+
+      await fetchCategories()
+      toast({
+        title: 'Categoria arquivada!',
+        description: 'A categoria foi arquivada com sucesso.'
+      })
+
+      return true
+    } catch (error) {
+      console.error('Erro inesperado:', error)
+      toast({
+        title: 'Erro inesperado',
+        description: 'Erro ao arquivar categoria',
+        variant: 'destructive'
+      })
+      return false
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [user?.id])
 
   return {
     categories,
-    isLoading,
-    error,
-    createCategory: createCategory.mutate,
-    updateCategory: updateCategory.mutate,
-    deleteCategory: deleteCategory.mutate,
-    isCreating: createCategory.isPending,
-    isUpdating: updateCategory.isPending,
-    isDeleting: deleteCategory.isPending,
-  };
+    loading,
+    fetchCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    archiveCategory
+  }
 }

@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = 'https://csvkgokkvbtojjkitodc.supabase.co'
@@ -61,6 +62,8 @@ export type Database = {
           tipo: string | null
           categoria: string | null
           userId: string | null
+          category_id: string
+          archived: boolean
         }
         Insert: {
           id?: number
@@ -72,6 +75,8 @@ export type Database = {
           tipo?: string | null
           categoria?: string | null
           userId?: string | null
+          category_id: string
+          archived?: boolean
         }
         Update: {
           id?: number
@@ -83,6 +88,8 @@ export type Database = {
           tipo?: string | null
           categoria?: string | null
           userId?: string | null
+          category_id?: string
+          archived?: boolean
         }
       }
       lembretes: {
@@ -93,6 +100,7 @@ export type Database = {
           descricao: string | null
           data: string | null
           valor: number | null
+          archived: boolean
         }
         Insert: {
           id?: number
@@ -101,6 +109,7 @@ export type Database = {
           descricao?: string | null
           data?: string | null
           valor?: number | null
+          archived?: boolean
         }
         Update: {
           id?: number
@@ -109,32 +118,36 @@ export type Database = {
           descricao?: string | null
           data?: string | null
           valor?: number | null
+          archived?: boolean
         }
       }
       categorias: {
         Row: {
           id: string
-          userid: string
+          userId: string
           nome: string
           tags: string | null
           created_at: string
           updated_at: string
+          archived: boolean
         }
         Insert: {
           id?: string
-          userid: string
+          userId: string
           nome: string
           tags?: string | null
           created_at?: string
           updated_at?: string
+          archived?: boolean
         }
         Update: {
           id?: string
-          userid?: string
+          userId?: string
           nome?: string
           tags?: string | null
           created_at?: string
           updated_at?: string
+          archived?: boolean
         }
       }
     }

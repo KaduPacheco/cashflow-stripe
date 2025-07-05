@@ -32,6 +32,7 @@ interface Transacao {
   tipo: string | null
   category_id: string
   userId: string | null
+  archived: boolean
   categorias?: {
     id: string
     nome: string
@@ -45,6 +46,7 @@ interface Lembrete {
   descricao: string | null
   data: string | null
   valor: number | null
+  archived: boolean
 }
 
 const dicas = [
@@ -114,12 +116,14 @@ export default function Dashboard() {
           )
         `)
         .eq('userId', user.id)
+        .eq('archived', false) // Filtrar dados arquivados
         .order('quando', { ascending: false })
 
       let lembretesQuery = supabase
         .from('lembretes')
         .select('*')
         .eq('userId', user.id)
+        .eq('archived', false) // Filtrar dados arquivados
         .order('data', { ascending: true })
 
       if (subscriptionData.subscribed) {
