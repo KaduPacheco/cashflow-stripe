@@ -18,7 +18,7 @@ export default function Categorias() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<any>(null)
 
-  const { categories, createCategory, updateCategory, deleteCategory, isLoading, isCreating, isUpdating, isDeleting } = useCategories()
+  const { categories, createCategory, updateCategory, deleteCategory, loading, isCreating, isUpdating, isDeleting } = useCategories()
   const { isReadOnly } = useReadOnlyMode()
 
   const handleCreate = async () => {
@@ -27,7 +27,7 @@ export default function Categorias() {
       return;
     }
 
-    createCategory({ nome: trimmedName });
+    await createCategory({ nome: trimmedName });
     setIsCreateDialogOpen(false);
     setNewCategoryName('');
   }
@@ -37,7 +37,7 @@ export default function Categorias() {
       return;
     }
 
-    updateCategory({
+    await updateCategory({
       id: editingCategory.id,
       updates: { nome: editingCategory.nome.trim() }
     });
@@ -51,7 +51,7 @@ export default function Categorias() {
       return;
     }
     
-    deleteCategory(id);
+    await deleteCategory(id);
   }
 
   return (

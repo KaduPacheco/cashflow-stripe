@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { toast } from './use-toast'
 
-interface Category {
+export interface Category {
   id: string
   userId: string
   nome: string
@@ -18,6 +18,9 @@ export function useCategories() {
   const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchCategories = async (includeArchived: boolean = false) => {
     if (!user?.id) {
@@ -63,16 +66,17 @@ export function useCategories() {
     }
   }
 
-  const createCategory = async (nome: string, tags?: string) => {
+  const createCategory = async (data: { nome: string; tags?: string }) => {
     if (!user?.id) return null
 
+    setIsCreating(true)
     try {
-      const { data, error } = await supabase
+      const { data: category, error } = await supabase
         .from('categorias')
         .insert([{
           userId: user.id,
-          nome,
-          tags,
+          nome: data.nome,
+          tags: data.tags,
           archived: false
         }])
         .select()
@@ -91,10 +95,10 @@ export function useCategories() {
       await fetchCategories()
       toast({
         title: 'Categoria criada com sucesso!',
-        description: `A categoria "${nome}" foi criada.`
+        description: `A categoria "${data.nome}" foi criada.`
       })
 
-      return data
+      return category
     } catch (error) {
       console.error('Erro inesperado:', error)
       toast({
@@ -103,17 +107,20 @@ export function useCategories() {
         variant: 'destructive'
       })
       return null
+    } finally {
+      setIsCreating(false)
     }
   }
 
-  const updateCategory = async (id: string, nome: string, tags?: string) => {
+  const updateCategory = async (data: { id: string; updates: { nome: string; tags?: string } }) => {
     if (!user?.id) return null
 
+    setIsUpdating(true)
     try {
-      const { data, error } = await supabase
+      const { data: category, error } = await supabase
         .from('categorias')
-        .update({ nome, tags })
-        .eq('id', id)
+        .update({ nome: data.updates.nome, tags: data.updates.tags })
+        .eq('id', data.id)
         .eq('userId', user.id)
         .select()
         .single()
@@ -131,10 +138,10 @@ export function useCategories() {
       await fetchCategories()
       toast({
         title: 'Categoria atualizada!',
-        description: `A categoria "${nome}" foi atualizada.`
+        description: `A categoria "${data.updates.nome}" foi atualizada.`
       })
 
-      return data
+      return category
     } catch (error) {
       console.error('Erro inesperado:', error)
       toast({
@@ -143,12 +150,15 @@ export function useCategories() {
         variant: 'destructive'
       })
       return null
+    } finally {
+      setIsUpdating(false)
     }
   }
 
   const deleteCategory = async (id: string) => {
     if (!user?.id) return false
 
+    setIsDeleting(true)
     try {
       const { error } = await supabase
         .from('categorias')
@@ -181,6 +191,8 @@ export function useCategories() {
         variant: 'destructive'
       })
       return false
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -230,6 +242,10 @@ export function useCategories() {
   return {
     categories,
     loading,
+    isLoading: loading, // Alias para compatibilidade
+    isCreating,
+    isUpdating,
+    isDeleting,
     fetchCategories,
     createCategory,
     updateCategory,
