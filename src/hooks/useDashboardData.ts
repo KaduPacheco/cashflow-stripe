@@ -60,10 +60,16 @@ export function useDashboardData(filterMonth: string, filterYear: string): UseDa
       
       console.log('📅 Dashboard: Date range calculated', { startDate, endDate })
 
-      // Simplified queries without complex joins
+      // Query transacoes with categories using JOIN
       let transacoesQuery = supabase
         .from('transacoes')
-        .select('*')
+        .select(`
+          *,
+          categorias!inner(
+            id,
+            nome
+          )
+        `)
         .eq('userId', user.id)
         .order('quando', { ascending: false })
 
@@ -101,40 +107,13 @@ export function useDashboardData(filterMonth: string, filterYear: string): UseDa
         throw lembretesResult.error
       }
 
-      // Fetch categories separately for transactions that have them
-      const transacoesWithCategories = []
-      if (transacoesResult.data && transacoesResult.data.length > 0) {
-        for (const transacao of transacoesResult.data) {
-          let transacaoWithCategory = { ...transacao }
-          
-          if (transacao.category_id) {
-            try {
-              const { data: categoria } = await supabase
-                .from('categorias')
-                .select('id, nome')
-                .eq('id', transacao.category_id)
-                .eq('userid', user.id)
-                .single()
-              
-              if (categoria) {
-                transacaoWithCategory.categorias = categoria
-              }
-            } catch (error) {
-              console.warn('Warning: Could not fetch category for transaction', transacao.id)
-            }
-          }
-          
-          transacoesWithCategories.push(transacaoWithCategory)
-        }
-      }
-
       console.log('📊 Dashboard: Data fetched successfully', {
-        transacoesCount: transacoesWithCategories.length || 0,
+        transacoesCount: transacoesResult.data?.length || 0,
         lembretesCount: lembretesResult.data?.length || 0,
         isSubscribed: subscriptionData.subscribed
       })
 
-      setTransacoes(transacoesWithCategories || [])
+      setTransacoes(transacoesResult.data || [])
       setLembretes(lembretesResult.data || [])
 
     } catch (error: any) {
