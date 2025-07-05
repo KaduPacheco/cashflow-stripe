@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { useSubscription } from './useSubscription'
 import { useDebounce } from './useDebounce'
@@ -52,7 +52,7 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
       const startDate = new Date(parseInt(filterYear), parseInt(filterMonth), 1)
       const endDate = new Date(parseInt(filterYear), parseInt(filterMonth) + 1, 0, 23, 59, 59)
 
-      // Query para transações - usando cliente correto do Supabase
+      // Query para transações - mesma lógica da aba Transações
       let transacoesQuery = supabase
         .from('transacoes')
         .select('valor, tipo')
@@ -65,10 +65,12 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
         .eq('userId', user.id)
 
       if (subscriptionData.subscribed) {
+        // Usuários assinantes podem filtrar por período
         transacoesQuery = transacoesQuery
           .gte('quando', startDate.toISOString().split('T')[0])
           .lte('quando', endDate.toISOString().split('T')[0])
       } else {
+        // Usuários gratuitos veem apenas últimos registros
         transacoesQuery = transacoesQuery.limit(5)
       }
 
@@ -78,7 +80,7 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
       if (transacoesError) throw transacoesError
       if (lembretesError) throw lembretesError
 
-      // Calcular métricas
+      // Calcular métricas - mesma lógica da aba Transações
       const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => {
         const valor = Number(t.valor) || 0
         return sum + Math.abs(valor)
@@ -115,7 +117,7 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
     }
   }, [user?.id, filterMonth, filterYear, subscriptionData.subscribed])
 
-  // Listener para mudanças em tempo real
+  // Listener para mudanças em tempo real - mesma lógica da aba Transações
   useEffect(() => {
     if (!user?.id) return
 

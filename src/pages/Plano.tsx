@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom'
 export default function Plano() {
   const { theme } = useTheme()
   const navigate = useNavigate()
-  const { createCheckoutSession, subscriptionData } = useSubscription()
+  const { createCheckout, subscriptionData } = useSubscription()
   const isMobile = useIsMobile()
 
   // Determine which logo to use based on theme
@@ -29,7 +29,7 @@ export default function Plano() {
   }
 
   const handleSubscribe = () => {
-    createCheckoutSession()
+    createCheckout()
   }
 
   const handleBackToLogin = () => {

@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -22,6 +21,7 @@ export function useSubscription() {
   })
   const [loading, setLoading] = useState(true)
   const [checking, setChecking] = useState(false)
+  const [retryAttempts, setRetryAttempts] = useState(0)
   const [lastCheckTime, setLastCheckTime] = useState<number>(0)
   const [isRateLimited, setIsRateLimited] = useState(false)
   
@@ -29,7 +29,6 @@ export function useSubscription() {
   const timeoutRef = useRef<NodeJS.Timeout>()
   const rateLimitTimeoutRef = useRef<NodeJS.Timeout>()
   const checkTimeoutRef = useRef<NodeJS.Timeout>()
-  const abortControllerRef = useRef<AbortController>()
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -37,11 +36,11 @@ export function useSubscription() {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
       if (rateLimitTimeoutRef.current) clearTimeout(rateLimitTimeoutRef.current)
       if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
-      if (abortControllerRef.current) abortControllerRef.current.abort()
     }
   }, [])
 
-  const getStatusMessage = useCallback((status: string, subscribed: boolean): string => {
+  // Função para mapear status para mensagens amigáveis
+  const getStatusMessage = (status: string, subscribed: boolean): string => {
     if (subscribed) {
       switch (status) {
         case 'active': return 'Assinatura ativa'
@@ -58,27 +57,27 @@ export function useSubscription() {
         default: return 'Assinatura inativa'
       }
     }
-  }, [])
+  }
 
-  const checkSubscription = useCallback(async (forceCheck = false) => {
-    console.log('🔍 Checking subscription...', { user: !!user, session: !!session, isRateLimited, forceCheck })
+  const checkSubscription = async (isRetry = false, skipRateCheck = false, showToast = false) => {
+    console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited })
     
-    // Prevent multiple simultaneous checks
-    if (checking && !forceCheck) {
-      console.log('Already checking, skipping')
-      return
-    }
-
-    // Rate limiting check
-    if (isRateLimited && !forceCheck) {
+    // Se estamos em rate limit e não é um skip, bloquear
+    if (isRateLimited && !skipRateCheck) {
       console.log('Rate limited, skipping check')
       return
     }
 
-    // Frequency control - minimum 5 seconds between checks
+    // Evitar múltiplas chamadas simultâneas
+    if (checking && !skipRateCheck) {
+      console.log('Already checking, skipping')
+      return
+    }
+
+    // Controle de frequência - mínimo 2 segundos entre checks
     const now = Date.now()
     const timeSinceLastCheck = now - lastCheckTime
-    if (timeSinceLastCheck < 5000 && !forceCheck) {
+    if (timeSinceLastCheck < 2000 && !skipRateCheck && !isRetry) {
       console.log('Too frequent, skipping check')
       return
     }
@@ -94,7 +93,7 @@ export function useSubscription() {
       return
     }
 
-    // Check if token is close to expiration (within 5 minutes)
+    // Verificar se o token está próximo do vencimento (dentro de 5 minutos)
     if (session.expires_at) {
       const expiresAt = session.expires_at * 1000
       const fiveMinutes = 5 * 60 * 1000
@@ -124,16 +123,9 @@ export function useSubscription() {
     try {
       setChecking(true)
       setLastCheckTime(now)
-      
-      // Cancel previous request if exists
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-      
-      abortControllerRef.current = new AbortController()
-      
       console.log('Making subscription check request...')
       
+      // Timeout para a verificação (10 segundos)
       const checkPromise = supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -143,12 +135,12 @@ export function useSubscription() {
       const timeoutPromise = new Promise((_, reject) => {
         checkTimeoutRef.current = setTimeout(() => {
           reject(new Error('Verificação de assinatura expirou. Tente novamente.'))
-        }, 12000) // 12 seconds timeout
+        }, 10000) // 10 segundos timeout
       })
       
       const { data, error } = await Promise.race([checkPromise, timeoutPromise]) as any
       
-      // Clear timeout if completed
+      // Limpar timeout se completou
       if (checkTimeoutRef.current) {
         clearTimeout(checkTimeoutRef.current)
         checkTimeoutRef.current = undefined
@@ -159,17 +151,19 @@ export function useSubscription() {
         
         const errorMessage = error.message || String(error)
         
-        // Handle timeout
+        // Detectar timeout
         if (errorMessage.includes('expirou') || errorMessage.includes('timeout')) {
           setSubscriptionData({ 
             subscribed: false, 
             error: 'Verificação demorou muito. Tente novamente em alguns segundos.',
             errorType: 'service'
           })
+          setLoading(false)
+          setChecking(false)
           return
         }
         
-        // Handle rate limiting
+        // Detectar rate limiting
         if (errorMessage.includes('Request rate limit exceeded') || 
             errorMessage.includes('rate limit') ||
             errorMessage.includes('Too Many Requests')) {
@@ -182,161 +176,337 @@ export function useSubscription() {
             errorType: 'rate_limit'
           })
           
-          // 60 second backoff
+          // Backoff de 30 segundos
           rateLimitTimeoutRef.current = setTimeout(() => {
             console.log('Rate limit period expired, re-enabling checks')
             setIsRateLimited(false)
-          }, 60000)
+            setRetryAttempts(0)
+          }, 30000)
+          
+          setRetryAttempts(prev => prev + 1)
+          setLoading(false)
+          setChecking(false)
+          return
+        }
+        
+        // Detectar erros de sessão
+        const isSessionError = errorMessage.includes('session') || 
+                              errorMessage.includes('token') ||
+                              errorMessage.includes('unauthorized') ||
+                              errorMessage.includes('User not authenticated') ||
+                              errorMessage.includes('Authentication error')
+        
+        // Detectar erros de rede
+        const isNetworkError = errorMessage.includes('NetworkError') || 
+                              errorMessage.includes('fetch') ||
+                              errorMessage.includes('network') ||
+                              errorMessage.includes('connection') ||
+                              error.name === 'NetworkError'
+        
+        if (isSessionError && !isRetry && retryAttempts < 2) {
+          console.log('Session error detected, attempting session refresh...')
+          setRetryAttempts(prev => prev + 1)
+          
+          try {
+            const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession()
+            
+            if (!refreshError && sessionData.session) {
+              console.log('Session refreshed successfully, retrying...')
+              // Delay antes de retry para evitar rate limit
+              timeoutRef.current = setTimeout(() => {
+                checkSubscription(true, true, showToast)
+              }, 1500)
+              return
+            } else {
+              console.log('Session refresh failed, signing out...')
+              await signOut()
+              return
+            }
+          } catch (refreshErr) {
+            console.error('Session refresh failed:', refreshErr)
+            await signOut()
+            return
+          }
+        }
+        
+        let errorType: SubscriptionData['errorType'] = 'unknown'
+        let displayError = 'Erro ao verificar assinatura'
+        
+        if (isSessionError) {
+          errorType = 'session'
+          displayError = 'Sessão expirada. Faça login novamente.'
+        } else if (isNetworkError) {
+          errorType = 'network'
+          displayError = 'Erro de conexão. Verifique sua internet.'
+        } else {
+          errorType = 'subscription'
+          displayError = errorMessage
+        }
+        
+        setSubscriptionData({ 
+          subscribed: false, 
+          error: displayError,
+          errorType
+        })
+        return
+      }
+
+      console.log('Subscription check result:', data)
+      
+      if (data?.error) {
+        console.log('Subscription check returned error:', data.error)
+        
+        const isSessionError = data.error.includes('session') || 
+                              data.error.includes('token') ||
+                              data.error.includes('User not authenticated')
+        
+        const isRateLimit = data.error.includes('Request rate limit exceeded')
+        const isConfiguration = data.errorType === 'configuration'
+        
+        if (isRateLimit) {
+          setIsRateLimited(true)
+          setSubscriptionData({ 
+            subscribed: false,
+            error: 'Muitas tentativas. Aguardando automaticamente.',
+            errorType: 'rate_limit'
+          })
+          
+          rateLimitTimeoutRef.current = setTimeout(() => {
+            setIsRateLimited(false)
+            setRetryAttempts(0)
+          }, 30000)
           
           return
         }
         
-        // Handle session errors
-        const isSessionError = errorMessage.includes('session') || 
-                              errorMessage.includes('token') ||
-                              errorMessage.includes('unauthorized') ||
-                              errorMessage.includes('User not authenticated')
+        if (isConfiguration) {
+          setSubscriptionData({ 
+            subscribed: false,
+            error: 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.',
+            errorType: 'configuration'
+          })
+          return
+        }
+        
+        let errorType: SubscriptionData['errorType'] = 'subscription'
+        let displayError = data.error
         
         if (isSessionError) {
-          console.log('Session error detected, signing out...')
+          errorType = 'session'
+          displayError = 'Sessão expirada. Faça login novamente.'
           await signOut()
           return
         }
         
-        // Generic error
         setSubscriptionData({ 
-          subscribed: false, 
-          error: 'Erro ao verificar assinatura',
-          errorType: 'service'
+          subscribed: false,
+          error: displayError,
+          errorType
         })
         return
       }
       
-      console.log('✅ Subscription check result:', data)
+      // Reset retry attempts and rate limit on success
+      setRetryAttempts(0)
+      setIsRateLimited(false)
+      if (rateLimitTimeoutRef.current) {
+        clearTimeout(rateLimitTimeoutRef.current)
+      }
       
-      const newSubscriptionData: SubscriptionData = {
-        subscribed: data.subscribed || false,
-        subscription_tier: data.subscription_tier,
-        subscription_end: data.subscription_end,
-        subscription_id: data.subscription_id,
-        status: data.status || (data.subscribed ? 'active' : 'inactive'),
-        message: getStatusMessage(data.status || '', data.subscribed || false),
-        error: data.error,
-        errorType: data.errorType
+      const newSubscriptionData = data || { subscribed: false }
+      
+      // Adicionar mensagem amigável baseada no status
+      if (newSubscriptionData.status) {
+        newSubscriptionData.message = getStatusMessage(newSubscriptionData.status, newSubscriptionData.subscribed)
       }
       
       setSubscriptionData(newSubscriptionData)
       
-    } catch (error: any) {
-      console.error('Subscription check failed:', error)
-      
-      if (error.name === 'AbortError') {
-        console.log('Request was aborted')
-        return
+      // Show success toast if requested and subscription is active
+      if (showToast && newSubscriptionData.subscribed) {
+        toast.success("Assinatura verificada com sucesso!", {
+          description: newSubscriptionData.message || `Plano ${newSubscriptionData.subscription_tier} ativo`,
+        })
+      } else if (showToast && !newSubscriptionData.subscribed) {
+        toast.info("Status da assinatura", {
+          description: newSubscriptionData.message || "Nenhuma assinatura ativa encontrada",
+        })
       }
       
-      setSubscriptionData({ 
-        subscribed: false,
-        error: 'Erro na verificação de assinatura',
-        errorType: 'unknown'
-      })
+    } catch (error: any) {
+      console.error('Failed to check subscription:', error)
+      
+      // Limpar timeout em caso de erro
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current)
+        checkTimeoutRef.current = undefined
+      }
+      
+      const errorMessage = error.message || String(error)
+      
+      const isNetworkError = error.name === 'NetworkError' || 
+                            errorMessage.includes('fetch') ||
+                            errorMessage.includes('network') ||
+                            errorMessage.includes('connection') ||
+                            errorMessage.includes('timeout')
+      
+      const isSessionError = errorMessage.includes('User not authenticated') ||
+                            errorMessage.includes('session') ||
+                            errorMessage.includes('token')
+      
+      let errorType: SubscriptionData['errorType'] = 'unknown'
+      let displayError = 'Erro ao verificar assinatura'
+      
+      if (isSessionError) {
+        errorType = 'session'
+        displayError = 'Sessão expirada. Faça login novamente.'
+        await signOut()
+        return
+      } else if (isNetworkError) {
+        errorType = 'network'
+        displayError = 'Erro de conexão ou timeout. Verifique sua internet.'
+      }
+      
+      if (!isSessionError && showToast) {
+        toast.error("Erro ao verificar assinatura", {
+          description: displayError,
+        })
+      }
+      
+      setSubscriptionData({ subscribed: false, error: displayError, errorType })
     } finally {
+      setLoading(false)
       setChecking(false)
-      setLoading(false)
     }
-  }, [user?.id, session?.access_token, session?.expires_at, isRateLimited, lastCheckTime, getStatusMessage, signOut, checking])
+  }
 
-  // Initial check and auth state changes
-  useEffect(() => {
-    if (user && session) {
-      console.log('🔄 User authenticated, checking subscription')
-      checkSubscription(true) // Force initial check
-    } else {
-      setSubscriptionData({ subscribed: false })
-      setLoading(false)
+  const forceRefresh = async (showToast = true) => {
+    console.log('Force refreshing subscription...')
+    // Reset todos os controles para permitir nova verificação
+    setRetryAttempts(0)
+    setIsRateLimited(false)
+    setLastCheckTime(0)
+    if (rateLimitTimeoutRef.current) {
+      clearTimeout(rateLimitTimeoutRef.current)
     }
-  }, [user?.id, session?.access_token, checkSubscription])
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current)
+    }
+    setLoading(true)
+    await checkSubscription(false, true, showToast)
+  }
 
-  // Periodic check every 5 minutes for active users
-  useEffect(() => {
-    if (!user || !session || !subscriptionData.subscribed) return
-
-    const interval = setInterval(() => {
-      checkSubscription()
-    }, 5 * 60 * 1000) // 5 minutes
-
-    return () => clearInterval(interval)
-  }, [user?.id, session?.access_token, subscriptionData.subscribed, checkSubscription])
-
-  const refetchSubscription = useCallback(() => {
-    console.log('🔄 Manual subscription refetch requested')
-    checkSubscription(true)
-  }, [checkSubscription])
-
-  const createCheckoutSession = useCallback(async () => {
+  const createCheckout = async () => {
     if (!user || !session?.access_token) {
-      toast.error('Você precisa estar logado para assinar')
-      return null
+      toast.error("Erro de autenticação", {
+        description: "Você precisa estar logado para criar uma assinatura",
+      })
+      return
     }
 
     try {
-      console.log('Creating checkout session...')
+      console.log('Creating checkout session for user:', user.id)
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       })
-
+      
       if (error) {
-        console.error('Checkout error:', error)
-        toast.error('Erro ao criar sessão de pagamento')
-        return null
+        console.error('Error creating checkout:', error)
+        throw error
       }
 
-      return data
-    } catch (error) {
-      console.error('Checkout session error:', error)
-      toast.error('Erro ao processar pagamento')
-      return null
+      if (data?.url) {
+        console.log('Redirecting to checkout:', data.url)
+        window.open(data.url, '_blank')
+        
+        toast.success("Redirecionando para pagamento", {
+          description: "Abrindo nova aba com o checkout do Stripe...",
+        })
+      } else {
+        throw new Error('URL do checkout não retornada')
+      }
+    } catch (error: any) {
+      console.error('Failed to create checkout:', error)
+      toast.error("Erro ao criar sessão de pagamento", {
+        description: error.message || "Erro desconhecido ao criar checkout",
+      })
     }
-  }, [user?.id, session?.access_token])
+  }
 
-  const openCustomerPortal = useCallback(async () => {
+  const openCustomerPortal = async () => {
     if (!user || !session?.access_token) {
-      toast.error('Você precisa estar logado')
+      toast.error("Erro de autenticação", {
+        description: "Você precisa estar logado para acessar o portal do cliente",
+      })
       return
     }
 
     try {
-      console.log('Opening customer portal...')
+      console.log('Opening customer portal for user:', user.id)
+      
       const { data, error } = await supabase.functions.invoke('customer-portal', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       })
-
+      
       if (error) {
-        console.error('Customer portal error:', error)
-        toast.error('Erro ao abrir portal do cliente')
-        return
+        console.error('Error opening customer portal:', error)
+        throw error
       }
 
       if (data?.url) {
+        console.log('Redirecting to customer portal:', data.url)
         window.open(data.url, '_blank')
       }
-    } catch (error) {
-      console.error('Customer portal error:', error)
-      toast.error('Erro ao abrir portal do cliente')
+    } catch (error: any) {
+      console.error('Failed to open customer portal:', error)
+      toast.error("Erro ao abrir portal do cliente", {
+        description: error.message || "Erro desconhecido ao abrir portal",
+      })
     }
-  }, [user?.id, session?.access_token])
+  }
+
+  useEffect(() => {
+    if (session && user) {
+      // Debounce inicial check
+      timeoutRef.current = setTimeout(() => {
+        checkSubscription()
+      }, 500)
+    } else {
+      setLoading(false)
+      setSubscriptionData({ subscribed: false })
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [user, session])
+
+  // Auto-refresh subscription status every 5 minutes quando subscribed e ativo
+  useEffect(() => {
+    if (!user || !subscriptionData.subscribed || isRateLimited) return
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && !checking) {
+        checkSubscription()
+      }
+    }, 300000) // 5 minutes
+
+    return () => clearInterval(interval)
+  }, [user, subscriptionData.subscribed, checking, isRateLimited])
 
   return {
     subscriptionData,
     loading,
-    checking,
-    refetch: refetchSubscription,
-    createCheckoutSession,
+    checking: checking || isRateLimited,
+    checkSubscription: forceRefresh,
+    createCheckout,
     openCustomerPortal,
-    isRateLimited
   }
 }
