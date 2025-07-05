@@ -11,7 +11,6 @@ export interface Category {
   tags?: string
   created_at: string
   updated_at: string
-  archived: boolean
 }
 
 export function useCategories() {
@@ -22,26 +21,18 @@ export function useCategories() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const fetchCategories = async (includeArchived: boolean = false) => {
+  const fetchCategories = async () => {
     if (!user?.id) {
       setLoading(false)
       return
     }
 
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('categorias')
         .select('*')
         .eq('userId', user.id)
-
-      // Filtrar arquivados por padrão
-      if (!includeArchived) {
-        query = query.eq('archived', false)
-      }
-
-      query = query.order('nome')
-
-      const { data, error } = await query
+        .order('nome')
 
       if (error) {
         console.error('Erro ao buscar categorias:', error)
@@ -76,8 +67,7 @@ export function useCategories() {
         .insert([{
           userId: user.id,
           nome: data.nome,
-          tags: data.tags,
-          archived: false
+          tags: data.tags
         }])
         .select()
         .single()
@@ -196,45 +186,6 @@ export function useCategories() {
     }
   }
 
-  // Nova função para arquivar categoria
-  const archiveCategory = async (id: string) => {
-    if (!user?.id) return false
-
-    try {
-      const { error } = await supabase
-        .from('categorias')
-        .update({ archived: true })
-        .eq('id', id)
-        .eq('userId', user.id)
-
-      if (error) {
-        console.error('Erro ao arquivar categoria:', error)
-        toast({
-          title: 'Erro ao arquivar categoria',
-          description: error.message,
-          variant: 'destructive'
-        })
-        return false
-      }
-
-      await fetchCategories()
-      toast({
-        title: 'Categoria arquivada!',
-        description: 'A categoria foi arquivada com sucesso.'
-      })
-
-      return true
-    } catch (error) {
-      console.error('Erro inesperado:', error)
-      toast({
-        title: 'Erro inesperado',
-        description: 'Erro ao arquivar categoria',
-        variant: 'destructive'
-      })
-      return false
-    }
-  }
-
   useEffect(() => {
     fetchCategories()
   }, [user?.id])
@@ -249,7 +200,6 @@ export function useCategories() {
     fetchCategories,
     createCategory,
     updateCategory,
-    deleteCategory,
-    archiveCategory
+    deleteCategory
   }
 }
