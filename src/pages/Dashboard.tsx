@@ -1,10 +1,11 @@
-
 import { useState, useEffect, useCallback } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useOnboarding } from '@/hooks/useOnboarding'
+import { useDemoData } from '@/hooks/useDemoData'
 import { toast } from '@/hooks/use-toast'
 import { Filter, Lock } from 'lucide-react'
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
@@ -14,6 +15,8 @@ import { DashboardStats } from '@/components/dashboard/DashboardStats'
 import { ExpensesByCategoryChart } from '@/components/dashboard/ExpensesByCategoryChart'
 import { RevenueVsExpensesChart } from '@/components/dashboard/RevenueVsExpensesChart'
 import { DashboardTipCard } from '@/components/dashboard/DashboardTipCard'
+import { WelcomeMessage } from '@/components/onboarding/WelcomeMessage'
+import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
 
 interface DashboardStats {
   totalReceitas: number
@@ -60,6 +63,8 @@ const dicas = [
 export default function Dashboard() {
   const { user } = useAuth()
   const { subscriptionData } = useSubscription()
+  const { showTour, completeOnboarding } = useOnboarding()
+  const { loadDemoData, loading: demoLoading } = useDemoData()
   
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
   const [lembretes, setLembretes] = useState<Lembrete[]>([])
@@ -67,6 +72,7 @@ export default function Dashboard() {
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth().toString())
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString())
   const [dicaDoDia] = useState(dicas[new Date().getDate() % dicas.length])
+  const [showWelcome, setShowWelcome] = useState(false)
 
   // Calculate stats from transacoes
   const stats: DashboardStats = {
@@ -176,6 +182,15 @@ export default function Dashboard() {
     }
   }, [user?.id, filterMonth, filterYear, subscriptionData.subscribed])
 
+  // Check if user is new (no transactions) after data is loaded
+  useEffect(() => {
+    if (!loading && transacoes.length === 0 && lembretes.length === 0) {
+      setShowWelcome(true)
+    } else {
+      setShowWelcome(false)
+    }
+  }, [loading, transacoes.length, lembretes.length])
+
   useEffect(() => {
     if (!user?.id) return
 
@@ -210,6 +225,18 @@ export default function Dashboard() {
       supabase.removeChannel(channel)
     }
   }, [user?.id, debouncedFetchDashboardData])
+
+  const handleLoadDemoData = async () => {
+    await loadDemoData()
+    setShowWelcome(false)
+    // Recarregar dados após inserir dados de exemplo
+    fetchDashboardData()
+  }
+
+  const handleStartTour = () => {
+    setShowWelcome(false)
+    // O tour será iniciado automaticamente pelo useOnboarding
+  }
 
   if (!user?.id) {
     return (
@@ -278,6 +305,21 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Welcome Message for New Users */}
+      {showWelcome && (
+        <WelcomeMessage 
+          onLoadDemo={handleLoadDemoData}
+          onStartTour={handleStartTour}
+          loading={demoLoading}
+        />
+      )}
+
+      {/* Onboarding Tour */}
+      <OnboardingTour 
+        show={showTour}
+        onComplete={completeOnboarding}
+      />
 
       <DashboardMetricsCards 
         filterMonth={filterMonth} 

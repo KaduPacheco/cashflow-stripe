@@ -36,6 +36,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
     setNumeroParcelas
   } = useRecurringLogic()
 
+  const handleTipoChange = (value: string) => {
+    setTipo(value as 'receita' | 'despesa')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !estabelecimento || !valor || !categoryId) {
@@ -126,7 +130,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
         tipo={tipo}
         onEstabelecimentoChange={setEstabelecimento}
         onValorChange={setValor}
-        onTipoChange={setTipo}
+        onTipoChange={handleTipoChange}
       />
 
       <TransactionFormClassification

@@ -1,6 +1,16 @@
 
-import { NavLink, useLocation } from 'react-router-dom'
-import { Home, CreditCard, Calendar, User, LogOut, Tag, FileText, Receipt } from 'lucide-react'
+import { useState } from "react"
+import { 
+  Home, 
+  CreditCard, 
+  Bell, 
+  FolderOpen, 
+  BarChart3, 
+  User, 
+  Crown,
+  Receipt 
+} from "lucide-react"
+import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
   SidebarContent,
@@ -10,92 +20,92 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/button'
-import { UserProfile } from './UserProfile'
-import { useTheme } from '@/hooks/useTheme'
+} from "@/components/ui/sidebar"
+import { UserProfile } from "./UserProfile"
 
-const items = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home },
-  { title: 'Transações', url: '/transacoes', icon: CreditCard },
-  { title: 'Contas a Pagar/Receber', url: '/contas', icon: Receipt },
-  { title: 'Categorias', url: '/categorias', icon: Tag },
-  { title: 'Relatórios', url: '/relatorios', icon: FileText },
-  { title: 'Lembretes', url: '/lembretes', icon: Calendar },
-  { title: 'Perfil', url: '/perfil', icon: User },
+const menuItems = [
+  { 
+    title: "Dashboard", 
+    url: "/dashboard", 
+    icon: Home,
+    tourId: "dashboard"
+  },
+  { 
+    title: "Transações", 
+    url: "/transacoes", 
+    icon: CreditCard,
+    tourId: "transacoes"
+  },
+  { 
+    title: "Contas a Pagar/Receber", 
+    url: "/contas", 
+    icon: Receipt,
+  },
+  { 
+    title: "Lembretes", 
+    url: "/lembretes", 
+    icon: Bell,
+    tourId: "lembretes"
+  },
+  { 
+    title: "Categorias", 
+    url: "/categorias", 
+    icon: FolderOpen,
+    tourId: "categorias"
+  },
+  { 
+    title: "Relatórios", 
+    url: "/relatorios", 
+    icon: BarChart3 
+  },
+]
+
+const bottomMenuItems = [
+  { 
+    title: "Perfil", 
+    url: "/perfil", 
+    icon: User 
+  },
+  { 
+    title: "Plano", 
+    url: "/plano", 
+    icon: Crown 
+  },
 ]
 
 export function AppSidebar() {
-  const { state } = useSidebar()
+  const { collapsed } = useSidebar()
   const location = useLocation()
-  const { signOut } = useAuth()
-  const { theme } = useTheme()
   const currentPath = location.pathname
 
   const isActive = (path: string) => currentPath === path
-  const isCollapsed = state === "collapsed"
-
-  // Determine which logo to use based on theme
-  const getLogoSrc = () => {
-    if (theme === 'dark') {
-      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png' // logo-white
-    } else if (theme === 'light') {
-      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png' // logo-black
-    } else {
-      // System theme - check actual computed theme
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      return isDark 
-        ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
-        : 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png'
-    }
-  }
+  const getNavClassName = (path: string) => 
+    isActive(path) 
+      ? "bg-primary/10 text-primary font-medium border-r-2 border-primary" 
+      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-card">
-      <SidebarHeader className="p-4 border-b border-border bg-card">
-        <div className="flex items-center justify-center">
-          {isCollapsed ? (
-            <div className="min-w-8">
-              <img 
-                src="/lovable-uploads/a5a40de7-4096-4a32-af0c-76fe03ec72f7.png"
-                alt="Cash Flow Icon" 
-                className="h-8 w-8"
-              />
-            </div>
-          ) : (
-            <img 
-              src={getLogoSrc()} 
-              alt="Cash Flow" 
-              className="h-8 w-auto"
-            />
-          )}
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="p-2 bg-card">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-3 py-2">
-            Menu
+    <Sidebar className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
+      <SidebarContent className="flex flex-col h-full">
+        {/* Main Navigation */}
+        <SidebarGroup className="flex-1">
+          <SidebarGroupLabel className={collapsed ? "opacity-0" : "opacity-100"}>
+            Navegação Principal
           </SidebarGroupLabel>
+          
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {items.map((item) => (
+            <SidebarMenu>
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    className={`${
-                      isActive(item.url)
-                        ? 'bg-primary text-primary-foreground border-l-4 border-l-primary shadow-fintech fintech-interactive'
-                        : 'hover:bg-accent fintech-interactive hover:border-l-4 hover:border-l-primary/30 text-foreground'
-                    } rounded-xl mx-1 transition-all duration-200`}
-                  >
-                    <NavLink to={item.url} end className="flex items-center gap-3 px-3 py-2">
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url} 
+                      className={getNavClassName(item.url)}
+                      data-tour={item.tourId}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {!collapsed && <span className="ml-3">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -103,21 +113,35 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
 
-      <SidebarFooter className="p-4 space-y-4 border-t border-border bg-card">
-        <UserProfile />
-        
-        <Button
-          onClick={signOut}
-          variant="outline"
-          size={isCollapsed ? "icon" : "default"}
-          className="w-full fintech-interactive"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="group-data-[collapsible=icon]:hidden ml-2">Sair</span>
-        </Button>
-      </SidebarFooter>
+        {/* Bottom Section */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {bottomMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url} 
+                      className={getNavClassName(item.url)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {!collapsed && <span className="ml-3">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* User Profile */}
+        {!collapsed && (
+          <div className="p-4 border-t border-border">
+            <UserProfile />
+          </div>
+        )}
+      </SidebarContent>
     </Sidebar>
   )
 }

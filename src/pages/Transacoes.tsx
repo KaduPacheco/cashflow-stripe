@@ -11,7 +11,7 @@ import { useTransactions } from '@/hooks/useTransactions'
 import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
 import { ReadOnlyWrapper } from '@/components/subscription/ReadOnlyWrapper'
 import { SubscriptionGate } from '@/components/subscription/SubscriptionGate'
-import { Transacao, TransactionFormData } from '@/types/transaction'
+import { Transacao } from '@/types/transaction'
 
 export default function Transacoes() {
   const { 
@@ -25,8 +25,6 @@ export default function Transacoes() {
     categoryFilter,
     setCategoryFilter,
     clearFilters,
-    createTransaction,
-    updateTransaction,
     deleteTransaction,
     deleteAllTransactions
   } = useTransactions()
@@ -34,51 +32,10 @@ export default function Transacoes() {
   const { isReadOnly } = useReadOnlyMode()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transacao | null>(null)
-  const [formData, setFormData] = useState<TransactionFormData>({
-    quando: '',
-    estabelecimento: '',
-    valor: 0,
-    detalhes: '',
-    tipo: '',
-    category_id: '',
-  })
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    try {
-      if (editingTransaction) {
-        await updateTransaction(editingTransaction.id, formData)
-      } else {
-        await createTransaction(formData)
-      }
-
-      setDialogOpen(false)
-      setEditingTransaction(null)
-      setFormData({
-        quando: '',
-        estabelecimento: '',
-        valor: 0,
-        detalhes: '',
-        tipo: '',
-        category_id: '',
-      })
-    } catch (error) {
-      // Erro já tratado no hook
-    }
-  }
 
   const handleEdit = (transacao: Transacao) => {
-    setEditingTransaction(transacao)
-    setFormData({
-      quando: transacao.quando || '',
-      estabelecimento: transacao.estabelecimento || '',
-      valor: transacao.valor || 0,
-      detalhes: transacao.detalhes || '',
-      tipo: transacao.tipo || '',
-      category_id: transacao.category_id || '',
-    })
-    setDialogOpen(true)
+    // TODO: Implementar edição de transações
+    console.log('Editar transação:', transacao)
   }
 
   const handleDelete = async (id: number) => {
@@ -88,15 +45,12 @@ export default function Transacoes() {
 
   const handleCreateNew = () => {
     setEditingTransaction(null)
-    setFormData({
-      quando: '',
-      estabelecimento: '',
-      valor: 0,
-      detalhes: '',
-      tipo: '',
-      category_id: '',
-    })
     setDialogOpen(true)
+  }
+
+  const handleFormSuccess = () => {
+    setDialogOpen(false)
+    setEditingTransaction(null)
   }
 
   return (
@@ -182,10 +136,7 @@ export default function Transacoes() {
               </DialogDescription>
             </DialogHeader>
             <TransactionForm 
-              formData={formData}
-              setFormData={setFormData}
-              onSubmit={handleSubmit}
-              isEditing={!!editingTransaction}
+              onSuccess={handleFormSuccess}
             />
           </DialogContent>
         </Dialog>
