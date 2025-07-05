@@ -1,5 +1,5 @@
+
 import { useState, useEffect, useCallback } from 'react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -7,16 +7,12 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { useDemoData } from '@/hooks/useDemoData'
 import { toast } from '@/hooks/use-toast'
-import { Filter, Lock } from 'lucide-react'
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner'
 import { DashboardMetricsCards } from '@/components/dashboard/DashboardMetricsCards'
-import { LembretesDoDiaCard } from '@/components/dashboard/LembretesDoDiaCard'
-import { DashboardStats } from '@/components/dashboard/DashboardStats'
-import { ExpensesByCategoryChart } from '@/components/dashboard/ExpensesByCategoryChart'
-import { RevenueVsExpensesChart } from '@/components/dashboard/RevenueVsExpensesChart'
-import { DashboardTipCard } from '@/components/dashboard/DashboardTipCard'
 import { WelcomeMessage } from '@/components/onboarding/WelcomeMessage'
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
 
 interface DashboardStats {
   totalReceitas: number
@@ -255,56 +251,14 @@ export default function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       <SubscriptionBanner />
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            Dashboard
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Visão geral das suas finanças pessoais
-            {transacoes.length > 0 && ` • ${transacoes.length} transações encontradas`}
-            {!subscriptionData.subscribed && " • Versão gratuita (últimos 5 registros)"}
-          </p>
-        </div>
-        
-        {subscriptionData.subscribed ? (
-          <div className="flex gap-3 items-center bg-card/50 backdrop-blur-sm rounded-2xl p-3 border border-border/50">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={filterMonth} onValueChange={setFilterMonth}>
-              <SelectTrigger className="w-36 rounded-xl border-border/50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <SelectItem key={i} value={i.toString()} className="rounded-lg">
-                    {new Date(0, i).toLocaleDateString('pt-BR', { month: 'long' })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-28 rounded-xl border-border/50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {Array.from({ length: 5 }, (_, i) => {
-                  const year = new Date().getFullYear() - 2 + i
-                  return (
-                    <SelectItem key={year} value={year.toString()} className="rounded-lg">
-                      {year}
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 px-4 py-2 rounded-2xl">
-            <Lock className="h-4 w-4" />
-            <span className="text-sm">Filtros disponíveis com assinatura</span>
-          </div>
-        )}
-      </div>
+      <DashboardHeader
+        transacaoCount={transacoes.length}
+        isSubscribed={subscriptionData.subscribed}
+        filterMonth={filterMonth}
+        filterYear={filterYear}
+        onFilterMonthChange={setFilterMonth}
+        onFilterYearChange={setFilterYear}
+      />
 
       {/* Welcome Message for New Users */}
       {showWelcome && (
@@ -326,32 +280,12 @@ export default function Dashboard() {
         filterYear={filterYear} 
       />
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        <ExpensesByCategoryChart 
-          transacoes={transacoes}
-          isSubscribed={subscriptionData.subscribed}
-        />
-
-        <div className="space-y-6">
-          <LembretesDoDiaCard />
-          <DashboardTipCard tip={dicaDoDia} />
-        </div>
-      </div>
-
-      <div className="grid gap-8 md:grid-cols-2">
-        <RevenueVsExpensesChart 
-          transacoes={transacoes}
-          totalReceitas={stats.totalReceitas}
-        />
-
-        <DashboardStats
-          receitas={stats.totalReceitas}
-          despesas={stats.totalDespesas}
-          saldo={stats.saldo}
-          transacoesCount={stats.transacoesCount}
-          lembretesCount={stats.lembretesCount}
-        />
-      </div>
+      <DashboardCharts
+        transacoes={transacoes}
+        stats={stats}
+        isSubscribed={subscriptionData.subscribed}
+        dicaDoDia={dicaDoDia}
+      />
     </div>
   )
 }

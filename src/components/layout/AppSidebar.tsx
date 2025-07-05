@@ -20,7 +20,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 import { UserProfile } from "./UserProfile"
 
@@ -75,7 +74,6 @@ const bottomMenuItems = [
 ]
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar()
   const location = useLocation()
   const currentPath = location.pathname
 
@@ -86,11 +84,11 @@ export function AppSidebar() {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
 
   return (
-    <Sidebar className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"}`}>
+    <Sidebar className="transition-all duration-300 w-64">
       <SidebarContent className="flex flex-col h-full">
         {/* Main Navigation */}
         <SidebarGroup className="flex-1">
-          <SidebarGroupLabel className={collapsed ? "opacity-0" : "opacity-100"}>
+          <SidebarGroupLabel>
             Navegação Principal
           </SidebarGroupLabel>
           
@@ -105,7 +103,7 @@ export function AppSidebar() {
                       data-tour={item.tourId}
                     >
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span className="ml-3">{item.title}</span>}
+                      <span className="ml-3">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -126,7 +124,7 @@ export function AppSidebar() {
                       className={getNavClassName(item.url)}
                     >
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span className="ml-3">{item.title}</span>}
+                      <span className="ml-3">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -136,11 +134,9 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* User Profile */}
-        {!collapsed && (
-          <div className="p-4 border-t border-border">
-            <UserProfile />
-          </div>
-        )}
+        <div className="p-4 border-t border-border">
+          <UserProfile />
+        </div>
       </SidebarContent>
     </Sidebar>
   )

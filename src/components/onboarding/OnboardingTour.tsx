@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react'
 import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride'
-import { Button } from '@/components/ui/button'
 
 interface OnboardingTourProps {
   show: boolean
@@ -73,7 +72,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ show, onComplete
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data
     
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       setRun(false)
       onComplete()
     }
