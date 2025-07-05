@@ -1,6 +1,7 @@
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { FormSectionTitle } from '@/components/ui/form-section-title'
 import { Calendar } from 'lucide-react'
 
 interface TransactionFormSchedulingProps {
@@ -8,16 +9,16 @@ interface TransactionFormSchedulingProps {
   onQuandoChange: (value: string) => void
 }
 
-export function TransactionFormScheduling({
+export const TransactionFormScheduling: React.FC<TransactionFormSchedulingProps> = ({
   quando,
   onQuandoChange
-}: TransactionFormSchedulingProps) {
+}) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-        Agendamento
-      </div>
+      <FormSectionTitle 
+        title="Agendamento" 
+        dotColor="bg-green-500" 
+      />
 
       <div>
         <div className="flex items-center gap-2 mb-2">

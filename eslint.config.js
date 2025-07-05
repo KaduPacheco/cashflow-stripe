@@ -28,14 +28,18 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
+      
       // TypeScript strict rules
       "@typescript-eslint/no-unused-vars": ["error", { 
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_" 
       }],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/prefer-const": "error",
       "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/explicit-function-return-type": "warn",
+      "@typescript-eslint/no-unsafe-assignment": "warn",
+      "@typescript-eslint/no-unsafe-member-access": "warn",
       
       // Code quality rules
       "prefer-const": "error",
@@ -43,13 +47,32 @@ export default tseslint.config(
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "no-debugger": "error",
       "no-duplicate-imports": "error",
+      "eqeqeq": ["error", "always"],
+      "curly": ["error", "all"],
       
       // React specific rules
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error",
       
       // Performance rules
       "no-await-in-loop": "warn",
       "require-await": "error",
+      
+      // Naming conventions
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          "selector": "variableLike",
+          "format": ["camelCase", "PascalCase", "UPPER_CASE"]
+        },
+        {
+          "selector": "function",
+          "format": ["camelCase", "PascalCase"]
+        },
+        {
+          "selector": "typeLike",
+          "format": ["PascalCase"]
+        }
+      ],
     },
   }
 );

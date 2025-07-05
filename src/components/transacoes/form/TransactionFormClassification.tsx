@@ -1,6 +1,7 @@
 
 import { Label } from '@/components/ui/label'
 import { CategorySelector } from '@/components/transactions/CategorySelector'
+import { FormSectionTitle } from '@/components/ui/form-section-title'
 import { Tag } from 'lucide-react'
 
 interface TransactionFormClassificationProps {
@@ -8,16 +9,16 @@ interface TransactionFormClassificationProps {
   onCategoryChange: (value: string) => void
 }
 
-export function TransactionFormClassification({
+export const TransactionFormClassification: React.FC<TransactionFormClassificationProps> = ({
   categoryId,
   onCategoryChange
-}: TransactionFormClassificationProps) {
+}) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-        Classificação
-      </div>
+      <FormSectionTitle 
+        title="Classificação" 
+        dotColor="bg-green-500" 
+      />
 
       <div>
         <div className="flex items-center gap-2 mb-2">

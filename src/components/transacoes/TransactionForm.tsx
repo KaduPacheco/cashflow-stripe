@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react'
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { TransactionFormData } from '@/types/transaction'
 import { TransactionFormBasicInfo } from './form/TransactionFormBasicInfo'
@@ -7,6 +7,7 @@ import { TransactionFormClassification } from './form/TransactionFormClassificat
 import { TransactionFormScheduling } from './form/TransactionFormScheduling'
 import { TransactionFormDetails } from './form/TransactionFormDetails'
 import { TransactionFormSpecialOptions } from './form/TransactionFormSpecialOptions'
+import { useRecurringLogic } from '@/hooks/useRecurringLogic'
 
 interface TransactionFormProps {
   formData: TransactionFormData
@@ -15,11 +16,22 @@ interface TransactionFormProps {
   isEditing: boolean
 }
 
-export function TransactionForm({ formData, setFormData, onSubmit, isEditing }: TransactionFormProps) {
-  const [recorrente, setRecorrente] = useState(false)
-  const [recorrencia, setRecorrencia] = useState('mensal')
-  const [parcelado, setParcelado] = useState(false)
-  const [numeroParcelas, setNumeroParcelas] = useState(2)
+export const TransactionForm: React.FC<TransactionFormProps> = ({ 
+  formData, 
+  setFormData, 
+  onSubmit, 
+  isEditing 
+}) => {
+  const {
+    recorrente,
+    recorrencia,
+    parcelado,
+    numeroParcelas,
+    setRecorrente,
+    setRecorrencia,
+    setParcelado,
+    setNumeroParcelas
+  } = useRecurringLogic()
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
