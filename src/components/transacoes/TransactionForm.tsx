@@ -1,7 +1,9 @@
 
-import React from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { TransactionFormData } from '@/types/transaction'
+import { toast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { TransactionFormBasicInfo } from './form/TransactionFormBasicInfo'
 import { TransactionFormClassification } from './form/TransactionFormClassification'
 import { TransactionFormScheduling } from './form/TransactionFormScheduling'
@@ -10,18 +12,19 @@ import { TransactionFormSpecialOptions } from './form/TransactionFormSpecialOpti
 import { useRecurringLogic } from '@/hooks/useRecurringLogic'
 
 interface TransactionFormProps {
-  formData: TransactionFormData
-  setFormData: (data: TransactionFormData) => void
-  onSubmit: (e: React.FormEvent) => void
-  isEditing: boolean
+  onSuccess: () => void
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ 
-  formData, 
-  setFormData, 
-  onSubmit, 
-  isEditing 
-}) => {
+export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) => {
+  const { user } = useAuth()
+  const [estabelecimento, setEstabelecimento] = useState('')
+  const [valor, setValor] = useState('')
+  const [tipo, setTipo] = useState<'receita' | 'despesa'>('despesa')
+  const [categoryId, setCategoryId] = useState('')
+  const [quando, setQuando] = useState(new Date().toISOString().split('T')[0])
+  const [detalhes, setDetalhes] = useState('')
+  const [loading, setLoading] = useState(false)
+
   const {
     recorrente,
     recorrencia,
@@ -33,53 +36,132 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     setNumeroParcelas
   } = useRecurringLogic()
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user || !estabelecimento || !valor || !categoryId) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const valorNumerico = parseFloat(valor.replace(',', '.'))
+      
+      if (parcelado && numeroParcelas > 1) {
+        // Criar múltiplas transações parceladas
+        const valorParcela = valorNumerico / numeroParcelas
+        const promises = []
+        
+        for (let i = 0; i < numeroParcelas; i++) {
+          const dataTransacao = new Date(quando)
+          dataTransacao.setMonth(dataTransacao.getMonth() + i)
+          
+          promises.push(
+            supabase.from('transacoes').insert({
+              estabelecimento: `${estabelecimento} (${i + 1}/${numeroParcelas})`,
+              valor: valorParcela,
+              tipo,
+              category_id: categoryId,
+              detalhes: `${detalhes} - Parcela ${i + 1}/${numeroParcelas}`,
+              quando: dataTransacao.toISOString().split('T')[0],
+              userId: user.id
+            })
+          )
+        }
+        
+        await Promise.all(promises)
+      } else {
+        // Criar transação única
+        const { error } = await supabase.from('transacoes').insert({
+          estabelecimento,
+          valor: valorNumerico,
+          tipo,
+          category_id: categoryId,
+          detalhes,
+          quando,
+          userId: user.id
+        })
+
+        if (error) throw error
+      }
+
+      toast({
+        title: "Sucesso!",
+        description: "Transação adicionada com sucesso",
+      })
+
+      // Reset form
+      setEstabelecimento('')
+      setValor('')
+      setTipo('despesa')
+      setCategoryId('')
+      setQuando(new Date().toISOString().split('T')[0])
+      setDetalhes('')
+      setRecorrente(false)
+      setParcelado(false)
+      setNumeroParcelas(2)
+
+      onSuccess()
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar transação",
+        description: error.message,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <TransactionFormBasicInfo
-        tipo={formData.tipo}
-        valor={formData.valor}
-        estabelecimento={formData.estabelecimento}
-        onTipoChange={(value) => setFormData({...formData, tipo: value})}
-        onValorChange={(value) => setFormData({...formData, valor: value})}
-        onEstabelecimentoChange={(value) => setFormData({...formData, estabelecimento: value})}
+        estabelecimento={estabelecimento}
+        valor={valor}
+        tipo={tipo}
+        onEstabelecimentoChange={setEstabelecimento}
+        onValorChange={setValor}
+        onTipoChange={setTipo}
       />
 
       <TransactionFormClassification
-        categoryId={formData.category_id}
-        onCategoryChange={(value) => setFormData({...formData, category_id: value})}
+        categoryId={categoryId}
+        onCategoryChange={setCategoryId}
       />
 
       <TransactionFormScheduling
-        quando={formData.quando}
-        onQuandoChange={(value) => setFormData({...formData, quando: value})}
+        quando={quando}
+        onQuandoChange={setQuando}
       />
-
-      {!isEditing && (
-        <TransactionFormSpecialOptions
-          recorrente={recorrente}
-          recorrencia={recorrencia}
-          parcelado={parcelado}
-          numeroParcelas={numeroParcelas}
-          onRecorrenteChange={setRecorrente}
-          onRecorrenciaChange={setRecorrencia}
-          onParceladoChange={setParcelado}
-          onNumeroParcelasChange={setNumeroParcelas}
-        />
-      )}
 
       <TransactionFormDetails
-        detalhes={formData.detalhes}
-        onDetalhesChange={(value) => setFormData({...formData, detalhes: value})}
+        detalhes={detalhes}
+        onDetalhesChange={setDetalhes}
       />
 
-      <div className="pt-4">
-        <Button 
-          type="submit" 
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          {isEditing ? 'Atualizar' : 'Adicionar'} Transação
-        </Button>
-      </div>
+      <TransactionFormSpecialOptions
+        recorrente={recorrente}
+        recorrencia={recorrencia}
+        parcelado={parcelado}
+        numeroParcelas={numeroParcelas}
+        onRecorrenteChange={setRecorrente}
+        onRecorrenciaChange={setRecorrencia}
+        onParceladoChange={setParcelado}
+        onNumeroParcelasChange={setNumeroParcelas}
+      />
+
+      <Button 
+        type="submit" 
+        disabled={loading}
+        className="w-full bg-primary hover:bg-primary/90"
+      >
+        {loading ? 'Salvando...' : 'Adicionar Transação'}
+      </Button>
     </form>
   )
 }
