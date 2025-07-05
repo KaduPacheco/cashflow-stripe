@@ -6,7 +6,7 @@ import { toast } from './use-toast'
 
 export interface Category {
   id: string
-  userId: string
+  userid: string
   nome: string
   tags?: string
   created_at: string
@@ -31,7 +31,7 @@ export function useCategories() {
       const { data, error } = await supabase
         .from('categorias')
         .select('*')
-        .eq('userId', user.id)
+        .eq('userid', user.id)
         .order('nome')
 
       if (error) {
@@ -65,7 +65,7 @@ export function useCategories() {
       const { data: category, error } = await supabase
         .from('categorias')
         .insert([{
-          userId: user.id,
+          userid: user.id,
           nome: data.nome,
           tags: data.tags
         }])
@@ -111,7 +111,7 @@ export function useCategories() {
         .from('categorias')
         .update({ nome: data.updates.nome, tags: data.updates.tags })
         .eq('id', data.id)
-        .eq('userId', user.id)
+        .eq('userid', user.id)
         .select()
         .single()
 
@@ -154,7 +154,7 @@ export function useCategories() {
         .from('categorias')
         .delete()
         .eq('id', id)
-        .eq('userId', user.id)
+        .eq('userid', user.id)
 
       if (error) {
         console.error('Erro ao excluir categoria:', error)

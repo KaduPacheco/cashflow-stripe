@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -116,14 +115,12 @@ export default function Dashboard() {
           )
         `)
         .eq('userId', user.id)
-        .eq('archived', false) // Filtrar dados arquivados
         .order('quando', { ascending: false })
 
       let lembretesQuery = supabase
         .from('lembretes')
         .select('*')
         .eq('userId', user.id)
-        .eq('archived', false) // Filtrar dados arquivados
         .order('data', { ascending: true })
 
       if (subscriptionData.subscribed) {

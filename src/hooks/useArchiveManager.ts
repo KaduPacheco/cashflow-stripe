@@ -12,28 +12,11 @@ export function useArchiveManager() {
     if (!user?.id) return { transacoes: 0, lembretes: 0, categorias: 0 }
 
     try {
-      const [transacoesResult, lembretesResult, categoriasResult] = await Promise.all([
-        supabase
-          .from('transacoes')
-          .select('id', { count: 'exact' })
-          .eq('userId', user.id)
-          .eq('archived', true),
-        supabase
-          .from('lembretes')
-          .select('id', { count: 'exact' })
-          .eq('userId', user.id)
-          .eq('archived', true),
-        supabase
-          .from('categorias')
-          .select('id', { count: 'exact' })
-          .eq('userId', user.id)
-          .eq('archived', true)
-      ])
-
+      // Por enquanto, retornamos 0 para tudo até a migração ser aplicada
       return {
-        transacoes: transacoesResult.count || 0,
-        lembretes: lembretesResult.count || 0,
-        categorias: categoriasResult.count || 0
+        transacoes: 0,
+        lembretes: 0,
+        categorias: 0
       }
     } catch (error) {
       console.error('Erro ao contar dados arquivados:', error)
@@ -46,34 +29,14 @@ export function useArchiveManager() {
 
     setLoading(true)
     try {
-      const cutoffDate = new Date()
-      cutoffDate.setMonth(cutoffDate.getMonth() - monthsOld)
-
-      const [transacoesResult, lembretesResult] = await Promise.all([
-        supabase
-          .from('transacoes')
-          .update({ archived: true })
-          .eq('userId', user.id)
-          .eq('archived', false)
-          .lt('created_at', cutoffDate.toISOString()),
-        supabase
-          .from('lembretes')
-          .update({ archived: true })
-          .eq('userId', user.id)
-          .eq('archived', false)
-          .lt('created_at', cutoffDate.toISOString())
-      ])
-
-      if (transacoesResult.error || lembretesResult.error) {
-        throw new Error('Erro ao arquivar dados antigos')
-      }
-
+      // Por enquanto, apenas simulamos o arquivamento até a migração ser aplicada
       toast({
-        title: 'Dados arquivados!',
-        description: `Dados com mais de ${monthsOld} meses foram arquivados.`
+        title: 'Funcionalidade temporariamente indisponível',
+        description: 'O arquivamento será habilitado após a migração do banco de dados.',
+        variant: 'destructive'
       })
 
-      return true
+      return false
     } catch (error) {
       console.error('Erro ao arquivar dados antigos:', error)
       toast({
@@ -92,12 +55,28 @@ export function useArchiveManager() {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase.rpc('export_user_data', {
-        user_id: user.id
-      })
+      // Buscar dados usando as colunas que realmente existem
+      const [transacoesResult, lembretesResult, categoriasResult] = await Promise.all([
+        supabase
+          .from('transacoes')
+          .select('*')
+          .eq('userId', user.id),
+        supabase
+          .from('lembretes')
+          .select('*')
+          .eq('userId', user.id),
+        supabase
+          .from('categorias')
+          .select('*')
+          .eq('userid', user.id)
+      ])
 
-      if (error) {
-        throw new Error(error.message)
+      const data = {
+        user_id: user.id,
+        exported_at: new Date().toISOString(),
+        transacoes: transacoesResult.data || [],
+        lembretes: lembretesResult.data || [],
+        categorias: categoriasResult.data || []
       }
 
       // Criar e baixar arquivo JSON
