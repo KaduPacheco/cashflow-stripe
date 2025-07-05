@@ -1,11 +1,11 @@
+
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useDebounce } from '@/hooks/useDebounce'
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import { toast } from '@/hooks/use-toast'
 import { TrendingUp, DollarSign, Filter, Lightbulb, Lock, FileText } from 'lucide-react'
 import { formatCurrency } from '@/utils/currency'
@@ -117,15 +117,10 @@ export default function Dashboard() {
       
       console.log('📅 Dashboard: Date range calculated', { startDate, endDate })
 
+      // Simplified queries without complex joins
       let transacoesQuery = supabase
         .from('transacoes')
-        .select(`
-          *,
-          categorias (
-            id,
-            nome
-          )
-        `)
+        .select('*')
         .eq('userId', user.id)
         .order('quando', { ascending: false })
 
@@ -163,13 +158,40 @@ export default function Dashboard() {
         throw lembretesResult.error
       }
 
+      // Fetch categories separately for transactions that have them
+      const transacoesWithCategories = []
+      if (transacoesResult.data && transacoesResult.data.length > 0) {
+        for (const transacao of transacoesResult.data) {
+          let transacaoWithCategory = { ...transacao }
+          
+          if (transacao.category_id) {
+            try {
+              const { data: categoria } = await supabase
+                .from('categorias')
+                .select('id, nome')
+                .eq('id', transacao.category_id)
+                .eq('userid', user.id)
+                .single()
+              
+              if (categoria) {
+                transacaoWithCategory.categorias = categoria
+              }
+            } catch (error) {
+              console.warn('Warning: Could not fetch category for transaction', transacao.id)
+            }
+          }
+          
+          transacoesWithCategories.push(transacaoWithCategory)
+        }
+      }
+
       console.log('📊 Dashboard: Data fetched successfully', {
-        transacoesCount: transacoesResult.data?.length || 0,
+        transacoesCount: transacoesWithCategories.length || 0,
         lembretesCount: lembretesResult.data?.length || 0,
         isSubscribed: subscriptionData.subscribed
       })
 
-      setTransacoes(transacoesResult.data || [])
+      setTransacoes(transacoesWithCategories || [])
       setLembretes(lembretesResult.data || [])
 
     } catch (error: any) {
