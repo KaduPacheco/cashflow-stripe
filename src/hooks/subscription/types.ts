@@ -8,6 +8,7 @@ export interface SubscriptionData {
   message?: string
   error?: string
   errorType?: 'session' | 'subscription' | 'network' | 'rate_limit' | 'configuration' | 'service' | 'unknown'
+  fromCache?: boolean
 }
 
 export interface CachedSubscriptionData extends SubscriptionData {

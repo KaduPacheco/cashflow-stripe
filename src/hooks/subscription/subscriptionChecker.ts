@@ -53,7 +53,11 @@ export const checkSubscription = async (
   if (!forceRefresh) {
     const cachedData = getCachedSubscription(user.id)
     if (cachedData) {
-      setSubscriptionData(cachedData)
+      const dataWithCacheFlag: SubscriptionData = {
+        ...cachedData,
+        fromCache: true
+      }
+      setSubscriptionData(dataWithCacheFlag)
       setLoading(false)
       console.log('Loaded subscription from cache')
       return
@@ -268,6 +272,9 @@ export const checkSubscription = async (
     if (newSubscriptionData.status) {
       newSubscriptionData.message = getStatusMessage(newSubscriptionData.status, newSubscriptionData.subscribed)
     }
+    
+    // Marca que os dados não vieram do cache
+    newSubscriptionData.fromCache = false
     
     setSubscriptionData(newSubscriptionData)
     

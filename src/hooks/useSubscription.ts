@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { clearSubscriptionCache } from './subscription/cache'
+import { clearSubscriptionCache, shouldShowSplash, wasCheckedToday } from './subscription/cache'
 import { checkSubscription } from './subscription/subscriptionChecker'
 import { createCheckout, openCustomerPortal } from './subscription/paymentOperations'
 import type { SubscriptionData } from './subscription/types'
@@ -18,6 +18,7 @@ export function useSubscription() {
   const [retryAttempts, setRetryAttempts] = useState(0)
   const [lastCheckTime, setLastCheckTime] = useState<number>(0)
   const [isRateLimited, setIsRateLimited] = useState(false)
+  const [showSplash, setShowSplash] = useState(false)
   
   const timeoutRef = useRef<NodeJS.Timeout>()
   const rateLimitTimeoutRef = useRef<NodeJS.Timeout>()
@@ -78,11 +79,22 @@ export function useSubscription() {
 
   useEffect(() => {
     if (session && user) {
+      // Determina se deve mostrar splash baseado no cache
+      const shouldShow = shouldShowSplash(user.id)
+      setShowSplash(shouldShow)
+      
+      // Se já foi verificado hoje, não mostra splash e usa cache se disponível
+      if (!shouldShow) {
+        console.log('Subscription already checked today, using cache')
+        setLoading(false)
+      }
+      
       timeoutRef.current = setTimeout(() => {
         handleCheckSubscription()
-      }, 500)
+      }, shouldShow ? 500 : 100) // Delay menor se não precisa mostrar splash
     } else {
       setLoading(false)
+      setShowSplash(false)
       setSubscriptionData({ subscribed: false })
     }
 
@@ -101,17 +113,16 @@ export function useSubscription() {
     }
   }, [user])
 
-  // Intervalo de verificação apenas se não há dados em cache válidos
+  // Revalidação em background usando stale-while-revalidate
   useEffect(() => {
     if (!user || !subscriptionData.subscribed || isRateLimited) return
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && !checking) {
-        // Verifica se ainda há cache válido antes de fazer nova requisição
-        const { getCachedSubscription } = require('./subscription/cache')
-        const cachedData = getCachedSubscription(user.id)
-        if (!cachedData) {
-          handleCheckSubscription()
+        // Apenas revalida se não foi verificado hoje
+        if (!wasCheckedToday(user.id)) {
+          console.log('Background revalidation triggered')
+          handleCheckSubscription(false, false, false, false)
         }
       }
     }, 300000) // 5 minutes
@@ -121,8 +132,9 @@ export function useSubscription() {
 
   return {
     subscriptionData,
-    loading,
+    loading: loading && showSplash, // Só mostra loading se deve mostrar splash
     checking: checking || isRateLimited,
+    showSplash,
     checkSubscription: forceRefresh,
     createCheckout: handleCreateCheckout,
     openCustomerPortal: handleOpenCustomerPortal,

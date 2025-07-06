@@ -5,16 +5,15 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
-import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut, Wifi, Clock, XCircle, Settings } from 'lucide-react'
+import { Loader2, CreditCard, AlertTriangle, RefreshCw, LogOut, Wifi, Clock, Settings } from 'lucide-react'
 
 interface SubscriptionGateProps {
   children: React.ReactNode
 }
 
 export function SubscriptionGate({ children }: SubscriptionGateProps) {
-  const { subscriptionData, loading, createCheckout, checkSubscription } = useSubscription()
+  const { subscriptionData, loading, showSplash, createCheckout, checkSubscription } = useSubscription()
   const { signOut } = useAuth()
   const navigate = useNavigate()
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -33,9 +32,9 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     }
   }, [navigate, checkSubscription])
 
-  // Simular progresso de loading com timeout
+  // Simular progresso de loading com timeout apenas se deve mostrar splash
   useEffect(() => {
-    if (loading) {
+    if (loading && showSplash) {
       setLoadingProgress(0)
       setShowTimeoutWarning(false)
       
@@ -51,7 +50,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
 
       // Mostrar aviso de timeout após 8 segundos
       const timeoutWarning = setTimeout(() => {
-        if (loading) {
+        if (loading && showSplash) {
           setShowTimeoutWarning(true)
         }
       }, 8000)
@@ -61,7 +60,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
         clearTimeout(timeoutWarning)
       }
     }
-  }, [loading])
+  }, [loading, showSplash])
 
   const handleSignOut = async () => {
     await signOut()
@@ -92,8 +91,8 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     }
   }
 
-  // Show loading with progress and timeout handling
-  if (loading) {
+  // Show loading with progress and timeout handling apenas se deve mostrar splash
+  if (loading && showSplash) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full">

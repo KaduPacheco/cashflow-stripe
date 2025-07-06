@@ -5,6 +5,29 @@ import { CachedSubscriptionData, SubscriptionData } from './types'
 const CACHE_DURATION = 24 * 60 * 60 * 1000
 
 const getCacheKey = (userId: string) => `subscription_cache_${userId}`
+const getLastCheckKey = (userId: string) => `last_subscription_check_${userId}`
+
+// Função utilitária para verificar se uma data é hoje
+function isToday(dateString: string): boolean {
+  const date = new Date(dateString)
+  const today = new Date()
+  return date.getDate() === today.getDate() &&
+         date.getMonth() === today.getMonth() &&
+         date.getFullYear() === today.getFullYear()
+}
+
+// Função para verificar se a verificação já foi feita hoje
+export const wasCheckedToday = (userId: string): boolean => {
+  try {
+    const lastCheck = localStorage.getItem(getLastCheckKey(userId))
+    if (!lastCheck) return false
+    
+    return isToday(lastCheck)
+  } catch (error) {
+    console.error('Error checking last subscription check:', error)
+    return false
+  }
+}
 
 export const getCachedSubscription = (userId: string): CachedSubscriptionData | null => {
   try {
@@ -36,6 +59,10 @@ export const setCachedSubscription = (userId: string, data: SubscriptionData) =>
       cachedAt: Date.now()
     }
     localStorage.setItem(getCacheKey(userId), JSON.stringify(cachedData))
+    
+    // Salva também o timestamp da última verificação
+    localStorage.setItem(getLastCheckKey(userId), new Date().toISOString())
+    
     console.log('Subscription data cached for 24 hours')
   } catch (error) {
     console.error('Error caching subscription data:', error)
@@ -46,9 +73,15 @@ export const clearSubscriptionCache = (userId?: string) => {
   try {
     if (userId) {
       localStorage.removeItem(getCacheKey(userId))
+      localStorage.removeItem(getLastCheckKey(userId))
     }
     console.log('Subscription cache cleared')
   } catch (error) {
     console.error('Error clearing subscription cache:', error)
   }
+}
+
+export const shouldShowSplash = (userId: string): boolean => {
+  // Mostra splash apenas se não foi verificado hoje ou não há cache válido
+  return !wasCheckedToday(userId) || !getCachedSubscription(userId)
 }
