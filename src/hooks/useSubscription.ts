@@ -87,44 +87,22 @@ export function useSubscription() {
       return
     }
 
-    // Enhanced session validation
+    // Validação de sessão menos restritiva
     if (session.expires_at) {
       const expiresAt = session.expires_at * 1000
-      const fiveMinutes = 5 * 60 * 1000
+      const tenMinutes = 10 * 60 * 1000 // Aumentado para 10 minutos
       
-      if (expiresAt - now < fiveMinutes) {
+      if (expiresAt - now < tenMinutes) {
         console.log('Token close to expiration, refreshing session...')
         try {
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-          if (refreshError) {
-            console.error('Failed to refresh session:', refreshError)
-            setSubscriptionData({ 
-              subscribed: false,
-              error: 'Sessão expirada. Faça login novamente.',
-              errorType: 'session'
-            })
-            setLoading(false)
-            return
-          }
-          if (!refreshData.session) {
-            console.log('No session after refresh')
-            setSubscriptionData({ 
-              subscribed: false,
-              error: 'Sessão expirada. Faça login novamente.',
-              errorType: 'session'
-            })
-            setLoading(false)
-            return
+          if (refreshError || !refreshData.session) {
+            console.log('Session refresh failed, but continuing with current session')
+            // Não retornar erro aqui, continuar com a sessão atual
           }
         } catch (error) {
-          console.error('Session refresh error:', error)
-          setSubscriptionData({ 
-            subscribed: false,
-            error: 'Erro ao renovar sessão. Faça login novamente.',
-            errorType: 'session'
-          })
-          setLoading(false)
-          return
+          console.log('Session refresh error, but continuing with current session:', error)
+          // Não retornar erro aqui, continuar com a sessão atual
         }
       }
     }
@@ -143,7 +121,7 @@ export function useSubscription() {
       const timeoutPromise = new Promise((_, reject) => {
         checkTimeoutRef.current = setTimeout(() => {
           reject(new Error('Verificação de assinatura expirou. Tente novamente.'))
-        }, 15000) // Increased timeout to 15 seconds
+        }, 20000) // Aumentado para 20 segundos
       })
       
       const { data, error } = await Promise.race([checkPromise, timeoutPromise]) as any
@@ -193,6 +171,7 @@ export function useSubscription() {
           return
         }
         
+        // Ser menos restritivo com erros de sessão
         const isSessionError = errorMessage.includes('session') || 
                               errorMessage.includes('token') ||
                               errorMessage.includes('unauthorized') ||
@@ -205,7 +184,8 @@ export function useSubscription() {
                               errorMessage.includes('connection') ||
                               error.name === 'NetworkError'
         
-        if (isSessionError && !isRetry && retryAttempts < 2) {
+        // Tentar refresh apenas uma vez por erro de sessão
+        if (isSessionError && !isRetry && retryAttempts < 1) {
           console.log('Session error detected, attempting session refresh...')
           setRetryAttempts(prev => prev + 1)
           
@@ -216,29 +196,13 @@ export function useSubscription() {
               console.log('Session refreshed successfully, retrying...')
               timeoutRef.current = setTimeout(() => {
                 checkSubscription(true, true, showToast)
-              }, 2000) // Increased delay
+              }, 1000)
               return
             } else {
-              console.log('Session refresh failed, user needs to login again')
-              setSubscriptionData({ 
-                subscribed: false,
-                error: 'Sessão expirada. Faça login novamente.',
-                errorType: 'session'
-              })
-              setLoading(false)
-              setChecking(false)
-              return
+              console.log('Session refresh failed, continuing without retry')
             }
           } catch (refreshErr) {
-            console.error('Session refresh failed:', refreshErr)
-            setSubscriptionData({ 
-              subscribed: false,
-              error: 'Sessão expirada. Faça login novamente.',
-              errorType: 'session'
-            })
-            setLoading(false)
-            setChecking(false)
-            return
+            console.log('Session refresh error, continuing without retry:', refreshErr)
           }
         }
         
@@ -247,7 +211,7 @@ export function useSubscription() {
         
         if (isSessionError) {
           errorType = 'session'
-          displayError = 'Sessão expirada. Faça login novamente.'
+          displayError = 'Problema na validação da sessão'
         } else if (isNetworkError) {
           errorType = 'network'
           displayError = 'Erro de conexão. Verifique sua internet.'
@@ -269,6 +233,7 @@ export function useSubscription() {
       if (data?.error) {
         console.log('Subscription check returned error:', data.error)
         
+        // Ser menos restritivo com erros de sessão
         const isSessionError = data.error.includes('session') || 
                               data.error.includes('token') ||
                               data.error.includes('User not authenticated')
@@ -306,7 +271,7 @@ export function useSubscription() {
         
         if (isSessionError) {
           errorType = 'session'
-          displayError = 'Sessão expirada. Faça login novamente.'
+          displayError = 'Problema na validação da sessão'
         }
         
         setSubscriptionData({ 
@@ -366,7 +331,7 @@ export function useSubscription() {
       
       if (isSessionError) {
         errorType = 'session'
-        displayError = 'Sessão expirada. Faça login novamente.'
+        displayError = 'Problema na validação da sessão'
       } else if (isNetworkError) {
         errorType = 'network'
         displayError = 'Erro de conexão ou timeout. Verifique sua internet.'
@@ -478,7 +443,7 @@ export function useSubscription() {
     if (session && user) {
       timeoutRef.current = setTimeout(() => {
         checkSubscription()
-      }, 1000) // Slightly increased delay
+      }, 500) // Reduzido delay inicial
     } else {
       setLoading(false)
       setSubscriptionData({ subscribed: false })

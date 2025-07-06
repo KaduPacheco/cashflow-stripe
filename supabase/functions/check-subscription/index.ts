@@ -129,20 +129,15 @@ serve(async (req) => {
       });
     }
 
-    // Improved authentication with better error handling
+    // Simplificada validação de autenticação - removendo timeout muito restritivo
     let userData: any;
     try {
-      const authPromise = authClient.auth.getUser(validatedToken);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth timeout')), 10000) // Increased timeout
-      );
-      
-      const { data, error: userError } = await Promise.race([authPromise, timeoutPromise]) as any;
+      const { data, error: userError } = await authClient.auth.getUser(validatedToken);
       
       if (userError) {
         logStep("Authentication error", { error: userError.message });
-        // Check if it's a JWT expired error
-        if (userError.message?.includes('JWT') || userError.message?.includes('expired') || userError.message?.includes('invalid')) {
+        // Ser menos restritivo com erros de JWT
+        if (userError.message?.includes('expired')) {
           return new Response(JSON.stringify({ 
             subscribed: false,
             error: "Sessão expirada. Faça login novamente.",
@@ -153,22 +148,16 @@ serve(async (req) => {
           });
         }
         
-        return new Response(JSON.stringify({ 
-          subscribed: false,
-          error: "Erro de autenticação",
-          errorType: "session"
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
+        // Para outros erros, tentar continuar com dados limitados se possível
+        logStep("Auth error but attempting to continue", { error: userError.message });
       }
       
       userData = data;
     } catch (authError) {
-      logStep("Auth client error/timeout", { error: authError.message });
+      logStep("Auth client error", { error: authError.message });
       return new Response(JSON.stringify({ 
         subscribed: false,
-        error: "Erro no serviço de autenticação ou timeout",
+        error: "Erro no serviço de autenticação",
         errorType: "service"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -176,7 +165,7 @@ serve(async (req) => {
       });
     }
     
-    const user = userData.user;
+    const user = userData?.user;
     if (!user?.email) {
       logStep("No user email found");
       return new Response(JSON.stringify({ 
@@ -228,14 +217,10 @@ serve(async (req) => {
     
     let customers: any;
     try {
-      const stripePromise = stripe.customers.list({ email: validatedEmail, limit: 1 });
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Stripe timeout')), 10000) // Increased timeout
-      );
-      
-      customers = await Promise.race([stripePromise, timeoutPromise]);
+      // Removendo timeout muito restritivo
+      customers = await stripe.customers.list({ email: validatedEmail, limit: 1 });
     } catch (stripeApiError) {
-      logStep("Stripe API error/timeout", { error: stripeApiError.message });
+      logStep("Stripe API error", { error: stripeApiError.message });
       return new Response(JSON.stringify({ 
         subscribed: false,
         error: "Não foi possível verificar status da assinatura",
@@ -284,18 +269,14 @@ serve(async (req) => {
 
     let subscriptions: any;
     try {
-      const subscriptionPromise = stripe.subscriptions.list({
+      // Removendo timeout muito restritivo
+      subscriptions = await stripe.subscriptions.list({
         customer: customerId,
         status: "all",
         limit: 5,
       });
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Subscription timeout')), 10000)
-      );
-      
-      subscriptions = await Promise.race([subscriptionPromise, timeoutPromise]);
     } catch (subscriptionError) {
-      logStep("Stripe subscription query error/timeout", { error: subscriptionError.message });
+      logStep("Stripe subscription query error", { error: subscriptionError.message });
       return new Response(JSON.stringify({ 
         subscribed: false,
         error: "Não foi possível verificar status da assinatura",
