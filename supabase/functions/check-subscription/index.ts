@@ -17,12 +17,10 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  // Sanitizar detalhes para log seguro
   const safeDetails = details ? JSON.stringify(details).slice(0, 500) : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${safeDetails ? ` - ${safeDetails}` : ''}`);
 };
 
-// Função para determinar status baseado na assinatura
 const determineSubscriptionStatus = (subscription: any, subscriptionEnd: string) => {
   const now = new Date();
   const endDate = new Date(subscriptionEnd);
@@ -53,7 +51,6 @@ serve(async (req) => {
   try {
     logStep("Function started", { ip: clientIP });
 
-    // Verificar configuração crítica primeiro
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -85,9 +82,8 @@ serve(async (req) => {
 
     logStep("Environment variables verified");
 
-    // Rate limiting
     try {
-      checkRateLimit(clientIP, 20, 60000); // Reduzido para 20 requests por minuto
+      checkRateLimit(clientIP, 20, 60000);
     } catch (rateLimitError) {
       logStep("Rate limit exceeded", { ip: clientIP });
       return new Response(JSON.stringify({ 
@@ -100,11 +96,9 @@ serve(async (req) => {
       });
     }
 
-    // Criar clientes Supabase
     const supabaseClient = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
     const authClient = createClient(supabaseUrl, anonKey);
 
-    // Validar cabeçalho de autorização
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       logStep("No authorization header - returning unsubscribed");
@@ -118,7 +112,6 @@ serve(async (req) => {
       });
     }
 
-    // Validar token
     let validatedToken: string;
     try {
       const token = authHeader.replace("Bearer ", "");
@@ -136,21 +129,33 @@ serve(async (req) => {
       });
     }
 
-    // Autenticar usuário com timeout
+    // Improved authentication with better error handling
     let userData: any;
     try {
       const authPromise = authClient.auth.getUser(validatedToken);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth timeout')), 8000) // 8 segundos timeout
+        setTimeout(() => reject(new Error('Auth timeout')), 10000) // Increased timeout
       );
       
       const { data, error: userError } = await Promise.race([authPromise, timeoutPromise]) as any;
       
       if (userError) {
         logStep("Authentication error", { error: userError.message });
+        // Check if it's a JWT expired error
+        if (userError.message?.includes('JWT') || userError.message?.includes('expired') || userError.message?.includes('invalid')) {
+          return new Response(JSON.stringify({ 
+            subscribed: false,
+            error: "Sessão expirada. Faça login novamente.",
+            errorType: "session"
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+        
         return new Response(JSON.stringify({ 
           subscribed: false,
-          error: "Sessão expirada ou inválida",
+          error: "Erro de autenticação",
           errorType: "session"
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -164,7 +169,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         error: "Erro no serviço de autenticação ou timeout",
-        errorType: "session"
+        errorType: "service"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -176,7 +181,7 @@ serve(async (req) => {
       logStep("No user email found");
       return new Response(JSON.stringify({ 
         subscribed: false,
-        error: "Autenticação incompleta do usuário",
+        error: "Dados do usuário não encontrados",
         errorType: "session"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -184,7 +189,6 @@ serve(async (req) => {
       });
     }
 
-    // Validar dados do usuário
     let validatedEmail: string;
     let validatedUserId: string;
     try {
@@ -222,12 +226,11 @@ serve(async (req) => {
       });
     }
     
-    // Buscar cliente no Stripe com timeout
     let customers: any;
     try {
       const stripePromise = stripe.customers.list({ email: validatedEmail, limit: 1 });
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Stripe timeout')), 8000) // 8 segundos timeout
+        setTimeout(() => reject(new Error('Stripe timeout')), 10000) // Increased timeout
       );
       
       customers = await Promise.race([stripePromise, timeoutPromise]);
@@ -235,7 +238,7 @@ serve(async (req) => {
       logStep("Stripe API error/timeout", { error: stripeApiError.message });
       return new Response(JSON.stringify({ 
         subscribed: false,
-        error: "Não foi possível verificar status da assinatura - timeout",
+        error: "Não foi possível verificar status da assinatura",
         errorType: "service"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -283,11 +286,11 @@ serve(async (req) => {
     try {
       const subscriptionPromise = stripe.subscriptions.list({
         customer: customerId,
-        status: "all", // Buscar todas as assinaturas para análise completa
+        status: "all",
         limit: 5,
       });
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Subscription timeout')), 8000)
+        setTimeout(() => reject(new Error('Subscription timeout')), 10000)
       );
       
       subscriptions = await Promise.race([subscriptionPromise, timeoutPromise]);
@@ -295,7 +298,7 @@ serve(async (req) => {
       logStep("Stripe subscription query error/timeout", { error: subscriptionError.message });
       return new Response(JSON.stringify({ 
         subscribed: false,
-        error: "Não foi possível verificar status da assinatura - timeout",
+        error: "Não foi possível verificar status da assinatura",
         errorType: "service"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -303,7 +306,6 @@ serve(async (req) => {
       });
     }
     
-    // Analisar assinaturas para encontrar a mais relevante
     const activeSubscriptions = subscriptions.data.filter((sub: any) => 
       ['active', 'trialing', 'past_due'].includes(sub.status)
     );
@@ -316,7 +318,7 @@ serve(async (req) => {
     let detailedStatus = 'no_subscription';
 
     if (hasActiveSub) {
-      const subscription = activeSubscriptions[0]; // Pegar a primeira assinatura ativa
+      const subscription = activeSubscriptions[0];
       subscriptionId = subscription.id;
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       subscriptionTier = "Premium";
@@ -329,7 +331,6 @@ serve(async (req) => {
         status: subscriptionStatus
       });
     } else if (subscriptions.data.length > 0) {
-      // Tem assinaturas mas nenhuma ativa
       const lastSubscription = subscriptions.data[0];
       subscriptionStatus = lastSubscription.status;
       detailedStatus = subscriptionStatus;
@@ -338,7 +339,6 @@ serve(async (req) => {
       logStep("No subscriptions found");
     }
 
-    // Update database
     try {
       await supabaseClient.from("subscribers").upsert({
         email: validatedEmail,

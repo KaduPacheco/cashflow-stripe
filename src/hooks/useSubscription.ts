@@ -25,12 +25,10 @@ export function useSubscription() {
   const [lastCheckTime, setLastCheckTime] = useState<number>(0)
   const [isRateLimited, setIsRateLimited] = useState(false)
   
-  // Refs para controlar timeouts e evitar memory leaks
   const timeoutRef = useRef<NodeJS.Timeout>()
   const rateLimitTimeoutRef = useRef<NodeJS.Timeout>()
   const checkTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -39,7 +37,6 @@ export function useSubscription() {
     }
   }, [])
 
-  // Função para mapear status para mensagens amigáveis
   const getStatusMessage = (status: string, subscribed: boolean): string => {
     if (subscribed) {
       switch (status) {
@@ -62,19 +59,16 @@ export function useSubscription() {
   const checkSubscription = async (isRetry = false, skipRateCheck = false, showToast = false) => {
     console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited })
     
-    // Se estamos em rate limit e não é um skip, bloquear
     if (isRateLimited && !skipRateCheck) {
       console.log('Rate limited, skipping check')
       return
     }
 
-    // Evitar múltiplas chamadas simultâneas
     if (checking && !skipRateCheck) {
       console.log('Already checking, skipping')
       return
     }
 
-    // Controle de frequência - mínimo 2 segundos entre checks
     const now = Date.now()
     const timeSinceLastCheck = now - lastCheckTime
     if (timeSinceLastCheck < 2000 && !skipRateCheck && !isRetry) {
@@ -93,7 +87,7 @@ export function useSubscription() {
       return
     }
 
-    // Verificar se o token está próximo do vencimento (dentro de 5 minutos)
+    // Enhanced session validation
     if (session.expires_at) {
       const expiresAt = session.expires_at * 1000
       const fiveMinutes = 5 * 60 * 1000
@@ -104,17 +98,32 @@ export function useSubscription() {
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
           if (refreshError) {
             console.error('Failed to refresh session:', refreshError)
-            await signOut()
+            setSubscriptionData({ 
+              subscribed: false,
+              error: 'Sessão expirada. Faça login novamente.',
+              errorType: 'session'
+            })
+            setLoading(false)
             return
           }
           if (!refreshData.session) {
             console.log('No session after refresh')
-            await signOut()
+            setSubscriptionData({ 
+              subscribed: false,
+              error: 'Sessão expirada. Faça login novamente.',
+              errorType: 'session'
+            })
+            setLoading(false)
             return
           }
         } catch (error) {
           console.error('Session refresh error:', error)
-          await signOut()
+          setSubscriptionData({ 
+            subscribed: false,
+            error: 'Erro ao renovar sessão. Faça login novamente.',
+            errorType: 'session'
+          })
+          setLoading(false)
           return
         }
       }
@@ -125,7 +134,6 @@ export function useSubscription() {
       setLastCheckTime(now)
       console.log('Making subscription check request...')
       
-      // Timeout para a verificação (10 segundos)
       const checkPromise = supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -135,12 +143,11 @@ export function useSubscription() {
       const timeoutPromise = new Promise((_, reject) => {
         checkTimeoutRef.current = setTimeout(() => {
           reject(new Error('Verificação de assinatura expirou. Tente novamente.'))
-        }, 10000) // 10 segundos timeout
+        }, 15000) // Increased timeout to 15 seconds
       })
       
       const { data, error } = await Promise.race([checkPromise, timeoutPromise]) as any
       
-      // Limpar timeout se completou
       if (checkTimeoutRef.current) {
         clearTimeout(checkTimeoutRef.current)
         checkTimeoutRef.current = undefined
@@ -151,7 +158,6 @@ export function useSubscription() {
         
         const errorMessage = error.message || String(error)
         
-        // Detectar timeout
         if (errorMessage.includes('expirou') || errorMessage.includes('timeout')) {
           setSubscriptionData({ 
             subscribed: false, 
@@ -163,7 +169,6 @@ export function useSubscription() {
           return
         }
         
-        // Detectar rate limiting
         if (errorMessage.includes('Request rate limit exceeded') || 
             errorMessage.includes('rate limit') ||
             errorMessage.includes('Too Many Requests')) {
@@ -176,7 +181,6 @@ export function useSubscription() {
             errorType: 'rate_limit'
           })
           
-          // Backoff de 30 segundos
           rateLimitTimeoutRef.current = setTimeout(() => {
             console.log('Rate limit period expired, re-enabling checks')
             setIsRateLimited(false)
@@ -189,14 +193,12 @@ export function useSubscription() {
           return
         }
         
-        // Detectar erros de sessão
         const isSessionError = errorMessage.includes('session') || 
                               errorMessage.includes('token') ||
                               errorMessage.includes('unauthorized') ||
                               errorMessage.includes('User not authenticated') ||
                               errorMessage.includes('Authentication error')
         
-        // Detectar erros de rede
         const isNetworkError = errorMessage.includes('NetworkError') || 
                               errorMessage.includes('fetch') ||
                               errorMessage.includes('network') ||
@@ -212,19 +214,30 @@ export function useSubscription() {
             
             if (!refreshError && sessionData.session) {
               console.log('Session refreshed successfully, retrying...')
-              // Delay antes de retry para evitar rate limit
               timeoutRef.current = setTimeout(() => {
                 checkSubscription(true, true, showToast)
-              }, 1500)
+              }, 2000) // Increased delay
               return
             } else {
-              console.log('Session refresh failed, signing out...')
-              await signOut()
+              console.log('Session refresh failed, user needs to login again')
+              setSubscriptionData({ 
+                subscribed: false,
+                error: 'Sessão expirada. Faça login novamente.',
+                errorType: 'session'
+              })
+              setLoading(false)
+              setChecking(false)
               return
             }
           } catch (refreshErr) {
             console.error('Session refresh failed:', refreshErr)
-            await signOut()
+            setSubscriptionData({ 
+              subscribed: false,
+              error: 'Sessão expirada. Faça login novamente.',
+              errorType: 'session'
+            })
+            setLoading(false)
+            setChecking(false)
             return
           }
         }
@@ -294,8 +307,6 @@ export function useSubscription() {
         if (isSessionError) {
           errorType = 'session'
           displayError = 'Sessão expirada. Faça login novamente.'
-          await signOut()
-          return
         }
         
         setSubscriptionData({ 
@@ -306,7 +317,6 @@ export function useSubscription() {
         return
       }
       
-      // Reset retry attempts and rate limit on success
       setRetryAttempts(0)
       setIsRateLimited(false)
       if (rateLimitTimeoutRef.current) {
@@ -315,14 +325,12 @@ export function useSubscription() {
       
       const newSubscriptionData = data || { subscribed: false }
       
-      // Adicionar mensagem amigável baseada no status
       if (newSubscriptionData.status) {
         newSubscriptionData.message = getStatusMessage(newSubscriptionData.status, newSubscriptionData.subscribed)
       }
       
       setSubscriptionData(newSubscriptionData)
       
-      // Show success toast if requested and subscription is active
       if (showToast && newSubscriptionData.subscribed) {
         toast.success("Assinatura verificada com sucesso!", {
           description: newSubscriptionData.message || `Plano ${newSubscriptionData.subscription_tier} ativo`,
@@ -336,7 +344,6 @@ export function useSubscription() {
     } catch (error: any) {
       console.error('Failed to check subscription:', error)
       
-      // Limpar timeout em caso de erro
       if (checkTimeoutRef.current) {
         clearTimeout(checkTimeoutRef.current)
         checkTimeoutRef.current = undefined
@@ -360,8 +367,6 @@ export function useSubscription() {
       if (isSessionError) {
         errorType = 'session'
         displayError = 'Sessão expirada. Faça login novamente.'
-        await signOut()
-        return
       } else if (isNetworkError) {
         errorType = 'network'
         displayError = 'Erro de conexão ou timeout. Verifique sua internet.'
@@ -382,7 +387,6 @@ export function useSubscription() {
 
   const forceRefresh = async (showToast = true) => {
     console.log('Force refreshing subscription...')
-    // Reset todos os controles para permitir nova verificação
     setRetryAttempts(0)
     setIsRateLimited(false)
     setLastCheckTime(0)
@@ -472,10 +476,9 @@ export function useSubscription() {
 
   useEffect(() => {
     if (session && user) {
-      // Debounce inicial check
       timeoutRef.current = setTimeout(() => {
         checkSubscription()
-      }, 500)
+      }, 1000) // Slightly increased delay
     } else {
       setLoading(false)
       setSubscriptionData({ subscribed: false })
@@ -488,7 +491,6 @@ export function useSubscription() {
     }
   }, [user, session])
 
-  // Auto-refresh subscription status every 5 minutes quando subscribed e ativo
   useEffect(() => {
     if (!user || !subscriptionData.subscribed || isRateLimited) return
 
