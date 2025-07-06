@@ -6,7 +6,7 @@ import { ContasFilters } from './ContasFilters'
 import { ContasForm } from './ContasForm'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import type { ContasFilters as IContasFilters } from '@/types/contas'
 
 export function ContasPagar() {
@@ -30,26 +30,13 @@ export function ContasPagar() {
           <p className="text-sm text-muted-foreground">Gerencie suas contas a pagar</p>
         </div>
         
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full md:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Conta a Pagar
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nova Conta a Pagar</DialogTitle>
-            </DialogHeader>
-            <ContasForm 
-              tipo="pagar" 
-              onSuccess={() => {
-                setDialogOpen(false)
-                fetchContas(filters)
-              }} 
-            />
-          </DialogContent>
-        </Dialog>
+        <Button 
+          onClick={() => setDialogOpen(true)}
+          className="w-full md:w-auto"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Conta a Pagar
+        </Button>
       </div>
 
       <ContasFilters 
@@ -64,6 +51,20 @@ export function ContasPagar() {
         tipo="pagar"
         onUpdate={() => fetchContas(filters)}
       />
+
+      <ResponsiveModal
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title="Nova Conta a Pagar"
+      >
+        <ContasForm 
+          tipo="pagar" 
+          onSuccess={() => {
+            setDialogOpen(false)
+            fetchContas(filters)
+          }} 
+        />
+      </ResponsiveModal>
     </div>
   )
 }
