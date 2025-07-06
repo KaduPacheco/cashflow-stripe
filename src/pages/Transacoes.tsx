@@ -1,7 +1,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
 import { TransactionFilters } from '@/components/transactions/TransactionFilters'
 import { TransactionForm } from '@/components/transacoes/TransactionForm'
@@ -123,23 +123,13 @@ export default function Transacoes() {
           </CardContent>
         </Card>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
-            <DialogHeader>
-              <DialogTitle className="text-lg sm:text-xl">
-                {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
-              </DialogTitle>
-              <DialogDescription className="text-sm">
-                {editingTransaction 
-                  ? 'Faça as alterações necessárias na transação.' 
-                  : 'Adicione uma nova receita ou despesa.'}
-              </DialogDescription>
-            </DialogHeader>
-            <TransactionForm 
-              onSuccess={handleFormSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        <ResponsiveModal
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
+        >
+          <TransactionForm onSuccess={handleFormSuccess} />
+        </ResponsiveModal>
       </SubscriptionGate>
     </div>
   )

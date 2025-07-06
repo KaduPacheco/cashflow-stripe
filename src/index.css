@@ -155,9 +155,23 @@
   .smooth-transition {
     @apply transition-all duration-200 ease-in-out;
   }
+
+  /* Modal Responsive Styles */
+  .modal-content {
+    @apply max-h-[calc(100vh-40px)] overflow-y-auto;
+  }
+
+  .modal-form-field {
+    @apply min-w-full text-sm;
+  }
+
+  /* Responsive Modal Button */
+  .modal-action-button {
+    @apply w-full min-h-[44px] text-sm font-medium;
+  }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Oculta em dispositivos móveis */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -175,6 +189,18 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.5);
+}
+
+/* Ocultar scrollbar em dispositivos móveis */
+@media (max-width: 768px) {
+  .modal-content {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .modal-content::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Focus Styles */

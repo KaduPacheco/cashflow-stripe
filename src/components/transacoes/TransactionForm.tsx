@@ -123,49 +123,53 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <TransactionFormBasicInfo
-        estabelecimento={estabelecimento}
-        valor={valor}
-        tipo={tipo}
-        onEstabelecimentoChange={setEstabelecimento}
-        onValorChange={setValor}
-        onTipoChange={handleTipoChange}
-      />
+    <div className="w-full max-h-full overflow-y-auto">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <TransactionFormBasicInfo
+          estabelecimento={estabelecimento}
+          valor={valor}
+          tipo={tipo}
+          onEstabelecimentoChange={setEstabelecimento}
+          onValorChange={setValor}
+          onTipoChange={handleTipoChange}
+        />
 
-      <TransactionFormClassification
-        categoryId={categoryId}
-        onCategoryChange={setCategoryId}
-      />
+        <TransactionFormClassification
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+        />
 
-      <TransactionFormScheduling
-        quando={quando}
-        onQuandoChange={setQuando}
-      />
+        <TransactionFormScheduling
+          quando={quando}
+          onQuandoChange={setQuando}
+        />
 
-      <TransactionFormDetails
-        detalhes={detalhes}
-        onDetalhesChange={setDetalhes}
-      />
+        <TransactionFormDetails
+          detalhes={detalhes}
+          onDetalhesChange={setDetalhes}
+        />
 
-      <TransactionFormSpecialOptions
-        recorrente={recorrente}
-        recorrencia={recorrencia}
-        parcelado={parcelado}
-        numeroParcelas={numeroParcelas}
-        onRecorrenteChange={setRecorrente}
-        onRecorrenciaChange={setRecorrencia}
-        onParceladoChange={setParcelado}
-        onNumeroParcelasChange={setNumeroParcelas}
-      />
+        <TransactionFormSpecialOptions
+          recorrente={recorrente}
+          recorrencia={recorrencia}
+          parcelado={parcelado}
+          numeroParcelas={numeroParcelas}
+          onRecorrenteChange={setRecorrente}
+          onRecorrenciaChange={setRecorrencia}
+          onParceladoChange={setParcelado}
+          onNumeroParcelasChange={setNumeroParcelas}
+        />
 
-      <Button 
-        type="submit" 
-        disabled={loading}
-        className="w-full bg-primary hover:bg-primary/90"
-      >
-        {loading ? 'Salvando...' : 'Adicionar Transação'}
-      </Button>
-    </form>
+        <div className="sticky bottom-0 bg-background border-t pt-4 mt-6">
+          <Button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary/90 min-h-[44px] text-sm font-medium"
+          >
+            {loading ? 'Salvando...' : 'Adicionar Transação'}
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }
