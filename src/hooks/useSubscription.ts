@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
@@ -14,6 +15,10 @@ export interface SubscriptionData {
   errorType?: 'session' | 'subscription' | 'network' | 'rate_limit' | 'configuration' | 'service' | 'unknown'
 }
 
+interface CachedSubscriptionData extends SubscriptionData {
+  cachedAt: number
+}
+
 export function useSubscription() {
   const { user, session, signOut } = useAuth()
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
@@ -28,6 +33,60 @@ export function useSubscription() {
   const timeoutRef = useRef<NodeJS.Timeout>()
   const rateLimitTimeoutRef = useRef<NodeJS.Timeout>()
   const checkTimeoutRef = useRef<NodeJS.Timeout>()
+
+  // Cache duration: 24 horas (em milissegundos)
+  const CACHE_DURATION = 24 * 60 * 60 * 1000
+
+  const getCacheKey = (userId: string) => `subscription_cache_${userId}`
+
+  const getCachedSubscription = (userId: string): CachedSubscriptionData | null => {
+    try {
+      const cached = localStorage.getItem(getCacheKey(userId))
+      if (!cached) return null
+      
+      const parsed = JSON.parse(cached) as CachedSubscriptionData
+      const now = Date.now()
+      
+      // Verifica se o cache ainda é válido (menos de 24 horas)
+      if (now - parsed.cachedAt < CACHE_DURATION) {
+        console.log('Using cached subscription data, valid for:', Math.round((CACHE_DURATION - (now - parsed.cachedAt)) / (1000 * 60 * 60)), 'more hours')
+        return parsed
+      }
+      
+      // Cache expirado, remove
+      localStorage.removeItem(getCacheKey(userId))
+      return null
+    } catch (error) {
+      console.error('Error reading subscription cache:', error)
+      return null
+    }
+  }
+
+  const setCachedSubscription = (userId: string, data: SubscriptionData) => {
+    try {
+      const cachedData: CachedSubscriptionData = {
+        ...data,
+        cachedAt: Date.now()
+      }
+      localStorage.setItem(getCacheKey(userId), JSON.stringify(cachedData))
+      console.log('Subscription data cached for 24 hours')
+    } catch (error) {
+      console.error('Error caching subscription data:', error)
+    }
+  }
+
+  const clearSubscriptionCache = (userId?: string) => {
+    try {
+      if (userId) {
+        localStorage.removeItem(getCacheKey(userId))
+      } else if (user?.id) {
+        localStorage.removeItem(getCacheKey(user.id))
+      }
+      console.log('Subscription cache cleared')
+    } catch (error) {
+      console.error('Error clearing subscription cache:', error)
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -56,8 +115,8 @@ export function useSubscription() {
     }
   }
 
-  const checkSubscription = async (isRetry = false, skipRateCheck = false, showToast = false) => {
-    console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited })
+  const checkSubscription = async (isRetry = false, skipRateCheck = false, showToast = false, forceRefresh = false) => {
+    console.log('Checking subscription...', { user: !!user, session: !!session, isRetry, isRateLimited, forceRefresh })
     
     if (isRateLimited && !skipRateCheck) {
       console.log('Rate limited, skipping check')
@@ -66,13 +125,6 @@ export function useSubscription() {
 
     if (checking && !skipRateCheck) {
       console.log('Already checking, skipping')
-      return
-    }
-
-    const now = Date.now()
-    const timeSinceLastCheck = now - lastCheckTime
-    if (timeSinceLastCheck < 2000 && !skipRateCheck && !isRetry) {
-      console.log('Too frequent, skipping check')
       return
     }
 
@@ -87,10 +139,28 @@ export function useSubscription() {
       return
     }
 
+    // Verifica cache apenas se não for um refresh forçado
+    if (!forceRefresh) {
+      const cachedData = getCachedSubscription(user.id)
+      if (cachedData) {
+        setSubscriptionData(cachedData)
+        setLoading(false)
+        console.log('Loaded subscription from cache')
+        return
+      }
+    }
+
+    const now = Date.now()
+    const timeSinceLastCheck = now - lastCheckTime
+    if (timeSinceLastCheck < 2000 && !skipRateCheck && !isRetry && !forceRefresh) {
+      console.log('Too frequent, skipping check')
+      return
+    }
+
     // Validação de sessão menos restritiva
     if (session.expires_at) {
       const expiresAt = session.expires_at * 1000
-      const tenMinutes = 10 * 60 * 1000 // Aumentado para 10 minutos
+      const tenMinutes = 10 * 60 * 1000
       
       if (expiresAt - now < tenMinutes) {
         console.log('Token close to expiration, refreshing session...')
@@ -98,11 +168,9 @@ export function useSubscription() {
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
           if (refreshError || !refreshData.session) {
             console.log('Session refresh failed, but continuing with current session')
-            // Não retornar erro aqui, continuar com a sessão atual
           }
         } catch (error) {
           console.log('Session refresh error, but continuing with current session:', error)
-          // Não retornar erro aqui, continuar com a sessão atual
         }
       }
     }
@@ -121,7 +189,7 @@ export function useSubscription() {
       const timeoutPromise = new Promise((_, reject) => {
         checkTimeoutRef.current = setTimeout(() => {
           reject(new Error('Verificação de assinatura expirou. Tente novamente.'))
-        }, 20000) // Aumentado para 20 segundos
+        }, 20000)
       })
       
       const { data, error } = await Promise.race([checkPromise, timeoutPromise]) as any
@@ -171,7 +239,6 @@ export function useSubscription() {
           return
         }
         
-        // Ser menos restritivo com erros de sessão
         const isSessionError = errorMessage.includes('session') || 
                               errorMessage.includes('token') ||
                               errorMessage.includes('unauthorized') ||
@@ -184,7 +251,6 @@ export function useSubscription() {
                               errorMessage.includes('connection') ||
                               error.name === 'NetworkError'
         
-        // Tentar refresh apenas uma vez por erro de sessão
         if (isSessionError && !isRetry && retryAttempts < 1) {
           console.log('Session error detected, attempting session refresh...')
           setRetryAttempts(prev => prev + 1)
@@ -233,7 +299,6 @@ export function useSubscription() {
       if (data?.error) {
         console.log('Subscription check returned error:', data.error)
         
-        // Ser menos restritivo com erros de sessão
         const isSessionError = data.error.includes('session') || 
                               data.error.includes('token') ||
                               data.error.includes('User not authenticated')
@@ -295,6 +360,9 @@ export function useSubscription() {
       }
       
       setSubscriptionData(newSubscriptionData)
+      
+      // Cache os dados para evitar requisições desnecessárias
+      setCachedSubscription(user.id, newSubscriptionData)
       
       if (showToast && newSubscriptionData.subscribed) {
         toast.success("Assinatura verificada com sucesso!", {
@@ -361,8 +429,12 @@ export function useSubscription() {
     if (checkTimeoutRef.current) {
       clearTimeout(checkTimeoutRef.current)
     }
+    // Limpa o cache para forçar nova verificação
+    if (user?.id) {
+      clearSubscriptionCache(user.id)
+    }
     setLoading(true)
-    await checkSubscription(false, true, showToast)
+    await checkSubscription(false, true, showToast, true)
   }
 
   const createCheckout = async () => {
@@ -443,7 +515,7 @@ export function useSubscription() {
     if (session && user) {
       timeoutRef.current = setTimeout(() => {
         checkSubscription()
-      }, 500) // Reduzido delay inicial
+      }, 500)
     } else {
       setLoading(false)
       setSubscriptionData({ subscribed: false })
@@ -456,12 +528,25 @@ export function useSubscription() {
     }
   }, [user, session])
 
+  // Limpa o cache quando o usuário faz logout
+  useEffect(() => {
+    if (!user && subscriptionData.subscribed) {
+      clearSubscriptionCache()
+      setSubscriptionData({ subscribed: false })
+    }
+  }, [user])
+
+  // Intervalo de verificação apenas se não há dados em cache válidos
   useEffect(() => {
     if (!user || !subscriptionData.subscribed || isRateLimited) return
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && !checking) {
-        checkSubscription()
+        // Verifica se ainda há cache válido antes de fazer nova requisição
+        const cachedData = getCachedSubscription(user.id)
+        if (!cachedData) {
+          checkSubscription()
+        }
       }
     }, 300000) // 5 minutes
 
