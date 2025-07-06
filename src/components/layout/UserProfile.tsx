@@ -1,52 +1,26 @@
 
-import { useState, useEffect } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/lib/supabase'
-import { NavLink } from 'react-router-dom'
-
-interface UserProfile {
-  nome: string
-  phone: string
-  avatar_url?: string
-}
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { LogOut } from 'lucide-react'
+import { useState } from 'react'
 
 export function UserProfile() {
-  const { user } = useAuth()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const { user, signOut } = useAuth()
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile()
-    }
-  }, [user])
-
-  const fetchProfile = async () => {
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('nome, phone, avatar_url')
-        .eq('id', user?.id)
-        .single()
-
-      if (error) {
-        console.error('Erro ao carregar perfil:', error)
-        return
-      }
-      
-      setProfile(data)
+      await signOut()
     } catch (error) {
-      console.error('Erro ao carregar perfil:', error)
+      console.error('Erro ao fazer logout:', error)
+    } finally {
+      setIsSigningOut(false)
     }
   }
 
-  if (!profile) return null
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name || typeof name !== 'string') {
-      return 'U' // Default fallback for "User"
-    }
-    
+  const getInitials = (name: string) => {
     return name
       .split(' ')
       .map(n => n[0])
@@ -55,20 +29,38 @@ export function UserProfile() {
       .slice(0, 2)
   }
 
+  if (!user) return null
+
   return (
-    <NavLink to="/perfil" className="block">
-      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+    <div className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg">
+      <div className="flex items-center gap-3 min-w-0">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={profile.avatar_url} />
+          <AvatarImage src={user.user_metadata?.avatar_url} />
           <AvatarFallback className="bg-primary text-primary-foreground">
-            {getInitials(profile.nome)}
+            {user.user_metadata?.nome ? getInitials(user.user_metadata.nome) : user.email?.[0]?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-          <p className="text-sm font-medium truncate">{profile.nome || 'Usuário'}</p>
-          <p className="text-xs text-muted-foreground truncate">{profile.phone || 'Sem telefone'}</p>
+        
+        <div className="flex flex-col min-w-0">
+          <p className="text-sm font-medium truncate">
+            {user.user_metadata?.nome || 'Usuário'}
+          </p>
+          <p className="text-xs text-muted-foreground truncate">
+            {user.phone || user.email}
+          </p>
         </div>
       </div>
-    </NavLink>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        title="Sair"
+      >
+        <LogOut className="h-4 w-4" />
+      </Button>
+    </div>
   )
 }
