@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { 
   Home, 
@@ -8,8 +9,7 @@ import {
   User, 
   Crown,
   Receipt,
-  LogOut,
-  Shield
+  LogOut
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
@@ -59,11 +59,6 @@ const menuItems = [
     title: "Relatórios", 
     url: "/relatorios", 
     icon: BarChart3 
-  },
-  {
-    title: "Segurança",
-    url: "/security",
-    icon: Shield,
   },
 ]
 
