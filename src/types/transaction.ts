@@ -20,6 +20,6 @@ export interface TransactionFormData {
   estabelecimento: string
   valor: number
   detalhes: string
-  tipo: string
+  tipo: 'receita' | 'despesa' // Corrigido para ser específico
   category_id: string
 }

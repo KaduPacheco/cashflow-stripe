@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase'
 import { validateTransaction, validateTransactionUpdate } from '@/lib/validations'
 import { validateAuthentication, validateResourceOwnership, sanitizeInput } from '@/lib/security'
@@ -35,12 +34,16 @@ export class TransactionService {
     token: string
   ) {
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/validate-transaction`, {
+      // Usar URL e key diretamente das constantes
+      const supabaseUrl = 'https://csvkgokkvbtojjkitodc.supabase.co'
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzdmtnb2trdmJ0b2pqa2l0b2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1OTE2NTIsImV4cCI6MjA2NTE2NzY1Mn0._pfTwbR3iLhqfJ--Tf6J8RD0lNQ8w8K9kzer8tY3ZDw'
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/validate-transaction`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'apikey': supabase.supabaseKey,
+          'apikey': supabaseKey,
         },
         body: JSON.stringify({
           operation,
