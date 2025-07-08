@@ -1,6 +1,6 @@
 
 import { TransactionOperations } from './operations'
-import { TransactionStats } from './stats'
+import { TransactionStatsService } from './stats'
 import { TransactionArchive } from './archive'
 
 // Re-export types
@@ -21,7 +21,7 @@ export class TransactionService {
   static getTransactions = TransactionOperations.getAll
 
   // Statistics
-  static getTransactionStats = TransactionStats.calculate
+  static getTransactionStats = TransactionStatsService.calculate
 
   // Archive Operations
   static archiveTransaction = TransactionArchive.archive
@@ -30,6 +30,6 @@ export class TransactionService {
 
 // Individual exports for more granular imports
 export { TransactionOperations } from './operations'
-export { TransactionStats } from './stats'
+export { TransactionStatsService } from './stats'
 export { TransactionArchive } from './archive'
 export { TransactionValidation } from './validation'

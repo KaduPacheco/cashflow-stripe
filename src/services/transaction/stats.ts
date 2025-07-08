@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { NetworkError } from '@/utils/errorHandler'
 import type { TransactionStats } from './types'
 
-export class TransactionStats {
+export class TransactionStatsService {
   static async calculate(
     userId: string, 
     dateFrom?: string, 
