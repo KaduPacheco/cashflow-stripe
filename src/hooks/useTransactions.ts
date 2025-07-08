@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -6,6 +7,7 @@ import { toast } from '@/hooks/use-toast'
 import { Transacao, TransactionFormData } from '@/types/transaction'
 import { validateCategoryOwnership, calculateTotals } from '@/utils/transactionUtils'
 import { TransactionService } from '@/services/transaction'
+import { secureTransactionInput } from '@/lib/integrateSecurity'
 
 export function useTransactions() {
   const { user } = useAuth()
@@ -73,13 +75,22 @@ export function useTransactions() {
     }
 
     try {
+      // Aplicar monitoramento de segurança
+      const secureFormData = secureTransactionInput(formData)
+      
       // Usar TransactionService com validação server-side
-      await TransactionService.createTransaction(user.id, formData)
+      await TransactionService.createTransaction(user.id, secureFormData)
       
       toast({ title: "Transação adicionada com sucesso!" })
       fetchTransacoes()
     } catch (error: any) {
-      if (error.field === 'rate_limit') {
+      if (error.message.includes('suspicious activity')) {
+        toast({
+          title: "Conta temporariamente suspensa",
+          description: "Atividade suspeita detectada. Entre em contato com o suporte.",
+          variant: "destructive",
+        })
+      } else if (error.field === 'rate_limit') {
         toast({
           title: "Limite de requisições excedido",
           description: error.message,
@@ -111,8 +122,11 @@ export function useTransactions() {
     }
 
     try {
+      // Aplicar monitoramento de segurança
+      const secureFormData = secureTransactionInput(formData)
+      
       const transacaoData = {
-        ...formData,
+        ...secureFormData,
         userId: user.id, // Sempre obrigatório agora
       }
 
@@ -126,11 +140,19 @@ export function useTransactions() {
       toast({ title: "Transação atualizada com sucesso!" })
       fetchTransacoes()
     } catch (error: any) {
-      toast({
-        title: "Erro ao salvar transação",
-        description: error.message,
-        variant: "destructive",
-      })
+      if (error.message.includes('suspicious activity')) {
+        toast({
+          title: "Conta temporariamente suspensa",
+          description: "Atividade suspeita detectada. Entre em contato com o suporte.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Erro ao salvar transação",
+          description: error.message,
+          variant: "destructive",
+        })
+      }
       throw error
     }
   }
