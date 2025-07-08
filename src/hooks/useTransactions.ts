@@ -5,7 +5,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { toast } from '@/hooks/use-toast'
 import { Transacao, TransactionFormData } from '@/types/transaction'
 import { validateCategoryOwnership, calculateTotals } from '@/utils/transactionUtils'
-import { TransactionService } from '@/services/transactionService'
+import { TransactionService } from '@/services/transaction'
 
 export function useTransactions() {
   const { user } = useAuth()

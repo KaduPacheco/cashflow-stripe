@@ -1,6 +1,5 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { TransactionService } from '@/services/transactionService'
+import { TransactionService } from '@/services/transaction'
 import { supabase } from '@/lib/supabase'
 
 // Mock supabase
