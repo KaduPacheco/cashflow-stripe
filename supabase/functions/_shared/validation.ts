@@ -112,6 +112,57 @@ export function validateUUID(id: unknown, fieldName: string): string {
   return id;
 }
 
+// Validação de transação
+export function validateTransaction(data: any): any {
+  const errors: ValidationError[] = [];
+  
+  // Validar estabelecimento
+  if (!data.estabelecimento || typeof data.estabelecimento !== 'string') {
+    errors.push({ field: 'estabelecimento', message: 'Estabelecimento é obrigatório' });
+  } else if (data.estabelecimento.length > 200) {
+    errors.push({ field: 'estabelecimento', message: 'Estabelecimento muito longo' });
+  }
+  
+  // Validar valor
+  if (!data.valor || typeof data.valor !== 'number' || data.valor <= 0) {
+    errors.push({ field: 'valor', message: 'Valor deve ser um número positivo' });
+  }
+  
+  // Validar tipo
+  if (!data.tipo || !['receita', 'despesa'].includes(data.tipo)) {
+    errors.push({ field: 'tipo', message: 'Tipo deve ser receita ou despesa' });
+  }
+  
+  // Validar category_id
+  if (!data.category_id) {
+    errors.push({ field: 'category_id', message: 'Categoria é obrigatória' });
+  } else {
+    try {
+      validateUUID(data.category_id, 'category_id');
+    } catch (e) {
+      errors.push({ field: 'category_id', message: 'ID da categoria inválido' });
+    }
+  }
+  
+  // Validar data
+  if (!data.quando) {
+    errors.push({ field: 'quando', message: 'Data é obrigatória' });
+  }
+  
+  if (errors.length > 0) {
+    throw new ValidationException(errors);
+  }
+  
+  return {
+    estabelecimento: sanitizeString(data.estabelecimento),
+    valor: Number(data.valor),
+    tipo: data.tipo,
+    category_id: data.category_id,
+    detalhes: data.detalhes ? sanitizeString(data.detalhes) : null,
+    quando: data.quando
+  };
+}
+
 // Rate limiting simples baseado em IP
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 

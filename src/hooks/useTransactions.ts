@@ -5,6 +5,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { toast } from '@/hooks/use-toast'
 import { Transacao, TransactionFormData } from '@/types/transaction'
 import { validateCategoryOwnership, calculateTotals } from '@/utils/transactionUtils'
+import { TransactionService } from '@/services/transactionService'
 
 export function useTransactions() {
   const { user } = useAuth()
@@ -72,25 +73,25 @@ export function useTransactions() {
     }
 
     try {
-      const transacaoData = {
-        ...formData,
-        userId: user.id, // Sempre obrigatório agora
-      }
-
-      const { error } = await supabase
-        .from('transacoes')
-        .insert([transacaoData])
-
-      if (error) throw error
+      // Usar TransactionService com validação server-side
+      await TransactionService.createTransaction(user.id, formData)
       
       toast({ title: "Transação adicionada com sucesso!" })
       fetchTransacoes()
     } catch (error: any) {
-      toast({
-        title: "Erro ao salvar transação",
-        description: error.message,
-        variant: "destructive",
-      })
+      if (error.field === 'rate_limit') {
+        toast({
+          title: "Limite de requisições excedido",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Erro ao salvar transação",
+          description: error.message,
+          variant: "destructive",
+        })
+      }
       throw error
     }
   }

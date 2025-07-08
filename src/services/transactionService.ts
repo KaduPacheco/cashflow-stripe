@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase'
 import { validateTransaction, validateTransactionUpdate } from '@/lib/validations'
 import { validateAuthentication, validateResourceOwnership, sanitizeInput } from '@/lib/security'
@@ -27,32 +28,68 @@ export interface CreateTransactionData {
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {}
 
 export class TransactionService {
+  // Validação server-side com rate limiting
+  static async validateTransactionServerSide(
+    operation: string,
+    data: CreateTransactionData,
+    token: string
+  ) {
+    try {
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/validate-transaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': supabase.supabaseKey,
+        },
+        body: JSON.stringify({
+          operation,
+          data
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new ValidationError(result.error, 'rate_limit')
+        }
+        throw new ValidationError(result.error || 'Erro de validação', 'validation')
+      }
+
+      return result.data
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error
+      }
+      throw new NetworkError('Erro na validação server-side', 500, 'VALIDATION_ERROR')
+    }
+  }
+
   static async createTransaction(
     userId: string, 
     data: CreateTransactionData
   ) {
     try {
-      // Validate and sanitize input
-      const validation = validateTransaction(data)
-      if (!validation.success) {
-        throw new ValidationError(
-          validation.error.errors[0].message,
-          validation.error.errors[0].path[0] as string
-        )
+      // Obter token de sessão para validação server-side
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new ValidationError('Sessão inválida', 'auth')
       }
 
-      // Sanitize string inputs
-      const sanitizedData = {
-        ...validation.data,
-        estabelecimento: sanitizeInput(validation.data.estabelecimento),
-        detalhes: validation.data.detalhes ? sanitizeInput(validation.data.detalhes) : undefined,
-        userId,
-        archived: false
-      }
+      // Validação server-side with rate limiting
+      const validatedData = await this.validateTransactionServerSide(
+        'transaction_create',
+        data,
+        session.access_token
+      )
 
       const { data: transaction, error } = await supabase
         .from('transacoes')
-        .insert([sanitizedData])
+        .insert([{
+          ...validatedData,
+          archived: false
+        }])
         .select()
         .single()
 
@@ -75,7 +112,7 @@ export class TransactionService {
     data: UpdateTransactionData
   ) {
     try {
-      // Validate input
+      // Validação local para updates (menos crítico que creates)
       const validation = validateTransactionUpdate(data)
       if (!validation.success) {
         throw new ValidationError(
@@ -84,7 +121,7 @@ export class TransactionService {
         )
       }
 
-      // Sanitize string inputs
+      // Sanitizar dados
       const sanitizedData = Object.fromEntries(
         Object.entries(validation.data).map(([key, value]) => [
           key,
