@@ -1,7 +1,7 @@
 
 import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
-import { validateAuthToken, checkRateLimit } from './security'
+import { validateRateLimit } from './security'
 
 // Sistema de validação de sessão seguro
 export class SecureAuthManager {
