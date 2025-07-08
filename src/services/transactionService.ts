@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase'
 import { validateTransaction, validateTransactionUpdate } from '@/lib/validations'
 import { validateAuthentication, validateResourceOwnership, sanitizeInput } from '@/lib/security'
@@ -12,7 +11,7 @@ export interface Transaction {
   category_id: string
   detalhes?: string
   quando: string
-  userId?: string
+  userId: string
   archived?: boolean
 }
 
@@ -48,7 +47,7 @@ export class TransactionService {
         estabelecimento: sanitizeInput(validation.data.estabelecimento),
         detalhes: validation.data.detalhes ? sanitizeInput(validation.data.detalhes) : undefined,
         userId,
-        archived: false // Nova transação sempre não arquivada
+        archived: false
       }
 
       const { data: transaction, error } = await supabase

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -29,7 +28,7 @@ export function useTransactions() {
             nome
           )
         `)
-        .eq('userId', user?.id)
+        .eq('userId', user?.id) // user?.id é sempre validado antes da chamada
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -59,6 +58,11 @@ export function useTransactions() {
   const totals = useMemo(() => calculateTotals(filteredTransacoes), [filteredTransacoes])
 
   const createTransaction = async (formData: TransactionFormData) => {
+    // Validação: verificar se o usuário está logado
+    if (!user?.id) {
+      throw new Error("Usuário não autenticado")
+    }
+
     // Validação: verificar se a categoria selecionada pertence ao usuário
     if (formData.category_id) {
       const categoryBelongsToUser = validateCategoryOwnership(formData.category_id, categories)
@@ -70,7 +74,7 @@ export function useTransactions() {
     try {
       const transacaoData = {
         ...formData,
-        userId: user?.id,
+        userId: user.id, // Sempre obrigatório agora
       }
 
       const { error } = await supabase
@@ -92,6 +96,11 @@ export function useTransactions() {
   }
 
   const updateTransaction = async (id: number, formData: TransactionFormData) => {
+    // Validação: verificar se o usuário está logado
+    if (!user?.id) {
+      throw new Error("Usuário não autenticado")
+    }
+
     // Validação: verificar se a categoria selecionada pertence ao usuário
     if (formData.category_id) {
       const categoryBelongsToUser = validateCategoryOwnership(formData.category_id, categories)
@@ -103,7 +112,7 @@ export function useTransactions() {
     try {
       const transacaoData = {
         ...formData,
-        userId: user?.id,
+        userId: user.id, // Sempre obrigatório agora
       }
 
       const { error } = await supabase

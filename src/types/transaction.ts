@@ -8,7 +8,7 @@ export interface Transacao {
   detalhes: string | null
   tipo: string | null
   category_id: string
-  userId: string | null
+  userId: string // Removido null - agora é obrigatório
   categorias?: {
     id: string
     nome: string
