@@ -1,4 +1,3 @@
-
 import { Suspense, lazy } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,6 +12,7 @@ import { LazyWrapper } from "@/components/ui/lazy-wrapper";
 import { PerformanceMonitor } from "@/components/dev/PerformanceMonitor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 
 // Lazy loading das páginas principais com preloading estratégico
 const Dashboard = lazy(() => 
@@ -76,6 +76,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/landing" element={<Landing />} />
       <Route 
         path="/auth" 
         element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
@@ -90,7 +91,7 @@ function AppRoutes() {
       />
       <Route 
         path="/" 
-        element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />} 
+        element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />} 
       />
       <Route
         path="/dashboard"
