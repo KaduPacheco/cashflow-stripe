@@ -2,6 +2,8 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { SecureLogger } from '@/lib/logger'
+import { SecureAuthManager } from '@/lib/secureAuth'
 
 interface AuthContextType {
   user: User | null
@@ -22,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Função para limpar estado local
   const clearAuthState = () => {
-    console.log('Clearing auth state')
+    SecureLogger.auth('Clearing auth state')
     setSession(null)
     setUser(null)
     // Limpar localStorage forçadamente
@@ -30,36 +32,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('sb-csvkgokkvbtojjkitodc-auth-token')
       localStorage.removeItem('supabase.auth.token')
     } catch (error) {
-      console.error('Error clearing localStorage:', error)
+      SecureLogger.error('Error clearing localStorage', error)
     }
   }
 
-  // Função para validar se a sessão é válida
-  const isSessionValid = (session: Session | null): boolean => {
-    if (!session) return false
-    
-    const now = Math.floor(Date.now() / 1000)
-    const expiresAt = session.expires_at || 0
-    
-    // Considerar sessão inválida se expira em menos de 1 minuto
-    return expiresAt > (now + 60)
-  }
-
   useEffect(() => {
-    console.log('AuthProvider initializing...')
+    SecureLogger.auth('AuthProvider initializing...')
     
     // Configurar listener de mudanças de auth PRIMEIRO
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, !!session)
+        SecureLogger.auth('Auth state change', { event, hasSession: !!session })
         
         if (event === 'SIGNED_OUT' || !session) {
           clearAuthState()
-        } else if (session && isSessionValid(session)) {
+        } else if (session && SecureAuthManager.isSessionValid(session)) {
           setSession(session)
           setUser(session.user)
-        } else if (session && !isSessionValid(session)) {
-          console.log('Invalid session detected, clearing...')
+        } else if (session && !SecureAuthManager.isSessionValid(session)) {
+          SecureLogger.warn('Invalid session detected, clearing...')
           clearAuthState()
         }
         
@@ -69,20 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // DEPOIS verificar sessão existente
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('Initial session check:', !!session, error)
+      SecureLogger.auth('Initial session check', { hasSession: !!session, hasError: !!error })
       
       if (error) {
-        console.error('Error getting session:', error)
+        SecureLogger.error('Error getting session', error)
         clearAuthState()
         setLoading(false)
         return
       }
 
-      if (session && isSessionValid(session)) {
+      if (session && SecureAuthManager.isSessionValid(session)) {
         setSession(session)
         setUser(session.user)
-      } else if (session && !isSessionValid(session)) {
-        console.log('Initial session is invalid, clearing...')
+      } else if (session && !SecureAuthManager.isSessionValid(session)) {
+        SecureLogger.auth('Initial session is invalid, clearing...')
         clearAuthState()
       } else {
         clearAuthState()
@@ -92,25 +83,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => {
-      console.log('AuthProvider cleanup')
+      SecureLogger.auth('AuthProvider cleanup')
       subscription.unsubscribe()
     }
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    console.log('Attempting sign in for:', email)
+    SecureLogger.auth('Attempting sign in', { email: '***MASKED***' })
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
     if (error) {
-      console.error('Sign in error:', error)
+      SecureLogger.error('Sign in error', error)
     }
     return { error }
   }
 
   const signUp = async (email: string, password: string, metadata?: { nome?: string; phone?: string; whatsapp?: string }) => {
-    console.log('Attempting sign up for:', email)
+    SecureLogger.auth('Attempting sign up', { email: '***MASKED***' })
     const redirectUrl = `${window.location.origin}/`
     
     const { error } = await supabase.auth.signUp({
@@ -122,34 +113,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
     if (error) {
-      console.error('Sign up error:', error)
+      SecureLogger.error('Sign up error', error)
     }
     return { error }
   }
 
   const signOut = async () => {
-    console.log('Attempting sign out...')
+    SecureLogger.auth('Attempting sign out...')
     
     try {
+      // Limpar sessões do usuário
+      if (user?.id) {
+        SecureAuthManager.clearUserSessions(user.id)
+      }
+      
       // Tentar fazer logout no servidor
       const { error } = await supabase.auth.signOut()
       if (error) {
-        console.error('Server sign out error:', error)
+        SecureLogger.error('Server sign out error', error)
       }
     } catch (error) {
-      console.error('Sign out request failed:', error)
+      SecureLogger.error('Sign out request failed', error)
     }
     
     // Independentemente do resultado, limpar estado local
     clearAuthState()
-    console.log('Sign out completed (local state cleared)')
+    SecureLogger.auth('Sign out completed (local state cleared)')
   }
 
   const resetPassword = async (email: string) => {
-    console.log('Attempting password reset for:', email)
+    SecureLogger.auth('Attempting password reset', { email: '***MASKED***' })
     const { error } = await supabase.auth.resetPasswordForEmail(email)
     if (error) {
-      console.error('Password reset error:', error)
+      SecureLogger.error('Password reset error', error)
     }
     return { error }
   }

@@ -1,11 +1,7 @@
 
 import { CachedSubscriptionData, SubscriptionData } from './types'
-
-// Cache duration: 24 horas (em milissegundos)
-const CACHE_DURATION = 24 * 60 * 60 * 1000
-
-const getCacheKey = (userId: string) => `subscription_cache_${userId}`
-const getLastCheckKey = (userId: string) => `last_subscription_check_${userId}`
+import { SecureCacheManager } from './secureCache'
+import { SecureLogger } from '@/lib/logger'
 
 // Função utilitária para verificar se uma data é hoje
 function isToday(dateString: string): boolean {
@@ -19,69 +15,50 @@ function isToday(dateString: string): boolean {
 // Função para verificar se a verificação já foi feita hoje
 export const wasCheckedToday = (userId: string): boolean => {
   try {
-    const lastCheck = localStorage.getItem(getLastCheckKey(userId))
+    const lastCheck = localStorage.getItem(`last_subscription_check_${userId}`)
     if (!lastCheck) return false
     
     return isToday(lastCheck)
   } catch (error) {
-    console.error('Error checking last subscription check:', error)
+    SecureLogger.error('Error checking last subscription check', error)
     return false
   }
 }
 
 export const getCachedSubscription = (userId: string): CachedSubscriptionData | null => {
-  try {
-    const cached = localStorage.getItem(getCacheKey(userId))
-    if (!cached) return null
-    
-    const parsed = JSON.parse(cached) as CachedSubscriptionData
-    const now = Date.now()
-    
-    // Verifica se o cache ainda é válido (menos de 24 horas)
-    if (now - parsed.cachedAt < CACHE_DURATION) {
-      console.log('Using cached subscription data, valid for:', Math.round((CACHE_DURATION - (now - parsed.cachedAt)) / (1000 * 60 * 60)), 'more hours')
-      return parsed
-    }
-    
-    // Cache expirado, remove
-    localStorage.removeItem(getCacheKey(userId))
-    return null
-  } catch (error) {
-    console.error('Error reading subscription cache:', error)
-    return null
-  }
+  return SecureCacheManager.getCachedSubscription(userId)
 }
 
 export const setCachedSubscription = (userId: string, data: SubscriptionData) => {
+  SecureCacheManager.setCachedSubscription(userId, data)
+  
+  // Salva também o timestamp da última verificação
   try {
-    const cachedData: CachedSubscriptionData = {
-      ...data,
-      cachedAt: Date.now()
-    }
-    localStorage.setItem(getCacheKey(userId), JSON.stringify(cachedData))
-    
-    // Salva também o timestamp da última verificação
-    localStorage.setItem(getLastCheckKey(userId), new Date().toISOString())
-    
-    console.log('Subscription data cached for 24 hours')
+    localStorage.setItem(`last_subscription_check_${userId}`, new Date().toISOString())
+    SecureLogger.debug('Last subscription check timestamp updated')
   } catch (error) {
-    console.error('Error caching subscription data:', error)
+    SecureLogger.error('Error updating last subscription check', error)
   }
 }
 
 export const clearSubscriptionCache = (userId?: string) => {
-  try {
-    if (userId) {
-      localStorage.removeItem(getCacheKey(userId))
-      localStorage.removeItem(getLastCheckKey(userId))
+  if (userId) {
+    SecureCacheManager.clearCache(userId)
+    try {
+      localStorage.removeItem(`last_subscription_check_${userId}`)
+    } catch (error) {
+      SecureLogger.error('Error clearing subscription cache', error)
     }
-    console.log('Subscription cache cleared')
-  } catch (error) {
-    console.error('Error clearing subscription cache:', error)
   }
+  SecureLogger.debug('Subscription cache cleared')
 }
 
 export const shouldShowSplash = (userId: string): boolean => {
   // Mostra splash apenas se não foi verificado hoje ou não há cache válido
   return !wasCheckedToday(userId) || !getCachedSubscription(userId)
+}
+
+// Nova função para validar integridade do cache
+export const validateCacheIntegrity = (userId: string): boolean => {
+  return SecureCacheManager.validateCacheIntegrity(userId)
 }

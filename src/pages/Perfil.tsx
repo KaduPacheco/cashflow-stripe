@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm'
+import { SecureChangePasswordForm } from '@/components/profile/SecureChangePasswordForm'
 import { SubscriptionInfo } from '@/components/profile/SubscriptionInfo'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -16,6 +15,8 @@ import { toast } from '@/hooks/use-toast'
 import { Camera, User, Trash2, Settings, CreditCard, Shield } from 'lucide-react'
 import { validateWhatsAppNumber } from '@/utils/whatsapp'
 import { useNavigate } from 'react-router-dom'
+import { SecureLogger } from '@/lib/logger'
+import { EnhancedRateLimiter } from '@/lib/enhancedSecurity'
 
 interface Profile {
   nome: string
@@ -101,6 +102,7 @@ export default function Perfil() {
         }
       }
     } catch (error: any) {
+      SecureLogger.error('Error loading profile', error)
       toast({
         title: "Erro ao carregar perfil",
         description: error.message,
@@ -113,6 +115,19 @@ export default function Perfil() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!user?.id) return
+    
+    // Verificar rate limiting
+    if (!EnhancedRateLimiter.checkLimit(user.id, 'api_request')) {
+      toast({
+        title: "Erro",
+        description: "Muitas tentativas. Tente novamente em alguns minutos.",
+        variant: "destructive",
+      })
+      return
+    }
+    
     setSaving(true)
 
     try {
@@ -125,7 +140,7 @@ export default function Perfil() {
         
         // Se o telefone mudou, validar o WhatsApp
         if (fullPhone !== profile.phone) {
-          console.log('Validando WhatsApp para número alterado:', fullPhone)
+          SecureLogger.debug('Validating WhatsApp for changed number')
           
           try {
             const whatsappValidation = await validateWhatsAppNumber(fullPhone.replace('+', ''))
@@ -142,6 +157,7 @@ export default function Perfil() {
             
             whatsappId = whatsappValidation.whatsappId
           } catch (error: any) {
+            SecureLogger.error('WhatsApp validation error', error)
             toast({
               title: "Erro na validação do WhatsApp",
               description: error.message,
@@ -153,8 +169,7 @@ export default function Perfil() {
         }
       }
 
-      console.log('Saving profile with phone:', fullPhone)
-      console.log('Saving profile with whatsapp:', whatsappId)
+      SecureLogger.debug('Saving profile')
 
       const { error } = await supabase
         .from('profiles')
@@ -174,6 +189,7 @@ export default function Perfil() {
       
       toast({ title: "Perfil atualizado com sucesso!" })
     } catch (error: any) {
+      SecureLogger.error('Error updating profile', error)
       toast({
         title: "Erro ao atualizar perfil",
         description: error.message,
@@ -251,46 +267,58 @@ export default function Perfil() {
       return
     }
 
+    if (!user?.id) return
+
+    // Verificar rate limiting para operações críticas
+    if (!EnhancedRateLimiter.checkLimit(user.id, 'api_request')) {
+      toast({
+        title: "Erro",
+        description: "Muitas tentativas. Tente novamente em alguns minutos.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setDeleting(true)
 
     try {
       // First delete all user data from profiles table
-      console.log('Deletando perfil do usuário...')
+      SecureLogger.info('Deleting user profile')
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', user?.id)
 
       if (profileError) {
-        console.error('Erro ao deletar perfil:', profileError)
+        SecureLogger.error('Error deleting profile', profileError)
         throw profileError
       }
 
       // Delete all user transactions
-      console.log('Deletando transações do usuário...')
+      SecureLogger.info('Deleting user transactions')
       const { error: transacoesError } = await supabase
         .from('transacoes')
         .delete()
         .eq('userId', user?.id)
 
       if (transacoesError) {
-        console.error('Erro ao deletar transações:', transacoesError)
+        SecureLogger.error('Error deleting transactions', transacoesError)
         throw transacoesError
       }
 
       // Delete all user reminders
-      console.log('Deletando lembretes do usuário...')
+      SecureLogger.info('Deleting user reminders')
       const { error: lembretesError } = await supabase
         .from('lembretes')
         .delete()
         .eq('userId', user?.id)
 
       if (lembretesError) {
-        console.error('Erro ao deletar lembretes:', lembretesError)
+        SecureLogger.error('Error deleting reminders', lembretesError)
         throw lembretesError
       }
 
-      console.log('Dados do usuário deletados com sucesso')
+      SecureLogger.info('User data deleted successfully')
 
       toast({
         title: "Conta removida com sucesso",
@@ -301,7 +329,7 @@ export default function Perfil() {
       await signOut()
       navigate('/auth')
     } catch (error: any) {
-      console.error('Erro completo ao remover conta:', error)
+      SecureLogger.error('Complete error removing account', error)
       toast({
         title: "Erro ao remover conta",
         description: error.message,
@@ -430,7 +458,7 @@ export default function Perfil() {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
-          <ChangePasswordForm />
+          <SecureChangePasswordForm />
 
           <Card className="border-destructive/20">
             <CardHeader>
