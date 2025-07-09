@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import { ArrowRight, Check } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -25,7 +26,13 @@ export const HeroSection = ({ onNavigateToAuth, onScrollToSection }: HeroSection
     <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-20">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
+          <motion.div 
+            className="space-y-8"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            viewport={{ once: true }}
+          >
             <div className="space-y-4">
               <Badge className="bg-primary/10 text-primary border-primary/20">
                 🚀 Plataforma de Gestão Financeira
@@ -75,9 +82,15 @@ export const HeroSection = ({ onNavigateToAuth, onScrollToSection }: HeroSection
                 <span>Cancele quando quiser</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="relative">
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+            viewport={{ once: true }}
+          >
             <div className="fintech-card p-8 shadow-fintech-xl">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -112,7 +125,7 @@ export const HeroSection = ({ onNavigateToAuth, onScrollToSection }: HeroSection
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
