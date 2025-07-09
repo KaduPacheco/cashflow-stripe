@@ -4,10 +4,29 @@ import { ArrowRight, Check, BarChart3, CreditCard, Bell, FileText, Shield, Zap }
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { useNavigate } from 'react-router-dom'
 
 const Landing = () => {
   const [selectedPlan, setSelectedPlan] = useState('premium')
+  const navigate = useNavigate()
+
+  // Funções para navegação e scroll
+  const handleScrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  const handleNavigateToPlano = () => {
+    navigate('/plano')
+  }
+
+  const handleNavigateToAuth = () => {
+    navigate('/auth')
+  }
 
   // Dados para os gráficos
   const lineData = [
@@ -55,19 +74,19 @@ const Landing = () => {
       name: 'Maria Silva',
       role: 'Empreendedora',
       content: 'O Cash Flow mudou completamente minha relação com o dinheiro. Agora sei exatamente para onde vai cada centavo!',
-      avatar: '/lovable-uploads/a5a40de7-4096-4a32-af0c-76fe03ec72f7.png'
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face'
     },
     {
       name: 'João Santos',
       role: 'Freelancer',
       content: 'Desde que uso o Cash Flow, consegui economizar 30% da minha renda mensal. Recomendo para todos!',
-      avatar: '/lovable-uploads/bd48b065-36ce-4af8-926d-a1f05a2d43c5.png'
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face'
     },
     {
       name: 'Ana Costa',
       role: 'Professora',
       content: 'Interface simples e intuitiva. Finalmente um app que me ajuda a organizar minhas finanças sem complicação.',
-      avatar: '/lovable-uploads/f49ea338-eba8-4e12-b460-c6276f4c4a93.png'
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b381d2da?w=96&h=96&fit=crop&crop=face'
     }
   ]
 
@@ -77,6 +96,29 @@ const Landing = () => {
     'Dificuldade em entender para onde vai seu dinheiro',
     'Ausência de controle sobre gastos recorrentes',
     'Falta de visão clara do patrimônio líquido'
+  ]
+
+  const faqItems = [
+    {
+      question: 'O que é o Cash Flow?',
+      answer: 'É uma plataforma de controle financeiro pessoal com lembretes, relatórios e gráficos que te ajudam a organizar suas finanças de forma inteligente e simples.'
+    },
+    {
+      question: 'Preciso pagar para usar?',
+      answer: 'Existe uma versão gratuita com recursos limitados e uma versão premium com funcionalidades completas. Você pode começar grátis por 7 dias.'
+    },
+    {
+      question: 'Posso cancelar quando quiser?',
+      answer: 'Sim. Você pode cancelar a assinatura a qualquer momento sem multas ou taxas adicionais. É simples e rápido.'
+    },
+    {
+      question: 'Meus dados estão seguros?',
+      answer: 'Sim. Usamos Supabase e Stripe com criptografia de ponta e as melhores práticas de segurança modernas para proteger seus dados.'
+    },
+    {
+      question: 'Tem aplicativo para celular?',
+      answer: 'Ainda não temos app nativo, mas nossa versão web é 100% responsiva e funciona perfeitamente no celular, oferecendo uma experiência completa.'
+    }
   ]
 
   return (
@@ -101,11 +143,22 @@ const Landing = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="text-lg px-8 py-6 shadow-fintech-lg hover:shadow-fintech-xl">
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-6 shadow-fintech-lg hover:shadow-fintech-xl cursor-pointer hover:bg-opacity-90"
+                  onClick={handleNavigateToAuth}
+                  aria-label="Começar agora gratuitamente por 7 dias"
+                >
                   Comece Agora – Grátis por 7 dias
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-lg px-8 py-6 cursor-pointer hover:bg-opacity-90"
+                  onClick={() => handleScrollToSection('charts-section')}
+                  aria-label="Ver demonstração da plataforma"
+                >
                   Ver Demonstração
                 </Button>
               </div>
@@ -167,7 +220,7 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-background">
+      <section id="features-section" className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -220,11 +273,11 @@ const Landing = () => {
                   <div className="flex items-center gap-4">
                     <img 
                       src={testimonial.avatar} 
-                      alt={testimonial.name}
+                      alt={`Foto de perfil de ${testimonial.name}`}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     <div>
-                      <p className="font-semibold">{testimonial.name}</p>
+                      <p className="font-bold">{testimonial.name}</p>
                       <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                     </div>
                   </div>
@@ -236,7 +289,7 @@ const Landing = () => {
       </section>
 
       {/* Chart Section */}
-      <section className="py-20 bg-background">
+      <section id="charts-section" className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
@@ -318,7 +371,12 @@ const Landing = () => {
               <p className="text-lg text-muted-foreground mb-6">
                 Nossa plataforma foi criada especificamente para eliminar essas dores e te dar controle total sobre suas finanças.
               </p>
-              <Button size="lg" className="px-8 py-6 text-lg">
+              <Button 
+                size="lg" 
+                className="px-8 py-6 text-lg cursor-pointer hover:bg-opacity-90"
+                onClick={() => handleScrollToSection('pricing-section')}
+                aria-label="Resolver problemas financeiros agora"
+              >
                 Resolver Agora
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -328,7 +386,7 @@ const Landing = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-background">
+      <section id="pricing-section" className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -376,7 +434,12 @@ const Landing = () => {
                   ))}
                 </div>
 
-                <Button size="lg" className="w-full text-lg py-6">
+                <Button 
+                  size="lg" 
+                  className="w-full text-lg py-6 cursor-pointer hover:bg-opacity-90"
+                  onClick={handleNavigateToPlano}
+                  aria-label="Assinar plano premium agora"
+                >
                   Assinar Agora
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -397,6 +460,37 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Perguntas Frequentes
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Tire suas dúvidas sobre o Cash Flow
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <Card className="fintech-card p-6">
+              <Accordion type="single" collapsible className="w-full">
+                {faqItems.map((item, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left text-lg font-semibold">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-base text-muted-foreground leading-relaxed">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-muted/20 py-12">
         <div className="container mx-auto px-4">
@@ -411,9 +505,24 @@ const Landing = () => {
             <div className="space-y-4">
               <h4 className="font-semibold">Produto</h4>
               <div className="space-y-2">
-                <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">Funcionalidades</a>
-                <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">Preços</a>
-                <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">Demonstração</a>
+                <button 
+                  onClick={() => handleScrollToSection('features-section')}
+                  className="block text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Funcionalidades
+                </button>
+                <button 
+                  onClick={() => handleScrollToSection('pricing-section')}
+                  className="block text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Preços
+                </button>
+                <button 
+                  onClick={() => handleScrollToSection('charts-section')}
+                  className="block text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Demonstração
+                </button>
               </div>
             </div>
 
