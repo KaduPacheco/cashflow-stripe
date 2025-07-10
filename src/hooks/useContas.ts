@@ -42,7 +42,11 @@ export function useContas() {
           clientes_fornecedores (
             id,
             nome,
-            tipo
+            tipo,
+            user_id,
+            ativo,
+            created_at,
+            updated_at
           )
         `)
         .eq('user_id', user.id)
@@ -53,7 +57,7 @@ export function useContas() {
         query = query.eq('tipo', filters.tipo)
       }
       if (filters.status) {
-        query = query.eq('status', filters.status)
+        query = query.eq('status', filters.status as any)
       }
       if (filters.data_inicio) {
         query = query.gte('data_vencimento', filters.data_inicio)
@@ -68,7 +72,7 @@ export function useContas() {
         query = query.eq('cliente_fornecedor_id', filters.cliente_fornecedor)
       }
       if (filters.recorrencia) {
-        query = query.eq('recorrencia', filters.recorrencia)
+        query = query.eq('recorrencia', filters.recorrencia as any)
       }
       if (filters.busca) {
         query = query.ilike('descricao', `%${filters.busca}%`)
@@ -82,9 +86,14 @@ export function useContas() {
         return
       }
 
-      setContas(data || [])
-      setPagamentoContas(data || [])
-      setStats(calculateContasStats(data || []))
+      const transformedData = (data || []).map(conta => ({
+        ...conta,
+        clientes_fornecedores: conta.clientes_fornecedores || undefined
+      })) as ContaPagarReceber[]
+
+      setContas(transformedData)
+      setPagamentoContas(transformedData)
+      setStats(calculateContasStats(transformedData))
     } catch (error) {
       console.error('Erro ao carregar contas:', error)
       toast.error('Erro ao carregar contas')

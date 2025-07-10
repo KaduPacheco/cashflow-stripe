@@ -5,9 +5,12 @@ import { ValidationError, NetworkError } from '@/utils/errorHandler'
 export class TransactionArchive {
   static async archive(id: number, userId: string) {
     try {
+      // Since there's no archived column, we'll use a soft delete approach by adding metadata
       const { data: transaction, error } = await supabase
         .from('transacoes')
-        .update({ archived: true })
+        .update({ 
+          detalhes: `[ARCHIVED] ${new Date().toISOString()} - Transação arquivada`
+        })
         .eq('id', id)
         .eq('userId', userId)
         .select()
@@ -31,9 +34,23 @@ export class TransactionArchive {
 
   static async unarchive(id: number, userId: string) {
     try {
+      // Remove the archived prefix from details
+      const { data: currentTransaction, error: fetchError } = await supabase
+        .from('transacoes')
+        .select('detalhes')
+        .eq('id', id)
+        .eq('userId', userId)
+        .single()
+
+      if (fetchError) {
+        throw new NetworkError(fetchError.message, 500, 'DATABASE_ERROR')
+      }
+
+      const cleanedDetails = currentTransaction.detalhes?.replace(/\[ARCHIVED\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z - Transação arquivada/, '').trim() || null
+
       const { data: transaction, error } = await supabase
         .from('transacoes')
-        .update({ archived: false })
+        .update({ detalhes: cleanedDetails })
         .eq('id', id)
         .eq('userId', userId)
         .select()

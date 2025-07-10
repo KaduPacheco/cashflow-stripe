@@ -24,10 +24,7 @@ export class TransactionOperations {
 
       const { data: transaction, error } = await supabase
         .from('transacoes')
-        .insert([{
-          ...validatedData,
-          archived: false
-        }])
+        .insert([validatedData])
         .select()
         .single()
 
@@ -120,11 +117,6 @@ export class TransactionOperations {
         .from('transacoes')
         .select('*')
         .eq('userId', userId)
-
-      // Filtrar dados arquivados por padrão
-      if (!filters?.includeArchived) {
-        query = query.eq('archived', false)
-      }
 
       // Apply filters
       if (filters?.tipo) {

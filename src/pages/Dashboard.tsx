@@ -31,7 +31,6 @@ interface Transacao {
   tipo: string | null
   category_id: string
   userId: string | null
-  archived: boolean
   categorias?: {
     id: string
     nome: string
@@ -45,7 +44,7 @@ interface Lembrete {
   descricao: string | null
   data: string | null
   valor: number | null
-  archived: boolean
+  whatsapp: string | null
 }
 
 const dicas = [

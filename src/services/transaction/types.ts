@@ -8,7 +8,6 @@ export interface Transaction {
   detalhes?: string
   quando: string
   userId: string
-  archived?: boolean
 }
 
 export interface CreateTransactionData {
@@ -29,7 +28,6 @@ export interface TransactionFilters {
   dateTo?: string
   limit?: number
   offset?: number
-  includeArchived?: boolean
 }
 
 export interface TransactionStats {
