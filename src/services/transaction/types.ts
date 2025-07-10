@@ -33,6 +33,6 @@ export interface TransactionFilters {
 export interface TransactionStats {
   totalReceitas: number
   totalDespesas: number
-  saldo: number
-  totalTransactions: number
+  saldoTotal: number
+  transacoesPorCategoria: Record<string, { receitas: number; despesas: number; total: number }>
 }
