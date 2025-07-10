@@ -1,4 +1,3 @@
-
 import * as Sentry from '@sentry/react'
 import { SecureLogger } from './logger'
 
@@ -14,7 +13,7 @@ export const initSentry = () => {
       
       // Configurações de privacidade e performance
       tracesSampleRate: 0.1, // 10% das transações para performance
-      beforeSend(event, hint) {
+      beforeSend(event: Sentry.Event, hint: Sentry.EventHint): Sentry.Event | null {
         // Sanitizar dados sensíveis antes de enviar
         return sanitizeEvent(event)
       },
@@ -30,7 +29,7 @@ export const initSentry = () => {
       ],
       
       // Configurações adicionais de privacidade
-      beforeBreadcrumb(breadcrumb) {
+      beforeBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | null {
         // Filtrar breadcrumbs sensíveis
         if (breadcrumb.category === 'console') {
           return null
