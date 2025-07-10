@@ -9,7 +9,7 @@ interface AuthContextProps {
   user: any | null
   session: any | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<any>
+  signIn: (email: string, password: string, retryCount?: number) => Promise<any>
   signUp: (email: string, password: string, metadata?: any) => Promise<any>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<any>
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, retryCount = 0) => {
     try {
       setLoading(true)
       
@@ -77,24 +77,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Erro de autenticação:', error)
         
-        // Tratamento específico para erros de rede
-        if (error.message === 'Failed to fetch' || error.message.includes('fetch')) {
+        // Tratamento específico para erros de rede com retry
+        if (error.message === 'Failed to fetch' || error.message.includes('fetch') || error.name === 'AbortError') {
+          if (retryCount < 2) {
+            console.log(`Tentando novamente... (${retryCount + 1}/2)`)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+            return signIn(email, password, retryCount + 1)
+          }
+          
           toast({
             title: "Erro de Conexão",
-            description: "Verifique sua conexão com a internet e tente novamente em instantes.",
+            description: "Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente mais tarde.",
+            variant: "destructive",
+          })
+        } else if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Credenciais Inválidas",
+            description: "Email ou senha incorretos. Verifique seus dados e tente novamente.",
             variant: "destructive",
           })
         } else {
           toast({
             title: "Erro no login",
-            description: error.message || "Credenciais inválidas",
+            description: "Ocorreu um erro inesperado. Tente novamente em alguns instantes.",
             variant: "destructive",
           })
         }
         
         SentryLogger.captureEvent('Sign in failed', 'warning', {
           errorCode: error.message,
-          email: '***MASKED***'
+          email: '***MASKED***',
+          retryCount
         })
         throw error
       }
@@ -106,11 +119,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('Erro no processo de login:', error)
       
-      // Tratamento adicional para erros de rede
-      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      // Tratamento adicional para erros de timeout/rede
+      if (error.name === 'AbortError') {
+        if (retryCount < 2) {
+          console.log(`Timeout - tentando novamente... (${retryCount + 1}/2)`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+          return signIn(email, password, retryCount + 1)
+        }
+        
         toast({
-          title: "Erro de Conexão",
-          description: "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+          title: "Tempo Limite Excedido",
+          description: "A conexão demorou muito para responder. Verifique sua internet e tente novamente.",
+          variant: "destructive",
+        })
+      } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        toast({
+          title: "Erro de Conectividade",
+          description: "Verifique se você está conectado à internet ou se algum bloqueador está ativo.",
           variant: "destructive",
         })
       }
@@ -118,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       SecureLogger.auth('Sign in error', error)
       SentryLogger.captureError(
         error instanceof Error ? error : new Error('Sign in failed'),
-        { action: 'sign_in' }
+        { action: 'sign_in', retryCount }
       )
       throw error
     } finally {
