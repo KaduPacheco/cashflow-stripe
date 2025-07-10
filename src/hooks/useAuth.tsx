@@ -1,176 +1,231 @@
-
-import { useState, useEffect, createContext, useContext } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
+import { useState, useEffect, useContext, createContext } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
-import { SecureAuthManager } from '@/lib/secureAuth'
 
-interface AuthContextType {
-  user: User | null
-  session: Session | null
+interface AuthContextProps {
+  user: any | null
+  session: any | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, metadata?: { nome?: string; phone?: string; whatsapp?: string }) => Promise<{ error: any }>
+  signIn: (email: string, password: string) => Promise<any>
+  signUp: (email: string, password: string, metadata?: any) => Promise<any>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: any }>
+  resetPassword: (email: string) => Promise<any>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextProps>({
+  user: null,
+  session: null,
+  loading: true,
+  signIn: async () => {},
+  signUp: async () => {},
+  signOut: async () => {},
+  resetPassword: async () => {}
+})
+
+export const useAuth = () => {
+  return useContext(AuthContext)
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<any | null>(null)
+  const [session, setSession] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Função para limpar estado local
-  const clearAuthState = () => {
-    SecureLogger.auth('Clearing auth state')
-    setSession(null)
-    setUser(null)
-    // Limpar localStorage forçadamente
-    try {
-      localStorage.removeItem('sb-csvkgokkvbtojjkitodc-auth-token')
-      localStorage.removeItem('supabase.auth.token')
-    } catch (error) {
-      SecureLogger.error('Error clearing localStorage', error)
-    }
-  }
-
   useEffect(() => {
-    SecureLogger.auth('AuthProvider initializing...')
-    
-    // Configurar listener de mudanças de auth PRIMEIRO
+    getUser()
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         SecureLogger.auth('Auth state change', { event, hasSession: !!session })
         
-        if (event === 'SIGNED_OUT' || !session) {
-          clearAuthState()
-        } else if (session && SecureAuthManager.isSessionValid(session)) {
-          setSession(session)
-          setUser(session.user)
-        } else if (session && !SecureAuthManager.isSessionValid(session)) {
-          SecureLogger.warn('Invalid session detected, clearing...')
-          clearAuthState()
+        // Configurar contexto do Sentry baseado na autenticação
+        if (event === 'SIGNED_IN' && session?.user) {
+          SentryLogger.setUser(session.user.id)
+          SentryLogger.captureEvent('User signed in', 'info', {
+            authMethod: session.user.app_metadata?.provider || 'email'
+          })
+        } else if (event === 'SIGNED_OUT') {
+          SentryLogger.clearUser()
+          SentryLogger.captureEvent('User signed out', 'info')
+        } else if (event === 'TOKEN_REFRESHED') {
+          SentryLogger.captureEvent('Token refreshed', 'info')
         }
-        
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setSession(session)
+          setUser(session?.user ?? null)
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null)
+          setUser(null)
+        }
         setLoading(false)
       }
     )
 
-    // DEPOIS verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      SecureLogger.auth('Initial session check', { hasSession: !!session, hasError: !!error })
-      
-      if (error) {
-        SecureLogger.error('Error getting session', error)
-        clearAuthState()
-        setLoading(false)
-        return
-      }
-
-      if (session && SecureAuthManager.isSessionValid(session)) {
-        setSession(session)
-        setUser(session.user)
-      } else if (session && !SecureAuthManager.isSessionValid(session)) {
-        SecureLogger.auth('Initial session is invalid, clearing...')
-        clearAuthState()
-      } else {
-        clearAuthState()
-      }
-      
-      setLoading(false)
-    })
-
-    return () => {
-      SecureLogger.auth('AuthProvider cleanup')
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe()
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    SecureLogger.auth('Attempting sign in', { email: '***MASKED***' })
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) {
-      SecureLogger.error('Sign in error', error)
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        SentryLogger.captureEvent('Sign in failed', 'warning', {
+          errorCode: error.message,
+          email: '***MASKED***' // Mascarar email por segurança
+        })
+        throw error
+      }
+
+      SecureLogger.auth('User signed in successfully')
+      return { user: data.user, session: data.session }
+    } catch (error) {
+      SecureLogger.auth('Sign in error', error)
+      SentryLogger.captureError(
+        error instanceof Error ? error : new Error('Sign in failed'),
+        { action: 'sign_in' }
+      )
+      throw error
+    } finally {
+      setLoading(false)
     }
-    return { error }
   }
 
-  const signUp = async (email: string, password: string, metadata?: { nome?: string; phone?: string; whatsapp?: string }) => {
-    SecureLogger.auth('Attempting sign up', { email: '***MASKED***' })
-    const redirectUrl = `${window.location.origin}/`
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: metadata || {}
+  const signUp = async (email: string, password: string, metadata?: any) => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata
+        }
+      })
+
+      if (error) {
+        SentryLogger.captureEvent('Sign up failed', 'warning', {
+          errorCode: error.message
+        })
+        throw error
       }
-    })
-    if (error) {
-      SecureLogger.error('Sign up error', error)
+
+      SecureLogger.auth('User signed up successfully')
+      SentryLogger.captureEvent('User signed up', 'info', {
+        hasMetadata: !!metadata
+      })
+      
+      return { user: data.user, session: data.session }
+    } catch (error) {
+      SecureLogger.auth('Sign up error', error)
+      SentryLogger.captureError(
+        error instanceof Error ? error : new Error('Sign up failed'),
+        { action: 'sign_up' }
+      )
+      throw error
+    } finally {
+      setLoading(false)
     }
-    return { error }
   }
 
   const signOut = async () => {
-    SecureLogger.auth('Attempting sign out...')
-    
     try {
-      // Limpar sessões do usuário
-      if (user?.id) {
-        SecureAuthManager.clearUserSessions(user.id)
-      }
-      
-      // Tentar fazer logout no servidor
+      setLoading(true)
       const { error } = await supabase.auth.signOut()
+      
       if (error) {
-        SecureLogger.error('Server sign out error', error)
+        SentryLogger.captureEvent('Sign out failed', 'warning', {
+          errorCode: error.message
+        })
+        throw error
       }
+
+      SecureLogger.auth('User signed out successfully')
     } catch (error) {
-      SecureLogger.error('Sign out request failed', error)
+      SecureLogger.auth('Sign out error', error)
+      SentryLogger.captureError(
+        error instanceof Error ? error : new Error('Sign out failed'),
+        { action: 'sign_out' }
+      )
+      throw error
+    } finally {
+      setLoading(false)
     }
-    
-    // Independentemente do resultado, limpar estado local
-    clearAuthState()
-    SecureLogger.auth('Sign out completed (local state cleared)')
   }
 
   const resetPassword = async (email: string) => {
-    SecureLogger.auth('Attempting password reset', { email: '***MASKED***' })
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
-    if (error) {
-      SecureLogger.error('Password reset error', error)
+    try {
+      setLoading(true)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      })
+
+      if (error) {
+        SentryLogger.captureEvent('Reset password failed', 'warning', {
+          errorCode: error.message,
+          email: '***MASKED***' // Mascarar email por segurança
+        })
+        throw error
+      }
+
+      SecureLogger.auth('Password reset email sent successfully')
+    } catch (error) {
+      SecureLogger.auth('Password reset error', error)
+      SentryLogger.captureError(
+        error instanceof Error ? error : new Error('Password reset failed'),
+        { action: 'reset_password' }
+      )
+      throw error
+    } finally {
+      setLoading(false)
     }
-    return { error }
+  }
+
+  const getUser = async () => {
+    try {
+      setLoading(true)
+      const { data: { user, session } } = await supabase.auth.getUser()
+
+      if (user) {
+        SentryLogger.setUser(user.id)
+        SentryLogger.captureEvent('User session restored', 'info', {
+          authMethod: user.app_metadata?.provider || 'email'
+        })
+      }
+
+      setSession(session)
+      setUser(user)
+    } catch (error) {
+      SecureLogger.error('Get user error', error)
+      SentryLogger.captureError(
+        error instanceof Error ? error : new Error('Get user failed'),
+        { action: 'get_user' }
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const value = {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        loading,
-        signIn,
-        signUp,
-        signOut,
-        resetPassword,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+export const useAuth = () => {
+  return useContext(AuthContext)
 }
