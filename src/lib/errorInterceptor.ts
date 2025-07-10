@@ -146,3 +146,6 @@ export const setupGlobalErrorHandling = () => {
     })
   })
 }
+
+// Re-export SentryLogger for convenience
+export { SentryLogger }

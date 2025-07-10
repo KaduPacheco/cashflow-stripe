@@ -1,3 +1,4 @@
+
 import { Suspense, lazy, useEffect } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -49,13 +50,6 @@ const queryClient = new QueryClient({
         }
         return failureCount < 3;
       },
-      onError: (error) => {
-        // Capturar erros de queries no Sentry
-        SentryLogger.captureError(
-          error instanceof Error ? error : new Error(String(error)),
-          { context: 'react_query' }
-        )
-      }
     },
     mutations: {
       onError: (error) => {

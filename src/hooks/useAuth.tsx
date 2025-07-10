@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useContext, createContext } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
+import { SentryLogger } from '@/lib/sentry'
 
 interface AuthContextProps {
   user: any | null
@@ -21,10 +23,6 @@ const AuthContext = createContext<AuthContextProps>({
   signOut: async () => {},
   resetPassword: async () => {}
 })
-
-export const useAuth = () => {
-  return useContext(AuthContext)
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null)
@@ -187,17 +185,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getUser = async () => {
     try {
       setLoading(true)
-      const { data: { user, session } } = await supabase.auth.getUser()
+      const { data, error } = await supabase.auth.getUser()
 
-      if (user) {
-        SentryLogger.setUser(user.id)
+      if (error) throw error
+
+      if (data.user) {
+        SentryLogger.setUser(data.user.id)
         SentryLogger.captureEvent('User session restored', 'info', {
-          authMethod: user.app_metadata?.provider || 'email'
+          authMethod: data.user.app_metadata?.provider || 'email'
         })
       }
 
-      setSession(session)
-      setUser(user)
+      setUser(data.user)
+      // Get session separately
+      const { data: sessionData } = await supabase.auth.getSession()
+      setSession(sessionData.session)
     } catch (error) {
       SecureLogger.error('Get user error', error)
       SentryLogger.captureError(

@@ -1,4 +1,7 @@
+
 // Sistema de logs seguros com níveis e mascaramento de dados sensíveis
+import { SentryLogger } from './sentry'
+
 interface LogLevel {
   DEVELOPMENT: 'development'
   PRODUCTION: 'production'
