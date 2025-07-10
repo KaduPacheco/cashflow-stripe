@@ -1,90 +1,94 @@
 
-import React from 'react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TrendingUp, TrendingDown, Edit, Trash2 } from 'lucide-react'
-import { Transacao } from '@/types/transaction'
-import { formatCurrency } from '@/utils/currency'
-import { formatBrazilianDateTime } from '@/utils/dateFormatter'
-import { ReadOnlyWrapper } from '@/components/subscription/ReadOnlyWrapper'
+import { Button } from '@/components/ui/button'
+import { Edit, Trash2, Calendar, Building2, FileText } from 'lucide-react'
+import { SafeDisplay } from '@/components/ui/safe-display'
+import type { Transacao } from '@/types/transaction'
 
 interface TransactionCardProps {
   transacao: Transacao
   onEdit: (transacao: Transacao) => void
   onDelete: (id: number) => void
-  isReadOnly: boolean
+  isReadOnly?: boolean
 }
 
-export function TransactionCard({ transacao, onEdit, onDelete, isReadOnly }: TransactionCardProps) {
+export function TransactionCard({ 
+  transacao, 
+  onEdit, 
+  onDelete, 
+  isReadOnly = false 
+}: TransactionCardProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
   return (
-    <Card className="p-3 sm:p-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            {transacao.tipo === 'receita' ? (
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
-            ) : (
-              <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
-            )}
-            <h3 className="font-semibold text-sm sm:text-base truncate">
-              {transacao.estabelecimento || 'Sem estabelecimento'}
-            </h3>
-            <Badge variant={transacao.tipo === 'receita' ? 'default' : 'destructive'} className="text-xs flex-shrink-0">
-              {transacao.tipo}
-            </Badge>
+    <Card className="w-full hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <SafeDisplay className="font-medium truncate">
+                {transacao.estabelecimento}
+              </SafeDisplay>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>{formatDate(transacao.quando || '')}</span>
+            </div>
           </div>
-          <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-            {transacao.categorias && (
-              <p className="truncate">Categoria: {transacao.categorias.nome}</p>
-            )}
-            {transacao.quando && (
-              <p>Data: {formatBrazilianDateTime(transacao.quando)}</p>
-            )}
-            <p>Criado em: {formatBrazilianDateTime(transacao.created_at)}</p>
-            {transacao.detalhes && (
-              <p className="truncate">Detalhes: {transacao.detalhes}</p>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-          <span className={`text-lg sm:text-xl font-bold ${
-            transacao.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {transacao.tipo === 'receita' ? '+' : '-'}
-            {formatCurrency(Math.abs(transacao.valor || 0))}
-          </span>
           
-          <div className="flex gap-2 w-full sm:w-auto">
-            <ReadOnlyWrapper message="Edição disponível apenas na versão premium" showOverlay={false}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(transacao)}
-                disabled={isReadOnly}
-                className="flex-1 sm:flex-none"
-              >
-                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="ml-1 sm:hidden">Editar</span>
-              </Button>
-            </ReadOnlyWrapper>
+          <div className="flex flex-col items-end gap-2">
+            <Badge
+              variant={transacao.tipo === 'receita' ? 'default' : 'destructive'}
+              className="ml-2"
+            >
+              {transacao.tipo === 'receita' ? '+' : '-'} {formatCurrency(transacao.valor || 0)}
+            </Badge>
             
-            <ReadOnlyWrapper message="Exclusão disponível apenas na versão premium" showOverlay={false}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDelete(transacao.id)}
-                disabled={isReadOnly}
-                className="flex-1 sm:flex-none"
-              >
-                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="ml-1 sm:hidden">Excluir</span>
-              </Button>
-            </ReadOnlyWrapper>
+            {!isReadOnly && (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEdit(transacao)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(transacao.id)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </CardHeader>
+
+      {transacao.detalhes && (
+        <CardContent className="pt-0">
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+            <SafeDisplay className="break-words">
+              {transacao.detalhes}
+            </SafeDisplay>
+          </div>
+        </CardContent>
+      )}
     </Card>
   )
 }

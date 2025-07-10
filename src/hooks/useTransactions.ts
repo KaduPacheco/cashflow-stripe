@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast'
 import { Transacao, TransactionFormData } from '@/types/transaction'
 import { validateCategoryOwnership, calculateTotals } from '@/utils/transactionUtils'
 import { TransactionService } from '@/services/transaction'
+import { SecureTransactionOperations } from '@/services/transaction/secureOperations'
 
 export function useTransactions() {
   const { user } = useAuth()
@@ -73,8 +74,8 @@ export function useTransactions() {
     }
 
     try {
-      // Usar TransactionService com validação server-side
-      await TransactionService.createTransaction(user.id, formData)
+      // Usar operações seguras com sanitização
+      await SecureTransactionOperations.create(user.id, formData)
       
       toast({ title: "Transação adicionada com sucesso!" })
       fetchTransacoes()
@@ -83,6 +84,12 @@ export function useTransactions() {
         toast({
           title: "Limite de requisições excedido",
           description: error.message,
+          variant: "destructive",
+        })
+      } else if (error.field === 'xss_detected') {
+        toast({
+          title: "Conteúdo suspeito detectado",
+          description: "Por favor, remova caracteres especiais do texto.",
           variant: "destructive",
         })
       } else {
@@ -111,26 +118,25 @@ export function useTransactions() {
     }
 
     try {
-      const transacaoData = {
-        ...formData,
-        userId: user.id, // Sempre obrigatório agora
-      }
-
-      const { error } = await supabase
-        .from('transacoes')
-        .update(transacaoData)
-        .eq('id', id)
-
-      if (error) throw error
+      // Usar operações seguras com sanitização
+      await SecureTransactionOperations.update(id, user.id, formData)
       
       toast({ title: "Transação atualizada com sucesso!" })
       fetchTransacoes()
     } catch (error: any) {
-      toast({
-        title: "Erro ao salvar transação",
-        description: error.message,
-        variant: "destructive",
-      })
+      if (error.field === 'xss_detected') {
+        toast({
+          title: "Conteúdo suspeito detectado",
+          description: "Por favor, remova caracteres especiais do texto.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Erro ao salvar transação",
+          description: error.message,
+          variant: "destructive",
+        })
+      }
       throw error
     }
   }

@@ -1,71 +1,89 @@
 
-import React from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Clock, Edit, Trash2 } from 'lucide-react'
-import { Lembrete } from '@/types/lembrete'
-import { formatCurrency } from '@/utils/currency'
-import { formatDate, getDateStatus, isOverdue } from '@/utils/lembreteUtils'
+import { Calendar, DollarSign, MessageCircle, Trash2, Edit } from 'lucide-react'
+import { SafeDisplay } from '@/components/ui/safe-display'
+import type { Lembrete } from '@/types/lembrete'
 
 interface LembreteCardProps {
   lembrete: Lembrete
   onEdit: (lembrete: Lembrete) => void
   onDelete: (id: number) => void
+  onWhatsApp: (lembrete: Lembrete) => void
 }
 
-export function LembreteCard({ lembrete, onEdit, onDelete }: LembreteCardProps) {
-  const dateStatus = lembrete.data ? getDateStatus(lembrete.data) : null
+export function LembreteCard({ lembrete, onEdit, onDelete, onWhatsApp }: LembreteCardProps) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
 
   return (
-    <Card className={`hover:shadow-md transition-all duration-200 ${
-      lembrete.data && isOverdue(lembrete.data) 
-        ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30' 
-        : 'dark:bg-muted/40'
-    }`}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="font-semibold text-foreground">{lembrete.descricao}</h3>
-              {dateStatus && (
-                <Badge variant={dateStatus.variant} className="dark:text-white">
-                  {dateStatus.label}
-                </Badge>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              {lembrete.data && (
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 dark:text-gray-300" />
-                  <span>Data: {formatDate(lembrete.data)}</span>
-                </div>
-              )}
-              {lembrete.valor && (
-                <p>Valor: {formatCurrency(lembrete.valor)}</p>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-lg font-medium">
+            <SafeDisplay>{lembrete.descricao}</SafeDisplay>
+          </CardTitle>
+          
+          <div className="flex gap-1">
             <Button
+              variant="ghost"
               size="sm"
-              variant="outline"
               onClick={() => onEdit(lembrete)}
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white transition-colors"
+              className="h-8 w-8 p-0"
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-3 w-3" />
             </Button>
             <Button
+              variant="ghost"
               size="sm"
-              variant="outline"
               onClick={() => onDelete(lembrete.id)}
-              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground dark:border-red-500 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-colors"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          {lembrete.data && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              <span>{formatDate(lembrete.data)}</span>
+            </div>
+          )}
+          
+          {lembrete.valor && (
+            <div className="flex items-center gap-1">
+              <DollarSign className="h-4 w-4" />
+              <span>{formatCurrency(lembrete.valor)}</span>
+            </div>
+          )}
+        </div>
+
+        {lembrete.whatsapp && (
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onWhatsApp(lembrete)}
+              className="w-full"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Enviar WhatsApp
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
