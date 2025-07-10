@@ -14,7 +14,7 @@ export const initSentry = () => {
       
       // Configurações de privacidade e performance
       tracesSampleRate: 0.1, // 10% das transações para performance
-      beforeSend(event) {
+      beforeSend(event, hint) {
         // Sanitizar dados sensíveis antes de enviar
         return sanitizeEvent(event)
       },
