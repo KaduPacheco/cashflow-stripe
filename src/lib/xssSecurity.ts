@@ -1,4 +1,3 @@
-
 import DOMPurify from 'dompurify'
 
 export class XSSSecurityClient {
