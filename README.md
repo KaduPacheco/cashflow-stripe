@@ -20,25 +20,6 @@ Uma aplicação moderna para controle de fluxo de caixa pessoal ou empresarial c
 - **Pagamentos**: Stripe com webhooks
 - **Validação**: Zod + React Hook Form
 
-## 📁 Estrutura do Projeto
-
-```
-src/
-├── components/          # Componentes React reutilizáveis
-│   ├── ui/             # Componentes base (shadcn/ui)
-│   ├── auth/           # Componentes de autenticação
-│   ├── dashboard/      # Componentes do dashboard
-│   ├── transacoes/     # Componentes de transações
-│   ├── contas/         # Contas a pagar/receber
-│   └── lembretes/      # Sistema de lembretes
-├── hooks/              # Hooks personalizados
-├── lib/                # Utilitários e configurações
-├── pages/              # Páginas da aplicação
-├── services/           # Serviços de API
-├── types/              # Definições TypeScript
-└── utils/              # Funções utilitárias
-```
-
 ## 🚀 Como Iniciar
 
 ### Pré-requisitos
@@ -46,6 +27,26 @@ src/
 - npm ou yarn
 - Conta no Supabase
 - Conta no Stripe (para pagamentos)
+
+### Configuração de Ambiente
+
+1. **Configure as variáveis de ambiente**:
+```bash
+cp .env.example .env.local
+```
+
+2. **Preencha as variáveis obrigatórias**:
+```bash
+# Supabase (Obrigatório)
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anonima
+
+# Stripe (Opcional - para pagamentos)
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_sua-chave
+
+# Sentry (Opcional - para monitoramento)
+VITE_SENTRY_DSN=https://sua-dsn.sentry.io
+```
 
 ### Desenvolvimento
 
@@ -57,9 +58,8 @@ cd <YOUR_PROJECT_NAME>
 # 2. Instale as dependências
 npm install
 
-# 3. Configure as variáveis de ambiente
-cp .env.example .env.local
-# Edite .env.local com suas credenciais
+# 3. Execute auditoria de segurança
+npm run security:audit
 
 # 4. Inicie o servidor de desenvolvimento
 npm run dev
@@ -75,6 +75,66 @@ npm run build
 npm run preview
 ```
 
+## 🔐 Segurança e Variáveis de Ambiente
+
+### Variáveis Obrigatórias
+
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `VITE_SUPABASE_URL` | URL do projeto Supabase | `https://abc.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Chave anônima do Supabase | `eyJhbGciOiJIUzI1...` |
+
+### Variáveis Opcionais
+
+| Variável | Descrição | Uso |
+|----------|-----------|-----|
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Chave pública do Stripe | Pagamentos |
+| `VITE_SENTRY_DSN` | DSN do Sentry | Monitoramento |
+| `VITE_APP_VERSION` | Versão da aplicação | Versionamento |
+
+### Boas Práticas de Segurança
+
+- ✅ **Nunca** comite arquivos `.env*` no Git
+- ✅ Use apenas chaves **públicas** com prefixo `VITE_`
+- ✅ Mantenha secrets **privados** no Supabase Edge Functions
+- ✅ Execute `npm audit` regularmente
+- ✅ Use HTTPS em produção
+- ❌ **Jamais** exponha tokens privados no frontend
+
+## 📜 Scripts de Segurança
+
+```bash
+# Auditoria completa de segurança
+npm run security:audit
+
+# Atualização segura de dependências
+npm run security:update
+
+# Verificação rápida
+npm run security:check
+
+# Limpeza de dependências não utilizadas
+npm run deps:clean
+
+# Verificação de integridade
+npm run deps:verify
+```
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── components/          # Componentes React reutilizáveis
+├── hooks/              # Hooks personalizados
+├── lib/                # Utilitários e configurações
+│   ├── env.ts          # Validação de ambiente
+│   ├── security.ts     # Configurações de segurança
+│   └── sentry.ts       # Monitoramento de erros
+├── pages/              # Páginas da aplicação
+├── services/           # Serviços de API
+└── types/              # Definições TypeScript
+```
+
 ## 🎨 Design System
 
 ### Cores Principais
@@ -86,11 +146,6 @@ npm run preview
 - **Fonte**: Inter
 - **Tamanhos**: Escala consistente de 12px a 48px
 
-### Componentes
-- Baseados em shadcn/ui com customizações
-- Dark mode nativo
-- Responsividade mobile-first
-
 ## 🔧 Guia para Contribuidores
 
 ### Convenções de Código
@@ -100,61 +155,6 @@ npm run preview
 - **Funções/Variáveis**: camelCase (`handleSubmit`, `userData`)
 - **Arquivos JS/TS**: camelCase (`userService.ts`, `dateUtils.ts`)
 - **Types/Interfaces**: PascalCase (`TransactionData`, `UserProfile`)
-
-#### Estrutura de Componentes
-```typescript
-import React from 'react'
-
-interface ComponentProps {
-  // Props tipadas
-}
-
-/**
- * Documentação JSDoc para componentes reutilizáveis
- * @param prop1 - Descrição do prop
- * @returns Descrição do retorno
- */
-export const Component: React.FC<ComponentProps> = ({ prop1 }) => {
-  // Lógica do componente
-  
-  return (
-    // JSX
-  )
-}
-```
-
-#### Hooks Personalizados
-```typescript
-interface UseHookReturn {
-  value: string
-  loading: boolean
-  error: string | null
-}
-
-export const useCustomHook = (): UseHookReturn => {
-  // Lógica do hook
-  
-  return { value, loading, error }
-}
-```
-
-### Padrões de Desenvolvimento
-
-#### Estado e Dados
-- **Dados assíncronos**: React Query
-- **Estado global leve**: Context API
-- **Formulários**: React Hook Form + Zod
-- **Validações**: Sempre no cliente e servidor
-
-#### Tratamento de Erros
-- ErrorBoundary para erros de renderização
-- Try/catch para operações assíncronas
-- Mensagens de erro consistentes com toast
-
-#### Performance
-- Lazy loading para rotas
-- Memoização com `useMemo`/`useCallback`
-- Componentes virtualizados para listas grandes
 
 ### Linting e Formatação
 
@@ -193,46 +193,62 @@ npm run format
 - Autenticação JWT
 - HTTPS obrigatório
 - Sanitização de inputs
-
-## 📊 Monitoramento
-
-- Logs estruturados
-- Error tracking
-- Performance monitoring
-- Analytics de uso
+- Monitoramento com Sentry
+- Auditoria automática de dependências
 
 ## 🚀 Deploy
 
-### Automático (Recomendado)
-- Push para `main` branch
-- CI/CD automático via GitHub Actions
-- Deploy automático no Vercel/Netlify
+### Vercel (Recomendado)
+1. Conecte seu repositório GitHub
+2. Configure variáveis de ambiente no dashboard
+3. Deploy automático a cada push
 
-### Manual
-```bash
-npm run build
-# Deploy da pasta dist/
-```
+### VPS Próprio
+Consulte o arquivo `DEPLOYMENT.md` para instruções detalhadas.
 
 ## 📝 Scripts Disponíveis
 
 ```bash
-npm run dev          # Servidor desenvolvimento
-npm run build        # Build produção
-npm run preview      # Preview da build
-npm run lint         # Verificar lint
-npm run lint:fix     # Corrigir lint
-npm run test         # Executar testes
-npm run type-check   # Verificar tipos TS
+npm run dev              # Servidor desenvolvimento
+npm run build            # Build produção
+npm run preview          # Preview da build
+npm run lint             # Verificar lint
+npm run security:audit   # Auditoria de segurança
+npm run security:update  # Atualização segura
+```
+
+## 🔧 Variáveis de Ambiente por Funcionalidade
+
+### Básico (Obrigatório)
+```bash
+VITE_SUPABASE_URL=        # Banco de dados e auth
+VITE_SUPABASE_ANON_KEY=   # Chave de acesso
+```
+
+### Pagamentos (Opcional)
+```bash
+VITE_STRIPE_PUBLISHABLE_KEY=  # Processamento de pagamentos
+```
+
+### Monitoramento (Opcional)
+```bash
+VITE_SENTRY_DSN=          # Captura de erros
+```
+
+### Desenvolvimento
+```bash
+VITE_DEBUG=true           # Logs detalhados
+VITE_APP_VERSION=1.0.0    # Controle de versão
 ```
 
 ## 🤝 Contribuindo
 
 1. Fork o projeto
 2. Crie uma branch (`git checkout -b feature/nova-funcionalidade`)
-3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/nova-funcionalidade`)
-5. Abra um Pull Request
+3. Execute auditoria de segurança (`npm run security:audit`)
+4. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+5. Push para a branch (`git push origin feature/nova-funcionalidade`)
+6. Abra um Pull Request
 
 ## 📄 Licença
 
@@ -243,7 +259,8 @@ Este projeto está sob a licença MIT. Veja `LICENSE` para mais detalhes.
 - 📧 Email: suporte@cashflow.com
 - 💬 Discord: [Link do servidor]
 - 📚 Documentação: [Link da documentação]
+- 🔒 Segurança: security@cashflow.com
 
 ---
 
-Desenvolvido com ❤️ pela equipe Cash Flow
+Desenvolvido com ❤️ e 🔒 pela equipe Cash Flow
