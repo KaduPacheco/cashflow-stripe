@@ -1,5 +1,5 @@
-
-import { SafeText } from '@/lib/xssSecurity'
+import React from 'react'
+import { XSSSecurityClient } from '@/lib/xssSecurity'
 
 interface SafeDisplayProps {
   children: string | null | undefined
@@ -18,14 +18,20 @@ export function SafeDisplay({
     return <span className={className}>{fallback}</span>
   }
 
-  return (
-    <SafeText 
-      allowBasicHTML={allowBasicHTML}
-      className={className}
-    >
-      {children}
-    </SafeText>
-  )
+  const safeContent = allowBasicHTML 
+    ? XSSSecurityClient.sanitizeHTML(children)
+    : XSSSecurityClient.sanitizeText(children)
+
+  if (allowBasicHTML) {
+    return (
+      <span 
+        className={className}
+        dangerouslySetInnerHTML={{ __html: safeContent }} 
+      />
+    )
+  }
+
+  return <span className={className}>{safeContent}</span>
 }
 
 interface SafeFieldProps {

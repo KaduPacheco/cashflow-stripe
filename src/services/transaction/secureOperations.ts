@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { validateTransaction, validateTransactionUpdate } from '@/lib/validations'
 import { ValidationError, NetworkError } from '@/utils/errorHandler'
 import { XSSProtectionService } from '@/services/xssProtectionService'
@@ -113,15 +113,12 @@ export class SecureTransactionOperations {
 
   static async getAll(userId: string, filters?: TransactionFilters) {
     try {
-      let query = supabase
+      const baseQuery = supabase
         .from('transacoes')
         .select('*')
         .eq('userId', userId)
 
-      // Filtrar dados arquivados por padrão
-      if (!filters?.includeArchived) {
-        query = query.eq('archived', false)
-      }
+      let query = baseQuery
 
       // Apply filters
       if (filters?.tipo) {

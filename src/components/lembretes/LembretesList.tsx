@@ -57,6 +57,7 @@ export function LembretesList({ lembretes, loading, onEdit, onDelete, onCreateNe
           lembrete={lembrete}
           onEdit={onEdit}
           onDelete={onDelete}
+          onWhatsApp={() => {}} // Função placeholder
         />
       ))}
     </div>

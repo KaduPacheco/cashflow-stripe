@@ -9,7 +9,6 @@ export class XSSSecurityClient {
       return ''
     }
 
-    // Configuração restritiva - remove todos os tags HTML
     const clean = DOMPurify.sanitize(input, {
       ALLOWED_TAGS: [],
       ALLOWED_ATTR: [],
@@ -38,13 +37,11 @@ export class XSSSecurityClient {
   }
 
   /**
-   * Valida se o input é seguro (não contém tentativas de XSS)
+   * Valida se o input é seguro
    */
   static isSafe(input: string): boolean {
     const original = input
     const sanitized = this.sanitizeText(input)
-    
-    // Se a sanitização mudou o conteúdo, pode conter XSS
     return original === sanitized
   }
 
@@ -58,9 +55,9 @@ export class XSSSecurityClient {
       const value = sanitized[key]
       
       if (typeof value === 'string') {
-        sanitized[key] = this.sanitizeText(value)
+        (sanitized as any)[key] = this.sanitizeText(value)
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        sanitized[key] = this.sanitizeObject(value)
+        (sanitized as any)[key] = this.sanitizeObject(value)
       }
     }
 
@@ -68,35 +65,6 @@ export class XSSSecurityClient {
   }
 }
 
-/**
- * Hook para sanitização automática de valores de formulário
- */
 export function useSafeValue(value: string): string {
   return XSSSecurityClient.sanitizeText(value)
-}
-
-/**
- * Componente wrapper para renderização segura de texto
- */
-export interface SafeTextProps {
-  children: string
-  allowBasicHTML?: boolean
-  className?: string
-}
-
-export function SafeText({ children, allowBasicHTML = false, className }: SafeTextProps) {
-  const safeContent = allowBasicHTML 
-    ? XSSSecurityClient.sanitizeHTML(children)
-    : XSSSecurityClient.sanitizeText(children)
-
-  if (allowBasicHTML) {
-    return (
-      <span 
-        className={className}
-        dangerouslySetInnerHTML={{ __html: safeContent }} 
-      />
-    )
-  }
-
-  return <span className={className}>{safeContent}</span>
 }

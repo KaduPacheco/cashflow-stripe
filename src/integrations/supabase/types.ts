@@ -272,6 +272,45 @@ export type Database = {
         }
         Relationships: []
       }
+      security_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          record_id: string | null
+          success: boolean
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          record_id?: string | null
+          success: boolean
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          record_id?: string | null
+          success?: boolean
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string
@@ -371,6 +410,20 @@ export type Database = {
       format_brasilia_datetime: {
         Args: { input_timestamp: string }
         Returns: string
+      }
+      log_security_event: {
+        Args: {
+          p_action: string
+          p_table_name: string
+          p_record_id?: string
+          p_success?: boolean
+          p_details?: Json
+        }
+        Returns: undefined
+      }
+      verify_user_ownership: {
+        Args: { table_name: string; record_id: string; user_id_field?: string }
+        Returns: boolean
       }
     }
     Enums: {
