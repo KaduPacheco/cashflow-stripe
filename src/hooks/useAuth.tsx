@@ -64,16 +64,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string, retryCount = 0) => {
+    const controller = new AbortController()
+    
     try {
       setLoading(true)
       
       console.log('Tentativa de login para:', email)
       
-      // Tentativa direta sem retry automático
+      // Timeout de 10s conforme solicitado
+      const timeoutId = setTimeout(() => {
+        controller.abort()
+      }, 10000)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      
+      clearTimeout(timeoutId)
 
       if (error) {
         console.error('Erro de autenticação:', error)
@@ -91,23 +99,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           error.name === 'AbortError' || 
           error.message.includes('signal is aborted') ||
           error.message.includes('timeout') ||
-          error.name === 'AuthRetryableFetchError'
+          error.name === 'AuthRetryableFetchError' ||
+          error.message.includes('ERR_BLOCKED_BY_CLIENT')
         ) {
-          // Retry apenas para erros de rede
-          if (retryCount < 2) {
-            console.log(`Tentando novamente... (${retryCount + 1}/2)`)
-            await new Promise(resolve => setTimeout(resolve, 2000))
-            return signIn(email, password, retryCount + 1)
-          }
-          
           toast({
-            title: "Erro de conexão com Supabase",
-            description: "Verifique sua rede ou recarregue a página.",
+            title: "Erro de Conexão",
+            description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
             variant: "destructive",
+            duration: 0, // Toast persistente
           })
         } else {
           toast({
-            title: "Erro no login",
+            title: "Erro no Login",
             description: "Ocorreu um erro inesperado. Tente novamente em alguns instantes.",
             variant: "destructive",
           })
@@ -128,24 +131,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('Erro no processo de login:', error)
       
-      // Tratamento para erros capturados
-      if (error.message === 'Request timeout' || error.message === 'Connection timeout') {
-        if (retryCount < 2) {
-          console.log(`Timeout - tentando novamente... (${retryCount + 1}/2)`)
-          await new Promise(resolve => setTimeout(resolve, 2000))
-          return signIn(email, password, retryCount + 1)
-        }
-        
+      // Tratamento para AbortError e erros de timeout
+      if (error.name === 'AbortError' || error.message.includes('signal is aborted without reason')) {
         toast({
-          title: "Tempo Limite Excedido",
-          description: "A conexão demorou muito para responder. Verifique sua internet e tente novamente.",
+          title: "Erro de Conexão",
+          description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
           variant: "destructive",
+          duration: 0, // Toast persistente
+        })
+      } else if (error.message === 'Request timeout' || error.message === 'Connection timeout') {
+        toast({
+          title: "Erro de Conexão",
+          description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
+          variant: "destructive",
+          duration: 0, // Toast persistente
         })
       } else {
         toast({
-          title: "Erro de Conectividade",
-          description: "Verifique se você está conectado à internet ou se algum bloqueador está ativo.",
+          title: "Erro de Conexão",
+          description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
           variant: "destructive",
+          duration: 0, // Toast persistente
         })
       }
       

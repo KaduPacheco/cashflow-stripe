@@ -18,9 +18,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       'apikey': supabaseAnonKey,
       'Authorization': `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+      'Prefer': 'return=minimal'
     },
     fetch: (url: any, options: any = {}) => {
       return new Promise<Response>((resolve, reject) => {
@@ -28,7 +26,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         const timeoutId = setTimeout(() => {
           controller.abort()
           reject(new Error('Request timeout'))
-        }, 15000) // 15s timeout
+        }, 10000) // 10s timeout conforme solicitado
         
         fetch(url, {
           ...options,
