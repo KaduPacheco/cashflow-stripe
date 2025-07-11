@@ -30,10 +30,7 @@ export function useContasPagamento() {
       }
 
       // Then, create the corresponding transaction
-      const contaCompleta = {
-        ...conta,
-        ...contaAtualizada
-      }
+      const contaCompleta = contaAtualizada ? Object.assign({}, conta, contaAtualizada) : conta
 
       const transacaoCriada = await criarTransacaoFromConta(contaCompleta, valorPago, dataPagamento)
 

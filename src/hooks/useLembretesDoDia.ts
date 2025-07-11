@@ -40,12 +40,12 @@ export function useLembretesDoDia(): UseLembretesDoDiaReturn {
         .from('lembretes')
         .select('id, descricao, data, valor, whatsapp')
         .eq('userId', user.id)
-        .eq('data', hoje)
+        .eq('data', hoje as any)
         .order('data', { ascending: true })
 
       if (lembretesError) throw lembretesError
 
-      setLembretesDoDia(lembretes || [])
+      setLembretesDoDia((lembretes as any) || [])
     } catch (err: any) {
       console.error('❌ useLembretesDoDia - Erro:', err)
       setError(err.message || 'Erro ao carregar lembretes do dia')

@@ -154,8 +154,8 @@ export default function Dashboard() {
         isSubscribed: subscriptionData.subscribed
       })
 
-      setTransacoes(transacoes || [])
-      setLembretes(lembretes || [])
+      setTransacoes((transacoes as any) || [])
+      setLembretes((lembretes as any) || [])
 
     } catch (error: any) {
       console.error('❌ Dashboard: Error loading data:', error)

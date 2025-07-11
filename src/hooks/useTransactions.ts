@@ -34,7 +34,7 @@ export function useTransactions() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setTransacoes(data || [])
+      setTransacoes((data as any) || [])
     } catch (error: any) {
       toast({
         title: "Erro ao carregar transações",
@@ -146,7 +146,7 @@ export function useTransactions() {
       const { error } = await supabase
         .from('transacoes')
         .delete()
-        .eq('id', id)
+        .eq('id', id as any)
 
       if (error) throw error
       

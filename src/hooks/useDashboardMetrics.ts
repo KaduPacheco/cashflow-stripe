@@ -81,13 +81,13 @@ export function useDashboardMetrics(filterMonth: string, filterYear: string): Us
       if (lembretesError) throw lembretesError
 
       // Calcular métricas - mesma lógica da aba Transações
-      const receitas = transacoes?.filter(t => t.tipo === 'receita').reduce((sum, t) => {
-        const valor = Number(t.valor) || 0
+      const receitas = transacoes?.filter(t => (t as any)?.tipo === 'receita').reduce((sum, t) => {
+        const valor = Number((t as any)?.valor) || 0
         return sum + Math.abs(valor)
       }, 0) || 0
 
-      const despesas = transacoes?.filter(t => t.tipo === 'despesa').reduce((sum, t) => {
-        const valor = Number(t.valor) || 0
+      const despesas = transacoes?.filter(t => (t as any)?.tipo === 'despesa').reduce((sum, t) => {
+        const valor = Number((t as any)?.valor) || 0
         return sum + Math.abs(valor)
       }, 0) || 0
 

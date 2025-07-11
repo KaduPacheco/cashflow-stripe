@@ -16,7 +16,7 @@ export function useContasCrud() {
         .insert({
           ...conta,
           user_id: user.id
-        })
+        } as any)
         .select()
         .single()
 
@@ -39,8 +39,8 @@ export function useContasCrud() {
     try {
       const { data, error } = await supabase
         .from('contas_pagar_receber')
-        .update(updates)
-        .eq('id', id)
+        .update(updates as any)
+        .eq('id', id as any)
         .select()
         .single()
 
@@ -64,7 +64,7 @@ export function useContasCrud() {
       const { error } = await supabase
         .from('contas_pagar_receber')
         .delete()
-        .eq('id', id)
+        .eq('id', id as any)
 
       if (error) {
         console.error('Erro ao deletar conta:', error)

@@ -121,11 +121,38 @@ export function useClientesFornecedores() {
     loadClientesFornecedores()
   }, [user?.id])
 
+  const deleteClienteFornecedor = async (id: string) => {
+    if (!user?.id) return false
+
+    try {
+      const { error } = await supabase
+        .from('clientes_fornecedores')
+        .delete()
+        .eq('id', id as any)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Erro ao deletar cliente/fornecedor:', error)
+        toast.error('Erro ao deletar cliente/fornecedor')
+        return false
+      }
+
+      await loadClientesFornecedores()
+      toast.success('Cliente/Fornecedor deletado com sucesso')
+      return true
+    } catch (error) {
+      console.error('Erro ao deletar cliente/fornecedor:', error)
+      toast.error('Erro ao deletar cliente/fornecedor')
+      return false
+    }
+  }
+
   return {
     clientesFornecedores,
     loading,
     createClienteFornecedor,
     updateClienteFornecedor,
+    deleteClienteFornecedor,
     toggleAtivoClienteFornecedor,
     loadClientesFornecedores
   }

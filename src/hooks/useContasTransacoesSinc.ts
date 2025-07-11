@@ -34,7 +34,7 @@ export function useContasTransacoesSinc() {
 
       const { data, error } = await supabase
         .from('transacoes')
-        .insert([transacaoData])
+        .insert([transacaoData] as any)
         .select()
         .single()
 

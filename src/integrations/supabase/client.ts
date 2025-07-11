@@ -22,8 +22,8 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
     },
-    fetch: (url, options = {}) => {
-      return new Promise((resolve, reject) => {
+    fetch: (url: any, options: any = {}) => {
+      return new Promise<Response>((resolve, reject) => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => {
           controller.abort()
@@ -38,7 +38,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         })
         .then(response => {
           clearTimeout(timeoutId)
-          resolve(response)
+          resolve(response as Response)
         })
         .catch(error => {
           clearTimeout(timeoutId)

@@ -58,14 +58,14 @@ export default function Perfil() {
       
       if (data) {
         setProfile({
-          nome: data.nome || '',
-          phone: data.phone || '',
-          whatsapp: data.whatsapp || '',
-          avatar_url: data.avatar_url
+          nome: (data as any)?.nome || '',
+          phone: (data as any)?.phone || '',
+          whatsapp: (data as any)?.whatsapp || '',
+          avatar_url: (data as any)?.avatar_url
         })
 
         // Parse the phone number to separate country code and number
-        const phone = data.phone || ''
+        const phone = (data as any)?.phone || ''
         if (phone) {
           // Check if phone starts with +
           if (phone.startsWith('+')) {
@@ -180,7 +180,7 @@ export default function Perfil() {
           whatsapp: whatsappId,
           avatar_url: profile.avatar_url,
           updated_at: new Date().toISOString(),
-        })
+        } as any)
 
       if (error) throw error
       

@@ -72,7 +72,7 @@ export function useDemoData() {
           DEMO_CATEGORIES.map(cat => ({
             ...cat,
             userid: user.id
-          }))
+          })) as any
         )
         .select()
 
@@ -82,12 +82,12 @@ export function useDemoData() {
       const transactionsWithCategories = DEMO_TRANSACTIONS.map((transaction, index) => ({
         ...transaction,
         userId: user.id,
-        category_id: categories[index % categories.length].id,
+        category_id: (categories as any)?.[index % (categories as any)?.length]?.id,
       }))
 
       const { error: transactionsError } = await supabase
         .from('transacoes')
-        .insert(transactionsWithCategories)
+        .insert(transactionsWithCategories as any)
 
       if (transactionsError) throw transactionsError
 
@@ -98,7 +98,7 @@ export function useDemoData() {
           DEMO_REMINDERS.map(reminder => ({
             ...reminder,
             userId: user.id,
-          }))
+          })) as any
         )
 
       if (remindersError) throw remindersError
@@ -130,7 +130,7 @@ export function useDemoData() {
       await Promise.all([
         supabase.from('transacoes').delete().eq('userId', user.id).like('detalhes', '% - dados de exemplo'),
         supabase.from('lembretes').delete().eq('userId', user.id).like('descricao', '% - lembrete de exemplo'),
-        supabase.from('categorias').delete().eq('userid', user.id).eq('tags', 'demo'),
+        supabase.from('categorias').delete().eq('userid', user.id).eq('tags', 'demo' as any),
       ])
 
       toast({
