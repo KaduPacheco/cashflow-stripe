@@ -1,26 +1,26 @@
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
-import type { ClienteFornecedor } from '@/types/contas'
+import { useAuth } from './useAuth'
 import { toast } from 'sonner'
+import type { Tables } from '@/integrations/supabase/types'
+
+export type ClienteFornecedor = Tables<'clientes_fornecedores'>
 
 export function useClientesFornecedores() {
   const { user } = useAuth()
   const [clientesFornecedores, setClientesFornecedores] = useState<ClienteFornecedor[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
-  const fetchClientesFornecedores = async () => {
-    if (!user) return
+  const loadClientesFornecedores = async () => {
+    if (!user?.id) return
 
     try {
       setLoading(true)
-      
       const { data, error } = await supabase
         .from('clientes_fornecedores')
         .select('*')
         .eq('user_id', user.id)
-        .eq('ativo', true)
+        .eq('ativo', true as any)
         .order('nome')
 
       if (error) {
@@ -29,7 +29,7 @@ export function useClientesFornecedores() {
         return
       }
 
-      setClientesFornecedores(data || [])
+      setClientesFornecedores(data as any || [])
     } catch (error) {
       console.error('Erro ao carregar clientes/fornecedores:', error)
       toast.error('Erro ao carregar clientes/fornecedores')
@@ -39,15 +39,15 @@ export function useClientesFornecedores() {
   }
 
   const createClienteFornecedor = async (clienteFornecedor: Omit<ClienteFornecedor, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return
+    if (!user?.id) return null
 
     try {
       const { data, error } = await supabase
         .from('clientes_fornecedores')
         .insert({
           ...clienteFornecedor,
-          user_id: user.id
-        })
+          user_id: user.id,
+        } as any)
         .select()
         .single()
 
@@ -57,8 +57,7 @@ export function useClientesFornecedores() {
         return null
       }
 
-      toast.success('Cliente/Fornecedor criado com sucesso!')
-      fetchClientesFornecedores()
+      await loadClientesFornecedores()
       return data
     } catch (error) {
       console.error('Erro ao criar cliente/fornecedor:', error)
@@ -68,11 +67,14 @@ export function useClientesFornecedores() {
   }
 
   const updateClienteFornecedor = async (id: string, updates: Partial<ClienteFornecedor>) => {
+    if (!user?.id) return null
+
     try {
       const { data, error } = await supabase
         .from('clientes_fornecedores')
-        .update(updates)
-        .eq('id', id)
+        .update(updates as any)
+        .eq('id', id as any)
+        .eq('user_id', user.id)
         .select()
         .single()
 
@@ -82,8 +84,7 @@ export function useClientesFornecedores() {
         return null
       }
 
-      toast.success('Cliente/Fornecedor atualizado com sucesso!')
-      fetchClientesFornecedores()
+      await loadClientesFornecedores()
       return data
     } catch (error) {
       console.error('Erro ao atualizar cliente/fornecedor:', error)
@@ -92,40 +93,40 @@ export function useClientesFornecedores() {
     }
   }
 
-  const deleteClienteFornecedor = async (id: string) => {
+  const toggleAtivoClienteFornecedor = async (id: string) => {
+    if (!user?.id) return
+
     try {
-      // Marcar como inativo ao invés de deletar
       const { error } = await supabase
         .from('clientes_fornecedores')
-        .update({ ativo: false })
-        .eq('id', id)
+        .update({ ativo: false } as any)
+        .eq('id', id as any)
+        .eq('user_id', user.id)
 
       if (error) {
-        console.error('Erro ao deletar cliente/fornecedor:', error)
-        toast.error('Erro ao deletar cliente/fornecedor')
-        return false
+        console.error('Erro ao desativar cliente/fornecedor:', error)
+        toast.error('Erro ao desativar cliente/fornecedor')
+        return
       }
 
-      toast.success('Cliente/Fornecedor removido com sucesso!')
-      fetchClientesFornecedores()
-      return true
+      await loadClientesFornecedores()
+      toast.success('Cliente/Fornecedor desativado com sucesso')
     } catch (error) {
-      console.error('Erro ao deletar cliente/fornecedor:', error)
-      toast.error('Erro ao deletar cliente/fornecedor')
-      return false
+      console.error('Erro ao desativar cliente/fornecedor:', error)
+      toast.error('Erro ao desativar cliente/fornecedor')
     }
   }
 
   useEffect(() => {
-    fetchClientesFornecedores()
-  }, [user])
+    loadClientesFornecedores()
+  }, [user?.id])
 
   return {
     clientesFornecedores,
     loading,
-    fetchClientesFornecedores,
     createClienteFornecedor,
     updateClienteFornecedor,
-    deleteClienteFornecedor
+    toggleAtivoClienteFornecedor,
+    loadClientesFornecedores
   }
 }

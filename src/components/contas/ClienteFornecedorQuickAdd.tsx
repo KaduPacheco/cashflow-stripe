@@ -39,18 +39,25 @@ export function ClienteFornecedorQuickAdd({ tipo, onSuccess }: ClienteFornecedor
     try {
       const result = await createClienteFornecedor({
         nome: formData.nome,
-        tipo: formData.tipo as 'cliente' | 'fornecedor' | 'ambos',
-        documento: formData.documento || undefined,
-        email: formData.email || undefined,
-        telefone: formData.telefone || undefined,
+        tipo: formData.tipo as any,
+        documento: formData.documento || null,
+        email: formData.email || null,
+        telefone: formData.telefone || null,
+        endereco: null,
+        observacoes: null,
         ativo: true,
-        user_id: '' // Will be set by the hook
-      })
+        user_id: '',
+        created_at: '',
+        updated_at: '',
+        id: ''
+      } as any)
 
       if (result) {
         toast.success(`${tipo === 'cliente' ? 'Cliente' : 'Fornecedor'} adicionado com sucesso!`)
-        if (result && typeof result === 'object' && 'id' in result && result.id) {
+        if (result && 'id' in result && result.id) {
           onSuccess(result.id as string)
+        } else {
+          onSuccess('')
         }
         setOpen(false)
         setFormData({

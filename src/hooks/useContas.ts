@@ -54,7 +54,7 @@ export function useContas() {
 
       // Apply filters
       if (filters.tipo) {
-        query = query.eq('tipo', filters.tipo)
+        query = query.eq('tipo', filters.tipo as any)
       }
       if (filters.status) {
         query = query.eq('status', filters.status as any)
@@ -66,10 +66,10 @@ export function useContas() {
         query = query.lte('data_vencimento', filters.data_fim)
       }
       if (filters.categoria) {
-        query = query.eq('category_id', filters.categoria)
+        query = query.eq('category_id', filters.categoria as any)
       }
       if (filters.cliente_fornecedor) {
-        query = query.eq('cliente_fornecedor_id', filters.cliente_fornecedor)
+        query = query.eq('cliente_fornecedor_id', filters.cliente_fornecedor as any)
       }
       if (filters.recorrencia) {
         query = query.eq('recorrencia', filters.recorrencia as any)
@@ -86,10 +86,12 @@ export function useContas() {
         return
       }
 
-      const transformedData = (data || []).map(conta => ({
-        ...conta,
-        clientes_fornecedores: conta.clientes_fornecedores || undefined
-      })) as ContaPagarReceber[]
+      const transformedData = (data || []).map((item: any) => {
+        return {
+          ...(item as any),
+          clientes_fornecedores: (item as any).clientes_fornecedores || null
+        }
+      }) as ContaPagarReceber[]
 
       setContas(transformedData)
       setPagamentoContas(transformedData)
