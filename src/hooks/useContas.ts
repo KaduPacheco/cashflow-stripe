@@ -42,11 +42,7 @@ export function useContas() {
           clientes_fornecedores (
             id,
             nome,
-            tipo,
-            user_id,
-            ativo,
-            created_at,
-            updated_at
+            tipo
           )
         `)
         .eq('user_id', user.id)
@@ -54,10 +50,10 @@ export function useContas() {
 
       // Apply filters
       if (filters.tipo) {
-        query = query.eq('tipo', filters.tipo as any)
+        query = query.eq('tipo', filters.tipo)
       }
       if (filters.status) {
-        query = query.eq('status', filters.status as any)
+        query = query.eq('status', filters.status)
       }
       if (filters.data_inicio) {
         query = query.gte('data_vencimento', filters.data_inicio)
@@ -66,13 +62,13 @@ export function useContas() {
         query = query.lte('data_vencimento', filters.data_fim)
       }
       if (filters.categoria) {
-        query = query.eq('category_id', filters.categoria as any)
+        query = query.eq('category_id', filters.categoria)
       }
       if (filters.cliente_fornecedor) {
-        query = query.eq('cliente_fornecedor_id', filters.cliente_fornecedor as any)
+        query = query.eq('cliente_fornecedor_id', filters.cliente_fornecedor)
       }
       if (filters.recorrencia) {
-        query = query.eq('recorrencia', filters.recorrencia as any)
+        query = query.eq('recorrencia', filters.recorrencia)
       }
       if (filters.busca) {
         query = query.ilike('descricao', `%${filters.busca}%`)
@@ -86,16 +82,9 @@ export function useContas() {
         return
       }
 
-      const transformedData = (data || []).map((item: any) => {
-        return {
-          ...(item as any),
-          clientes_fornecedores: (item as any).clientes_fornecedores || null
-        }
-      }) as ContaPagarReceber[]
-
-      setContas(transformedData)
-      setPagamentoContas(transformedData)
-      setStats(calculateContasStats(transformedData))
+      setContas(data || [])
+      setPagamentoContas(data || [])
+      setStats(calculateContasStats(data || []))
     } catch (error) {
       console.error('Erro ao carregar contas:', error)
       toast.error('Erro ao carregar contas')

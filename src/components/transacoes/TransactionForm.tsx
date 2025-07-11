@@ -72,9 +72,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
               tipo,
               category_id: categoryId,
               detalhes: `${detalhes} - Parcela ${i + 1}/${numeroParcelas}`,
-              quando: dataTransacao.toISOString(),
+              quando: dataTransacao.toISOString().split('T')[0],
               userId: user.id
-            } as any)
+            })
           )
         }
         
@@ -89,7 +89,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
           detalhes,
           quando,
           userId: user.id
-        } as any)
+        })
 
         if (error) throw error
       }

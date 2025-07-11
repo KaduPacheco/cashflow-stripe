@@ -46,12 +46,12 @@ export function useOptimizedTransactions(filterMonth: string, filterYear: string
       }
 
       const total = data
-        ?.filter(t => (t as any)?.tipo?.toLowerCase() === 'receita')
-        .reduce((acc, t) => acc + Math.abs(Number((t as any)?.valor) || 0), 0)
+        ?.filter(t => t.tipo?.toLowerCase() === 'receita')
+        .reduce((acc, t) => acc + Math.abs(Number(t.valor) || 0), 0)
 
       console.log('💰 useOptimizedTransactions - Receitas calculadas:', {
         totalTransacoes: data?.length || 0,
-        receitasEncontradas: data?.filter(t => (t as any)?.tipo?.toLowerCase() === 'receita').length || 0,
+        receitasEncontradas: data?.filter(t => t.tipo?.toLowerCase() === 'receita').length || 0,
         valorTotalReceitas: total || 0,
         isSubscribed: subscriptionData.subscribed
       })

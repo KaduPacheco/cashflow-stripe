@@ -18,7 +18,7 @@ export function useLembretes() {
         .order('data', { ascending: true })
 
       if (error) throw error
-      setLembretes((data as any) || [])
+      setLembretes(data || [])
     } catch (error: any) {
       toast({
         title: "Erro ao carregar lembretes",
@@ -39,7 +39,7 @@ export function useLembretes() {
         .single()
 
       if (error) throw error
-      return (data as any)?.whatsapp || null
+      return data?.whatsapp || null
     } catch (error: any) {
       console.log('Erro ao buscar WhatsApp do usuário:', error.message)
       return null
@@ -61,7 +61,7 @@ export function useLembretes() {
 
       const { error } = await supabase
         .from('lembretes')
-        .insert([lembreteData] as any)
+        .insert([lembreteData])
 
       if (error) throw error
       
@@ -92,8 +92,8 @@ export function useLembretes() {
 
       const { error } = await supabase
         .from('lembretes')
-        .update(lembreteData as any)
-        .eq('id', id as any)
+        .update(lembreteData)
+        .eq('id', id)
 
       if (error) throw error
       
@@ -114,7 +114,7 @@ export function useLembretes() {
       const { error } = await supabase
         .from('lembretes')
         .delete()
-        .eq('id', id as any)
+        .eq('id', id)
 
       if (error) throw error
       

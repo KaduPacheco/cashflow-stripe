@@ -1,15 +1,14 @@
 
 import { useState, useEffect, useContext, createContext } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
 import { SentryLogger } from '@/lib/sentry'
-import { toast } from '@/hooks/use-toast'
 
 interface AuthContextProps {
   user: any | null
   session: any | null
   loading: boolean
-  signIn: (email: string, password: string, retryCount?: number) => Promise<any>
+  signIn: (email: string, password: string) => Promise<any>
   signUp: (email: string, password: string, metadata?: any) => Promise<any>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<any>
@@ -37,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         SecureLogger.auth('Auth state change', { event, hasSession: !!session })
         
+        // Configurar contexto do Sentry baseado na autenticação
         if (event === 'SIGNED_IN' && session?.user) {
           SentryLogger.setUser(session.user.id)
           SentryLogger.captureEvent('User signed in', 'info', {
@@ -63,104 +63,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = async (email: string, password: string, retryCount = 0) => {
-    const controller = new AbortController()
-    
+  const signIn = async (email: string, password: string) => {
     try {
       setLoading(true)
-      
-      console.log('Tentativa de login para:', email)
-      
-      // Timeout de 10s conforme solicitado
-      const timeoutId = setTimeout(() => {
-        controller.abort()
-      }, 10000)
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      
-      clearTimeout(timeoutId)
 
       if (error) {
-        console.error('Erro de autenticação:', error)
-        
-        // Tratamento específico para diferentes tipos de erro
-        if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Credenciais Inválidas",
-            description: "Email ou senha incorretos. Verifique seus dados e tente novamente.",
-            variant: "destructive",
-          })
-        } else if (
-          error.message === 'Failed to fetch' || 
-          error.message.includes('fetch') || 
-          error.name === 'AbortError' || 
-          error.message.includes('signal is aborted') ||
-          error.message.includes('timeout') ||
-          error.name === 'AuthRetryableFetchError' ||
-          error.message.includes('ERR_BLOCKED_BY_CLIENT')
-        ) {
-          toast({
-            title: "Erro de Conexão",
-            description: "Erro ao conectar com Supabase. Verifique as credenciais ou tente novamente em instantes.",
-            variant: "destructive",
-            duration: 0, // Toast persistente
-          })
-        } else {
-          toast({
-            title: "Erro no Login",
-            description: "Ocorreu um erro inesperado. Tente novamente em alguns instantes.",
-            variant: "destructive",
-          })
-        }
-        
         SentryLogger.captureEvent('Sign in failed', 'warning', {
           errorCode: error.message,
-          email: '***MASKED***',
-          retryCount
+          email: '***MASKED***' // Mascarar email por segurança
         })
-        return { error }
+        throw error
       }
 
       SecureLogger.auth('User signed in successfully')
-      console.log('Login bem-sucedido:', data.user?.email)
-      
       return { user: data.user, session: data.session }
-    } catch (error: any) {
-      console.error('Erro no processo de login:', error)
-      
-      // Tratamento para AbortError e erros de timeout
-      if (error.name === 'AbortError' || error.message.includes('signal is aborted without reason')) {
-        toast({
-          title: "Erro de Conexão",
-          description: "Erro ao conectar com Supabase. Verifique CORS, bloqueios de extensão ou variáveis ausentes.",
-          variant: "destructive",
-          duration: 0, // Toast persistente
-        })
-      } else if (error.message === 'Request timeout' || error.message === 'Connection timeout') {
-        toast({
-          title: "Erro de Conexão",
-          description: "Erro ao conectar com Supabase. Verifique as credenciais ou tente novamente em instantes.",
-          variant: "destructive",
-          duration: 0, // Toast persistente
-        })
-      } else {
-        toast({
-          title: "Erro de Conexão",
-          description: "Erro ao conectar com Supabase. Verifique as credenciais ou tente novamente em instantes.",
-          variant: "destructive",
-          duration: 0, // Toast persistente
-        })
-      }
-      
+    } catch (error) {
       SecureLogger.auth('Sign in error', error)
       SentryLogger.captureError(
         error instanceof Error ? error : new Error('Sign in failed'),
-        { action: 'sign_in', retryCount }
+        { action: 'sign_in' }
       )
-      return { error }
+      throw error
     } finally {
       setLoading(false)
     }
@@ -173,17 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          data: metadata,
-          emailRedirectTo: `${window.location.origin}/`
+          data: metadata
         }
       })
 
       if (error) {
-        toast({
-          title: "Erro no cadastro",
-          description: error.message,
-          variant: "destructive",
-        })
         SentryLogger.captureEvent('Sign up failed', 'warning', {
           errorCode: error.message
         })
@@ -243,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         SentryLogger.captureEvent('Reset password failed', 'warning', {
           errorCode: error.message,
-          email: '***MASKED***'
+          email: '***MASKED***' // Mascarar email por segurança
         })
         throw error
       }
@@ -266,10 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       const { data, error } = await supabase.auth.getUser()
 
-      if (error) {
-        console.warn('Erro ao obter usuário:', error.message)
-        return
-      }
+      if (error) throw error
 
       if (data.user) {
         SentryLogger.setUser(data.user.id)
@@ -279,10 +197,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.user)
+      // Get session separately
       const { data: sessionData } = await supabase.auth.getSession()
       setSession(sessionData.session)
     } catch (error) {
-      console.warn('Erro ao verificar sessão:', error)
       SecureLogger.error('Get user error', error)
       SentryLogger.captureError(
         error instanceof Error ? error : new Error('Get user failed'),

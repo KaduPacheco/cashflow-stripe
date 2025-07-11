@@ -1,42 +1,67 @@
 
-import type { Transaction, TransactionStats } from './types'
+import { supabase } from '@/lib/supabase'
+import { NetworkError } from '@/utils/errorHandler'
+import type { TransactionStats } from './types'
 
 export class TransactionStatsService {
-  static calculate(transactions: Transaction[]): TransactionStats {
-    const activeTransactions = transactions.filter(t => !t.detalhes?.includes('[ARCHIVED]'))
-    
-    const totalReceitas = activeTransactions
-      .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + (t.valor || 0), 0)
-    
-    const totalDespesas = activeTransactions
-      .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + (t.valor || 0), 0)
-    
-    const saldoTotal = totalReceitas - totalDespesas
-    
-    const transacoesPorCategoria = activeTransactions.reduce((acc, transaction) => {
-      const categoryId = transaction.category_id
-      if (!acc[categoryId]) {
-        acc[categoryId] = { receitas: 0, despesas: 0, total: 0 }
+  static async calculate(
+    userId: string, 
+    dateFrom?: string, 
+    dateTo?: string, 
+    includeArchived?: boolean
+  ): Promise<{ success: true; data: TransactionStats }> {
+    try {
+      let query = supabase
+        .from('transacoes')
+        .select('tipo, valor')
+        .eq('userId', userId)
+
+      // Filtrar dados arquivados por padrão
+      if (!includeArchived) {
+        query = query.eq('archived', false)
       }
-      
-      const valor = transaction.valor || 0
-      if (transaction.tipo === 'receita') {
-        acc[categoryId].receitas += valor
-      } else {
-        acc[categoryId].despesas += valor
+
+      if (dateFrom) {
+        query = query.gte('quando', dateFrom)
       }
-      acc[categoryId].total = acc[categoryId].receitas - acc[categoryId].despesas
-      
-      return acc
-    }, {} as Record<string, { receitas: number; despesas: number; total: number }>)
-    
-    return {
-      totalReceitas,
-      totalDespesas,
-      saldoTotal,
-      transacoesPorCategoria
+      if (dateTo) {
+        query = query.lte('quando', dateTo)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        throw new NetworkError(error.message, 500, 'DATABASE_ERROR')
+      }
+
+      const stats = (data || []).reduce(
+        (acc, transaction) => {
+          if (transaction.tipo === 'receita') {
+            acc.totalReceitas += transaction.valor
+            acc.countReceita += 1
+          } else {
+            acc.totalDespesas += transaction.valor
+            acc.countDespesa += 1
+          }
+          return acc
+        },
+        { totalReceitas: 0, totalDespesas: 0, countReceita: 0, countDespesa: 0 }
+      )
+
+      return {
+        success: true,
+        data: {
+          totalReceitas: stats.totalReceitas,
+          totalDespesas: stats.totalDespesas,
+          saldo: stats.totalReceitas - stats.totalDespesas,
+          totalTransactions: stats.countReceita + stats.countDespesa
+        }
+      }
+    } catch (error) {
+      if (error instanceof NetworkError) {
+        throw error
+      }
+      throw new NetworkError('Erro ao calcular estatísticas', 500, 'UNKNOWN_ERROR')
     }
   }
 }

@@ -31,6 +31,7 @@ interface Transacao {
   tipo: string | null
   category_id: string
   userId: string | null
+  archived: boolean
   categorias?: {
     id: string
     nome: string
@@ -44,7 +45,7 @@ interface Lembrete {
   descricao: string | null
   data: string | null
   valor: number | null
-  whatsapp: string | null
+  archived: boolean
 }
 
 const dicas = [
@@ -154,8 +155,8 @@ export default function Dashboard() {
         isSubscribed: subscriptionData.subscribed
       })
 
-      setTransacoes((transacoes as any) || [])
-      setLembretes((lembretes as any) || [])
+      setTransacoes(transacoes || [])
+      setLembretes(lembretes || [])
 
     } catch (error: any) {
       console.error('❌ Dashboard: Error loading data:', error)

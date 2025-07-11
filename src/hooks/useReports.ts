@@ -63,12 +63,12 @@ export function useReports() {
 
       // Apply type filter
       if (filters.type) {
-        query = query.eq('tipo', filters.type as any)
+        query = query.eq('tipo', filters.type)
       }
 
       // Apply category filter
       if (filters.categoryId) {
-        query = query.eq('category_id', filters.categoryId as any)
+        query = query.eq('category_id', filters.categoryId)
       }
 
       const { data, error } = await query.order('quando', { ascending: false })
@@ -78,7 +78,7 @@ export function useReports() {
         throw error
       }
 
-      return (data as any) as ReportTransaction[]
+      return data as ReportTransaction[]
     },
     enabled: !!user?.id,
   })

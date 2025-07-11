@@ -8,6 +8,7 @@ export interface Transaction {
   detalhes?: string
   quando: string
   userId: string
+  archived?: boolean
 }
 
 export interface CreateTransactionData {
@@ -28,11 +29,12 @@ export interface TransactionFilters {
   dateTo?: string
   limit?: number
   offset?: number
+  includeArchived?: boolean
 }
 
 export interface TransactionStats {
   totalReceitas: number
   totalDespesas: number
-  saldoTotal: number
-  transacoesPorCategoria: Record<string, { receitas: number; despesas: number; total: number }>
+  saldo: number
+  totalTransactions: number
 }
