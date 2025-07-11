@@ -18,16 +18,37 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       'apikey': supabaseAnonKey,
       'Authorization': `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'return=minimal',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
     },
     fetch: (url, options = {}) => {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-      }).finally(() => clearTimeout(timeoutId))
+      return new Promise((resolve, reject) => {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => {
+          controller.abort()
+          reject(new Error('Request timeout'))
+        }, 15000) // 15s timeout
+        
+        fetch(url, {
+          ...options,
+          signal: controller.signal,
+          mode: 'cors',
+          credentials: 'omit'
+        })
+        .then(response => {
+          clearTimeout(timeoutId)
+          resolve(response)
+        })
+        .catch(error => {
+          clearTimeout(timeoutId)
+          if (error.name === 'AbortError') {
+            reject(new Error('Connection timeout'))
+          } else {
+            reject(error)
+          }
+        })
+      })
     }
   },
   realtime: {

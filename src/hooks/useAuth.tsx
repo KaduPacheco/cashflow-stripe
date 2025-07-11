@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('Tentativa de login para:', email)
       
+      // Tentativa direta sem retry automático
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -77,25 +78,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Erro de autenticação:', error)
         
-        // Tratamento específico para erros de rede e AbortError
-        if (error.message === 'Failed to fetch' || error.message.includes('fetch') || 
-            error.name === 'AbortError' || error.message.includes('signal is aborted') ||
-            error.name === 'AuthRetryableFetchError') {
+        // Tratamento específico para diferentes tipos de erro
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Credenciais Inválidas",
+            description: "Email ou senha incorretos. Verifique seus dados e tente novamente.",
+            variant: "destructive",
+          })
+        } else if (
+          error.message === 'Failed to fetch' || 
+          error.message.includes('fetch') || 
+          error.name === 'AbortError' || 
+          error.message.includes('signal is aborted') ||
+          error.message.includes('timeout') ||
+          error.name === 'AuthRetryableFetchError'
+        ) {
+          // Retry apenas para erros de rede
           if (retryCount < 2) {
             console.log(`Tentando novamente... (${retryCount + 1}/2)`)
-            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+            await new Promise(resolve => setTimeout(resolve, 2000))
             return signIn(email, password, retryCount + 1)
           }
           
           toast({
             title: "Erro de conexão com Supabase",
             description: "Verifique sua rede ou recarregue a página.",
-            variant: "destructive",
-          })
-        } else if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Credenciais Inválidas",
-            description: "Email ou senha incorretos. Verifique seus dados e tente novamente.",
             variant: "destructive",
           })
         } else {
@@ -111,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: '***MASKED***',
           retryCount
         })
-        throw error
+        return { error }
       }
 
       SecureLogger.auth('User signed in successfully')
@@ -121,11 +128,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('Erro no processo de login:', error)
       
-      // Tratamento adicional para erros de timeout/rede
-      if (error.name === 'AbortError') {
+      // Tratamento para erros capturados
+      if (error.message === 'Request timeout' || error.message === 'Connection timeout') {
         if (retryCount < 2) {
           console.log(`Timeout - tentando novamente... (${retryCount + 1}/2)`)
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+          await new Promise(resolve => setTimeout(resolve, 2000))
           return signIn(email, password, retryCount + 1)
         }
         
@@ -134,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: "A conexão demorou muito para responder. Verifique sua internet e tente novamente.",
           variant: "destructive",
         })
-      } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      } else {
         toast({
           title: "Erro de Conectividade",
           description: "Verifique se você está conectado à internet ou se algum bloqueador está ativo.",
@@ -147,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error instanceof Error ? error : new Error('Sign in failed'),
         { action: 'sign_in', retryCount }
       )
-      throw error
+      return { error }
     } finally {
       setLoading(false)
     }
