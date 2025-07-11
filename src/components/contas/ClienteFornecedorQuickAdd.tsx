@@ -49,7 +49,9 @@ export function ClienteFornecedorQuickAdd({ tipo, onSuccess }: ClienteFornecedor
 
       if (result) {
         toast.success(`${tipo === 'cliente' ? 'Cliente' : 'Fornecedor'} adicionado com sucesso!`)
-        onSuccess(result.id)
+        if (result && typeof result === 'object' && 'id' in result && result.id) {
+          onSuccess(result.id as string)
+        }
         setOpen(false)
         setFormData({
           nome: '',

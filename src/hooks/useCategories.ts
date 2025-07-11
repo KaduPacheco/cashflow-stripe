@@ -3,15 +3,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { toast } from './use-toast'
+import type { Tables } from '@/integrations/supabase/types'
 
-export interface Category {
-  id: string
-  userid: string
-  nome: string
-  tags?: string
-  created_at: string
-  updated_at: string
-}
+export type Category = Tables<'categorias'>
 
 export function useCategories() {
   const { user } = useAuth()
@@ -44,7 +38,7 @@ export function useCategories() {
         return
       }
 
-      setCategories(data || [])
+      setCategories(data as any || [])
     } catch (error) {
       console.error('Erro inesperado:', error)
       toast({
@@ -64,11 +58,11 @@ export function useCategories() {
     try {
       const { data: category, error } = await supabase
         .from('categorias')
-        .insert([{
+        .insert({
           userid: user.id,
           nome: data.nome,
-          tags: data.tags
-        }])
+          tags: data.tags || ''
+        } as any)
         .select()
         .single()
 
@@ -109,9 +103,11 @@ export function useCategories() {
     try {
       const { data: category, error } = await supabase
         .from('categorias')
-        .update({ nome: data.updates.nome, tags: data.updates.tags })
-        .eq('id', data.id)
-        .eq('userid', user.id)
+        .update({ 
+          nome: data.updates.nome, 
+          tags: data.updates.tags || ''
+        } as any)
+        .eq('id', data.id as any)
         .select()
         .single()
 
@@ -153,8 +149,7 @@ export function useCategories() {
       const { error } = await supabase
         .from('categorias')
         .delete()
-        .eq('id', id)
-        .eq('userid', user.id)
+        .eq('id', id as any)
 
       if (error) {
         console.error('Erro ao excluir categoria:', error)
