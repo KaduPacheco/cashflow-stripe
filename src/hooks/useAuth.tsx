@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) {
           toast({
             title: "Erro de Conexão",
-            description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
+            description: "Erro ao conectar com Supabase. Verifique as credenciais ou tente novamente em instantes.",
             variant: "destructive",
             duration: 0, // Toast persistente
           })
@@ -135,21 +135,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.name === 'AbortError' || error.message.includes('signal is aborted without reason')) {
         toast({
           title: "Erro de Conexão",
-          description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
+          description: "Erro ao conectar com Supabase. Verifique CORS, bloqueios de extensão ou variáveis ausentes.",
           variant: "destructive",
           duration: 0, // Toast persistente
         })
       } else if (error.message === 'Request timeout' || error.message === 'Connection timeout') {
         toast({
           title: "Erro de Conexão",
-          description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
+          description: "Erro ao conectar com Supabase. Verifique as credenciais ou tente novamente em instantes.",
           variant: "destructive",
           duration: 0, // Toast persistente
         })
       } else {
         toast({
           title: "Erro de Conexão",
-          description: "Erro ao conectar com o servidor. Tente novamente ou recarregue a página.",
+          description: "Erro ao conectar com Supabase. Verifique as credenciais ou tente novamente em instantes.",
           variant: "destructive",
           duration: 0, // Toast persistente
         })
