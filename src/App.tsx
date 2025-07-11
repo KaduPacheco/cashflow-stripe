@@ -1,5 +1,4 @@
-
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy } from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,8 +10,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { EnhancedLoadingSpinner } from "@/components/ui/enhanced-loading-spinner";
 import { LazyWrapper } from "@/components/ui/lazy-wrapper";
 import { PerformanceMonitor } from "@/components/dev/PerformanceMonitor";
-import { initSentry, SentryLogger } from "@/lib/sentry";
-import { setupGlobalErrorHandling } from "@/lib/errorInterceptor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
@@ -34,10 +31,6 @@ const Perfil = lazy(() => import("./pages/Perfil"));
 const Plano = lazy(() => import("./pages/Plano"));
 const ContasPagarReceber = lazy(() => import("./pages/ContasPagarReceber"));
 
-// Inicializar Sentry na inicialização da aplicação
-initSentry()
-setupGlobalErrorHandling()
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -51,15 +44,6 @@ const queryClient = new QueryClient({
         return failureCount < 3;
       },
     },
-    mutations: {
-      onError: (error) => {
-        // Capturar erros de mutations no Sentry
-        SentryLogger.captureError(
-          error instanceof Error ? error : new Error(String(error)),
-          { context: 'react_query_mutation' }
-        )
-      }
-    }
   },
 });
 
@@ -170,31 +154,21 @@ function AppRoutes() {
   );
 }
 
-const App = () => {
-  useEffect(() => {
-    // Log de inicialização da aplicação
-    SentryLogger.captureEvent('Application initialized', 'info', {
-      environment: import.meta.env.MODE,
-      version: import.meta.env.VITE_APP_VERSION || '1.0.0'
-    })
-  }, [])
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="financeflow-theme">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <AppRoutes />
-              <PerformanceMonitor />
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  )
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider defaultTheme="light" storageKey="financeflow-theme">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+            <PerformanceMonitor />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 export default App;

@@ -1,6 +1,6 @@
+
 import { toast } from 'sonner'
 import { SecurityError } from '@/lib/security'
-import { SentryLogger, ErrorInterceptor, ErrorCategory } from '@/lib/errorInterceptor'
 
 export interface AppError {
   message: string
@@ -52,27 +52,12 @@ export function handleError(error: unknown, showToast: boolean = true): AppError
 
   let appError: AppError
 
-  // Converter para Error se necessário
-  const errorInstance = error instanceof Error 
-    ? error 
-    : new Error(typeof error === 'string' ? error : 'Unknown error')
-
-  // Usar o interceptador para estruturar o erro
-  const structuredError = ErrorInterceptor.handle(errorInstance, { showToast })
-
   if (error instanceof SecurityError) {
     appError = createAppError(error.message, error.code, error.statusCode)
     
-    // Log de segurança no Sentry
-    SentryLogger.captureEvent(
-      `Security violation: ${error.code}`, 
-      'error', 
-      { securityCode: error.code }
-    )
-    
     if (showToast) {
       toast.error('Erro de Segurança', {
-        description: structuredError.userMessage,
+        description: error.message,
       })
     }
   } else if (error instanceof ValidationError) {
@@ -80,7 +65,7 @@ export function handleError(error: unknown, showToast: boolean = true): AppError
     
     if (showToast) {
       toast.error('Erro de Validação', {
-        description: structuredError.userMessage,
+        description: error.message,
       })
     }
   } else if (error instanceof NetworkError) {
@@ -88,15 +73,15 @@ export function handleError(error: unknown, showToast: boolean = true): AppError
     
     if (showToast) {
       toast.error('Erro de Conexão', {
-        description: structuredError.userMessage,
+        description: error.message,
       })
     }
   } else if (error instanceof Error) {
     appError = createAppError(error.message, 'UNKNOWN_ERROR', 500)
     
-    if (showToast && structuredError.shouldShowToUser) {
+    if (showToast) {
       toast.error('Erro Inesperado', {
-        description: structuredError.userMessage,
+        description: 'Algo deu errado. Tente novamente.',
       })
     }
   } else {
@@ -104,7 +89,7 @@ export function handleError(error: unknown, showToast: boolean = true): AppError
     
     if (showToast) {
       toast.error('Erro Inesperado', {
-        description: 'Algo deu errado. Nossa equipe foi notificada.',
+        description: 'Algo deu errado. Tente novamente.',
       })
     }
   }
@@ -116,17 +101,15 @@ export function handleError(error: unknown, showToast: boolean = true): AppError
 }
 
 function logError(error: AppError): void {
-  // Log seguro (dados sensíveis já foram filtrados)
-  SentryLogger.captureEvent(
-    `App Error: ${error.code}`,
-    'error',
-    {
-      code: error.code,
-      statusCode: error.statusCode,
-      timestamp: error.timestamp,
-      context: error.context
-    }
-  )
+  // In production, send to monitoring service
+  console.error('App Error:', {
+    message: error.message,
+    code: error.code,
+    statusCode: error.statusCode,
+    timestamp: error.timestamp,
+    context: error.context,
+    stack: new Error().stack
+  })
 }
 
 export function isRetryableError(error: AppError): boolean {
