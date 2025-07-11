@@ -77,8 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Erro de autenticação:', error)
         
-        // Tratamento específico para erros de rede com retry
-        if (error.message === 'Failed to fetch' || error.message.includes('fetch') || error.name === 'AbortError') {
+        // Tratamento específico para erros de rede e AbortError
+        if (error.message === 'Failed to fetch' || error.message.includes('fetch') || 
+            error.name === 'AbortError' || error.message.includes('signal is aborted') ||
+            error.name === 'AuthRetryableFetchError') {
           if (retryCount < 2) {
             console.log(`Tentando novamente... (${retryCount + 1}/2)`)
             await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
@@ -86,8 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           
           toast({
-            title: "Erro de Conexão",
-            description: "Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente mais tarde.",
+            title: "Erro de conexão com Supabase",
+            description: "Verifique sua rede ou recarregue a página.",
             variant: "destructive",
           })
         } else if (error.message.includes('Invalid login credentials')) {
