@@ -34,8 +34,8 @@ export default function Transacoes() {
   const [editingTransaction, setEditingTransaction] = useState<Transacao | null>(null)
 
   const handleEdit = (transacao: Transacao) => {
-    // TODO: Implementar edição de transações
-    console.log('Editar transação:', transacao)
+    setEditingTransaction(transacao)
+    setDialogOpen(true)
   }
 
   const handleDelete = async (id: number) => {
@@ -128,7 +128,10 @@ export default function Transacoes() {
           onOpenChange={setDialogOpen}
           title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
         >
-          <TransactionForm onSuccess={handleFormSuccess} />
+          <TransactionForm 
+            onSuccess={handleFormSuccess}
+            editingTransaction={editingTransaction}
+          />
         </ResponsiveModal>
       </SubscriptionGate>
     </div>

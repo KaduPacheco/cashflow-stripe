@@ -1,22 +1,26 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
+import { useTransactions } from '@/hooks/useTransactions'
 import { TransactionFormBasicInfo } from './form/TransactionFormBasicInfo'
 import { TransactionFormClassification } from './form/TransactionFormClassification'
 import { TransactionFormScheduling } from './form/TransactionFormScheduling'
 import { TransactionFormDetails } from './form/TransactionFormDetails'
 import { TransactionFormSpecialOptions } from './form/TransactionFormSpecialOptions'
 import { useRecurringLogic } from '@/hooks/useRecurringLogic'
+import { Transacao } from '@/types/transaction'
 
 interface TransactionFormProps {
   onSuccess: () => void
+  editingTransaction?: Transacao | null
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) => {
-  const { user } = useAuth()
+export const TransactionForm: React.FC<TransactionFormProps> = ({ 
+  onSuccess, 
+  editingTransaction 
+}) => {
+  const { createTransaction, updateTransaction } = useTransactions()
   const [estabelecimento, setEstabelecimento] = useState('')
   const [valor, setValor] = useState('')
   const [tipo, setTipo] = useState<'receita' | 'despesa'>('despesa')
@@ -36,13 +40,36 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
     setNumeroParcelas
   } = useRecurringLogic()
 
+  // Load editing data when editingTransaction changes
+  useEffect(() => {
+    if (editingTransaction) {
+      setEstabelecimento(editingTransaction.estabelecimento || '')
+      setValor(editingTransaction.valor?.toString() || '')
+      setTipo(editingTransaction.tipo as 'receita' | 'despesa' || 'despesa')
+      setCategoryId(editingTransaction.category_id || '')
+      setQuando(editingTransaction.quando ? editingTransaction.quando.split('T')[0] : new Date().toISOString().split('T')[0])
+      setDetalhes(editingTransaction.detalhes || '')
+    } else {
+      // Reset form for new transaction
+      setEstabelecimento('')
+      setValor('')
+      setTipo('despesa')
+      setCategoryId('')
+      setQuando(new Date().toISOString().split('T')[0])
+      setDetalhes('')
+      setRecorrente(false)
+      setParcelado(false)
+      setNumeroParcelas(2)
+    }
+  }, [editingTransaction, setRecorrente, setParcelado, setNumeroParcelas])
+
   const handleTipoChange = (value: string) => {
     setTipo(value as 'receita' | 'despesa')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !estabelecimento || !valor || !categoryId) {
+    if (!estabelecimento || !valor || !categoryId) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -55,60 +82,50 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
 
     try {
       const valorNumerico = parseFloat(valor.replace(',', '.'))
-      
-      if (parcelado && numeroParcelas > 1) {
-        // Criar múltiplas transações parceladas
-        const valorParcela = valorNumerico / numeroParcelas
-        const promises = []
-        
-        for (let i = 0; i < numeroParcelas; i++) {
-          const dataTransacao = new Date(quando)
-          dataTransacao.setMonth(dataTransacao.getMonth() + i)
+      const formData = {
+        estabelecimento,
+        valor: valorNumerico,
+        tipo,
+        category_id: categoryId,
+        detalhes,
+        quando
+      }
+
+      if (editingTransaction) {
+        // Update existing transaction
+        await updateTransaction(editingTransaction.id, formData)
+        toast({
+          title: "Sucesso!",
+          description: "Transação atualizada com sucesso",
+        })
+      } else {
+        // Create new transaction
+        if (parcelado && numeroParcelas > 1) {
+          // Handle installments for new transactions only
+          const valorParcela = valorNumerico / numeroParcelas
           
-          promises.push(
-            supabase.from('transacoes').insert({
+          for (let i = 0; i < numeroParcelas; i++) {
+            const dataTransacao = new Date(quando)
+            dataTransacao.setMonth(dataTransacao.getMonth() + i)
+            
+            await createTransaction({
               estabelecimento: `${estabelecimento} (${i + 1}/${numeroParcelas})`,
               valor: valorParcela,
               tipo,
               category_id: categoryId,
               detalhes: `${detalhes} - Parcela ${i + 1}/${numeroParcelas}`,
-              quando: dataTransacao.toISOString().split('T')[0],
-              userId: user.id
+              quando: dataTransacao.toISOString().split('T')[0]
             })
-          )
+          }
+        } else {
+          await createTransaction(formData)
         }
         
-        await Promise.all(promises)
-      } else {
-        // Criar transação única
-        const { error } = await supabase.from('transacoes').insert({
-          estabelecimento,
-          valor: valorNumerico,
-          tipo,
-          category_id: categoryId,
-          detalhes,
-          quando,
-          userId: user.id
+        toast({
+          title: "Sucesso!",
+          description: "Transação adicionada com sucesso",
         })
-
-        if (error) throw error
       }
-
-      toast({
-        title: "Sucesso!",
-        description: "Transação adicionada com sucesso",
-      })
-
-      // Reset form
-      setEstabelecimento('')
-      setValor('')
-      setTipo('despesa')
-      setCategoryId('')
-      setQuando(new Date().toISOString().split('T')[0])
-      setDetalhes('')
-      setRecorrente(false)
-      setParcelado(false)
-      setNumeroParcelas(2)
 
       onSuccess()
     } catch (error: any) {
@@ -149,16 +166,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
           onDetalhesChange={setDetalhes}
         />
 
-        <TransactionFormSpecialOptions
-          recorrente={recorrente}
-          recorrencia={recorrencia}
-          parcelado={parcelado}
-          numeroParcelas={numeroParcelas}
-          onRecorrenteChange={setRecorrente}
-          onRecorrenciaChange={setRecorrencia}
-          onParceladoChange={setParcelado}
-          onNumeroParcelasChange={setNumeroParcelas}
-        />
+        {!editingTransaction && (
+          <TransactionFormSpecialOptions
+            recorrente={recorrente}
+            recorrencia={recorrencia}
+            parcelado={parcelado}
+            numeroParcelas={numeroParcelas}
+            onRecorrenteChange={setRecorrente}
+            onRecorrenciaChange={setRecorrencia}
+            onParceladoChange={setParcelado}
+            onNumeroParcelasChange={setNumeroParcelas}
+          />
+        )}
 
         <div className="sticky bottom-0 bg-background border-t pt-4 mt-6">
           <Button 
@@ -166,7 +185,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSuccess }) =
             disabled={loading}
             className="w-full bg-primary hover:bg-primary/90 min-h-[44px] text-sm font-medium"
           >
-            {loading ? 'Salvando...' : 'Adicionar Transação'}
+            {loading ? 'Salvando...' : editingTransaction ? 'Atualizar Transação' : 'Adicionar Transação'}
           </Button>
         </div>
       </form>

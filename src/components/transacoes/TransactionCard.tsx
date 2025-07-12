@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Edit, Trash2, Calendar, Building2, FileText } from 'lucide-react'
+import { Edit, Trash2, Calendar, Building2, FileText, Tag } from 'lucide-react'
 import { SafeDisplay } from '@/components/ui/safe-display'
 import type { Transacao } from '@/types/transaction'
 
@@ -41,10 +41,18 @@ export function TransactionCard({
                 {transacao.estabelecimento}
               </SafeDisplay>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <Calendar className="h-3 w-3" />
               <span>{formatDate(transacao.quando || '')}</span>
             </div>
+            {transacao.categorias && (
+              <div className="flex items-center gap-2 text-sm">
+                <Tag className="h-3 w-3 text-muted-foreground" />
+                <Badge variant="secondary" className="text-xs">
+                  {transacao.categorias.nome}
+                </Badge>
+              </div>
+            )}
           </div>
           
           <div className="flex flex-col items-end gap-2">
