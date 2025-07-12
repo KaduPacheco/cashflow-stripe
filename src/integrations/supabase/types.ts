@@ -175,8 +175,11 @@ export type Database = {
         Row: {
           created_at: string
           data: string | null
+          data_envio_whatsapp: string | null
           descricao: string | null
+          horario_envio_whatsapp: string | null
           id: number
+          notificar_whatsapp: boolean | null
           userId: string | null
           valor: number | null
           whatsapp: string | null
@@ -184,8 +187,11 @@ export type Database = {
         Insert: {
           created_at?: string
           data?: string | null
+          data_envio_whatsapp?: string | null
           descricao?: string | null
+          horario_envio_whatsapp?: string | null
           id?: number
+          notificar_whatsapp?: boolean | null
           userId?: string | null
           valor?: number | null
           whatsapp?: string | null
@@ -193,8 +199,11 @@ export type Database = {
         Update: {
           created_at?: string
           data?: string | null
+          data_envio_whatsapp?: string | null
           descricao?: string | null
+          horario_envio_whatsapp?: string | null
           id?: number
+          notificar_whatsapp?: boolean | null
           userId?: string | null
           valor?: number | null
           whatsapp?: string | null

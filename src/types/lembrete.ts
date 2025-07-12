@@ -7,10 +7,16 @@ export interface Lembrete {
   data: string | null
   valor: number | null
   whatsapp: string | null
+  notificar_whatsapp: boolean | null
+  data_envio_whatsapp: string | null
+  horario_envio_whatsapp: string | null
 }
 
 export interface LembreteFormData {
   descricao: string
   data: string
   valor: string
+  notificar_whatsapp: boolean
+  data_envio_whatsapp: string
+  horario_envio_whatsapp: string
 }

@@ -2,12 +2,14 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useLembretes } from '@/hooks/useLembretes'
+import { useAuth } from '@/hooks/useAuth'
 import { LembreteForm } from '@/components/lembretes/LembreteForm'
 import { LembretesList } from '@/components/lembretes/LembretesList'
 import { LembretesActions } from '@/components/lembretes/LembretesActions'
 import { Lembrete, LembreteFormData } from '@/types/lembrete'
 
 export default function Lembretes() {
+  const { user } = useAuth()
   const { lembretes, loading, createLembrete, updateLembrete, deleteLembrete, deleteAllLembretes } = useLembretes()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingLembrete, setEditingLembrete] = useState<Lembrete | null>(null)
@@ -15,6 +17,9 @@ export default function Lembretes() {
     descricao: '',
     data: '',
     valor: '',
+    notificar_whatsapp: false,
+    data_envio_whatsapp: '',
+    horario_envio_whatsapp: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +38,9 @@ export default function Lembretes() {
         descricao: '',
         data: '',
         valor: '',
+        notificar_whatsapp: false,
+        data_envio_whatsapp: '',
+        horario_envio_whatsapp: '',
       })
     } catch (error) {
       // Erro já tratado no hook
@@ -45,6 +53,9 @@ export default function Lembretes() {
       descricao: lembrete.descricao || '',
       data: lembrete.data || '',
       valor: lembrete.valor?.toString() || '',
+      notificar_whatsapp: lembrete.notificar_whatsapp || false,
+      data_envio_whatsapp: lembrete.data_envio_whatsapp?.split('T')[0] || '',
+      horario_envio_whatsapp: lembrete.horario_envio_whatsapp || '',
     })
     setDialogOpen(true)
   }
@@ -60,6 +71,9 @@ export default function Lembretes() {
       descricao: '',
       data: '',
       valor: '',
+      notificar_whatsapp: false,
+      data_envio_whatsapp: '',
+      horario_envio_whatsapp: '',
     })
     setDialogOpen(true)
   }
@@ -85,6 +99,7 @@ export default function Lembretes() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onCreateNew={handleCreateNew}
+        userName={user?.user_metadata?.nome || user?.email}
       />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

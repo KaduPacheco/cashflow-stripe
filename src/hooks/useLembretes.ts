@@ -57,6 +57,9 @@ export function useLembretes() {
         valor: formData.valor ? parseFloat(formData.valor) : null,
         whatsapp: whatsappNumber,
         userId: user?.id,
+        notificar_whatsapp: formData.notificar_whatsapp,
+        data_envio_whatsapp: formData.data_envio_whatsapp || null,
+        horario_envio_whatsapp: formData.horario_envio_whatsapp || null,
       }
 
       const { error } = await supabase
@@ -88,6 +91,9 @@ export function useLembretes() {
         valor: formData.valor ? parseFloat(formData.valor) : null,
         whatsapp: whatsappNumber,
         userId: user?.id,
+        notificar_whatsapp: formData.notificar_whatsapp,
+        data_envio_whatsapp: formData.data_envio_whatsapp || null,
+        horario_envio_whatsapp: formData.horario_envio_whatsapp || null,
       }
 
       const { error } = await supabase

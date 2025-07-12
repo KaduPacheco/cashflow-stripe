@@ -12,9 +12,10 @@ interface LembretesListProps {
   onEdit: (lembrete: Lembrete) => void
   onDelete: (id: number) => void
   onCreateNew: () => void
+  userName?: string
 }
 
-export function LembretesList({ lembretes, loading, onEdit, onDelete, onCreateNew }: LembretesListProps) {
+export function LembretesList({ lembretes, loading, onEdit, onDelete, onCreateNew, userName }: LembretesListProps) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -57,7 +58,8 @@ export function LembretesList({ lembretes, loading, onEdit, onDelete, onCreateNe
           lembrete={lembrete}
           onEdit={onEdit}
           onDelete={onDelete}
-          onWhatsApp={() => {}} // Função placeholder
+          onWhatsApp={() => {}} // Função já implementada no próprio card
+          userName={userName}
         />
       ))}
     </div>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { LembreteFormData } from '@/types/lembrete'
 
 interface LembreteFormProps {
@@ -26,6 +27,7 @@ export function LembreteForm({ formData, setFormData, onSubmit, isEditing }: Lem
           required
         />
       </div>
+      
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="data">Data</Label>
@@ -49,6 +51,45 @@ export function LembreteForm({ formData, setFormData, onSubmit, isEditing }: Lem
           />
         </div>
       </div>
+
+      <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="notificar_whatsapp"
+            checked={formData.notificar_whatsapp}
+            onCheckedChange={(checked) => 
+              setFormData({...formData, notificar_whatsapp: checked as boolean})
+            }
+          />
+          <Label htmlFor="notificar_whatsapp" className="text-sm font-medium">
+            Receber notificação via WhatsApp
+          </Label>
+        </div>
+
+        {formData.notificar_whatsapp && (
+          <div className="grid grid-cols-2 gap-4 ml-6">
+            <div className="space-y-2">
+              <Label htmlFor="data_envio">Data do envio</Label>
+              <Input
+                id="data_envio"
+                type="date"
+                value={formData.data_envio_whatsapp}
+                onChange={(e) => setFormData({...formData, data_envio_whatsapp: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="horario_envio">Horário do envio</Label>
+              <Input
+                id="horario_envio"
+                type="time"
+                value={formData.horario_envio_whatsapp}
+                onChange={(e) => setFormData({...formData, horario_envio_whatsapp: e.target.value})}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
         {isEditing ? 'Atualizar' : 'Adicionar'} Lembrete
       </Button>
