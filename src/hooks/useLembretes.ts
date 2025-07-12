@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -115,6 +116,33 @@ export function useLembretes() {
     }
   }
 
+  const scheduleWhatsAppNotification = async (id: number, date: string, time: string) => {
+    try {
+      const whatsappNumber = await getUserWhatsApp()
+
+      const { error } = await supabase
+        .from('lembretes')
+        .update({
+          notificar_whatsapp: true,
+          data_envio_whatsapp: date,
+          horario_envio_whatsapp: time,
+          whatsapp: whatsappNumber
+        })
+        .eq('id', id)
+
+      if (error) throw error
+      
+      fetchLembretes()
+    } catch (error: any) {
+      toast({
+        title: "Erro ao agendar notificação",
+        description: error.message,
+        variant: "destructive",
+      })
+      throw error
+    }
+  }
+
   const deleteLembrete = async (id: number) => {
     try {
       const { error } = await supabase
@@ -170,6 +198,7 @@ export function useLembretes() {
     updateLembrete,
     deleteLembrete,
     deleteAllLembretes,
+    scheduleWhatsAppNotification,
     refetch: fetchLembretes
   }
 }

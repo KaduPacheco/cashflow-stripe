@@ -10,7 +10,15 @@ import { Lembrete, LembreteFormData } from '@/types/lembrete'
 
 export default function Lembretes() {
   const { user } = useAuth()
-  const { lembretes, loading, createLembrete, updateLembrete, deleteLembrete, deleteAllLembretes } = useLembretes()
+  const { 
+    lembretes, 
+    loading, 
+    createLembrete, 
+    updateLembrete, 
+    deleteLembrete, 
+    deleteAllLembretes,
+    scheduleWhatsAppNotification
+  } = useLembretes()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingLembrete, setEditingLembrete] = useState<Lembrete | null>(null)
   const [formData, setFormData] = useState<LembreteFormData>({
@@ -65,6 +73,10 @@ export default function Lembretes() {
     await deleteLembrete(id)
   }
 
+  const handleScheduleWhatsApp = async (id: number, date: string, time: string) => {
+    await scheduleWhatsAppNotification(id, date, time)
+  }
+
   const handleCreateNew = () => {
     setEditingLembrete(null)
     setFormData({
@@ -98,6 +110,7 @@ export default function Lembretes() {
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onScheduleWhatsApp={handleScheduleWhatsApp}
         onCreateNew={handleCreateNew}
         userName={user?.user_metadata?.nome || user?.email}
       />

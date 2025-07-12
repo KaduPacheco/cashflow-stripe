@@ -11,11 +11,20 @@ interface LembretesListProps {
   loading: boolean
   onEdit: (lembrete: Lembrete) => void
   onDelete: (id: number) => void
+  onScheduleWhatsApp: (id: number, date: string, time: string) => void
   onCreateNew: () => void
   userName?: string
 }
 
-export function LembretesList({ lembretes, loading, onEdit, onDelete, onCreateNew, userName }: LembretesListProps) {
+export function LembretesList({ 
+  lembretes, 
+  loading, 
+  onEdit, 
+  onDelete, 
+  onScheduleWhatsApp, 
+  onCreateNew, 
+  userName 
+}: LembretesListProps) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -58,7 +67,7 @@ export function LembretesList({ lembretes, loading, onEdit, onDelete, onCreateNe
           lembrete={lembrete}
           onEdit={onEdit}
           onDelete={onDelete}
-          onWhatsApp={() => {}} // Função já implementada no próprio card
+          onScheduleWhatsApp={onScheduleWhatsApp}
           userName={userName}
         />
       ))}
