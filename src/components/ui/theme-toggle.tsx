@@ -11,12 +11,12 @@ export function ThemeToggle() {
       variant="outline" 
       size="icon"
       onClick={toggleTheme}
-      className="transition-all duration-200 hover:scale-105"
+      className="bg-background/80 backdrop-blur-sm border-border/50 transition-all duration-300 hover:scale-105 hover:bg-accent hover:border-border shadow-fintech"
     >
       {theme === 'light' ? (
-        <Moon className="h-[1.2rem] w-[1.2rem] transition-all duration-300 rotate-0 scale-100" />
+        <Moon className="h-[1.2rem] w-[1.2rem] transition-all duration-300 rotate-0 scale-100 text-muted-foreground" />
       ) : (
-        <Sun className="h-[1.2rem] w-[1.2rem] transition-all duration-300 rotate-0 scale-100" />
+        <Sun className="h-[1.2rem] w-[1.2rem] transition-all duration-300 rotate-0 scale-100 text-primary" />
       )}
       <span className="sr-only">Alternar tema</span>
     </Button>
