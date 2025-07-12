@@ -183,6 +183,7 @@ export type Database = {
           userId: string | null
           valor: number | null
           whatsapp: string | null
+          whatsapp_notification_sent: boolean | null
         }
         Insert: {
           created_at?: string
@@ -195,6 +196,7 @@ export type Database = {
           userId?: string | null
           valor?: number | null
           whatsapp?: string | null
+          whatsapp_notification_sent?: boolean | null
         }
         Update: {
           created_at?: string
@@ -207,6 +209,7 @@ export type Database = {
           userId?: string | null
           valor?: number | null
           whatsapp?: string | null
+          whatsapp_notification_sent?: boolean | null
         }
         Relationships: [
           {

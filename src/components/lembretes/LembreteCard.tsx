@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, DollarSign, MessageCircle, Trash2, Edit, Clock } from 'lucide-react'
+import { Calendar, DollarSign, MessageCircle, Trash2, Edit, Clock, CheckCircle } from 'lucide-react'
 import { SafeDisplay } from '@/components/ui/safe-display'
 import { toast } from '@/hooks/use-toast'
 import { WhatsAppScheduleModal } from './WhatsAppScheduleModal'
@@ -98,13 +98,27 @@ export function LembreteCard({
 
           {lembrete.notificar_whatsapp && (lembrete.data_envio_whatsapp || lembrete.horario_envio_whatsapp) && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-              <Clock className="h-3 w-3" />
-              <span>
-                Notificação via WhatsApp agendada para:{' '}
-                {lembrete.data_envio_whatsapp && formatDate(lembrete.data_envio_whatsapp)}
-                {lembrete.data_envio_whatsapp && lembrete.horario_envio_whatsapp && ' às '}
-                {lembrete.horario_envio_whatsapp && formatTime(lembrete.horario_envio_whatsapp)}
-              </span>
+              {lembrete.whatsapp_notification_sent ? (
+                <>
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                  <span className="text-green-600">
+                    Notificação WhatsApp enviada em:{' '}
+                    {lembrete.data_envio_whatsapp && formatDate(lembrete.data_envio_whatsapp)}
+                    {lembrete.data_envio_whatsapp && lembrete.horario_envio_whatsapp && ' às '}
+                    {lembrete.horario_envio_whatsapp && formatTime(lembrete.horario_envio_whatsapp)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Notificação via WhatsApp agendada para:{' '}
+                    {lembrete.data_envio_whatsapp && formatDate(lembrete.data_envio_whatsapp)}
+                    {lembrete.data_envio_whatsapp && lembrete.horario_envio_whatsapp && ' às '}
+                    {lembrete.horario_envio_whatsapp && formatTime(lembrete.horario_envio_whatsapp)}
+                  </span>
+                </>
+              )}
             </div>
           )}
 
@@ -114,9 +128,10 @@ export function LembreteCard({
               size="sm"
               onClick={() => setWhatsAppModalOpen(true)}
               className="w-full"
+              disabled={lembrete.whatsapp_notification_sent}
             >
               <MessageCircle className="h-4 w-4 mr-2" />
-              Agendar WhatsApp
+              {lembrete.whatsapp_notification_sent ? 'Notificação Enviada' : 'Agendar WhatsApp'}
             </Button>
           </div>
         </CardContent>

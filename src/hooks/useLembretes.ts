@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -61,6 +60,7 @@ export function useLembretes() {
         notificar_whatsapp: formData.notificar_whatsapp,
         data_envio_whatsapp: formData.data_envio_whatsapp || null,
         horario_envio_whatsapp: formData.horario_envio_whatsapp || null,
+        whatsapp_notification_sent: false, // Sempre inicia como não enviado
       }
 
       const { error } = await supabase
@@ -95,6 +95,8 @@ export function useLembretes() {
         notificar_whatsapp: formData.notificar_whatsapp,
         data_envio_whatsapp: formData.data_envio_whatsapp || null,
         horario_envio_whatsapp: formData.horario_envio_whatsapp || null,
+        // Reset do status de envio se o agendamento foi alterado
+        whatsapp_notification_sent: false,
       }
 
       const { error } = await supabase
@@ -126,7 +128,8 @@ export function useLembretes() {
           notificar_whatsapp: true,
           data_envio_whatsapp: date,
           horario_envio_whatsapp: time,
-          whatsapp: whatsappNumber
+          whatsapp: whatsappNumber,
+          whatsapp_notification_sent: false // Reset status de envio
         })
         .eq('id', id)
 
