@@ -1,4 +1,5 @@
 
+
 interface FooterSectionProps {
   onScrollToSection: (sectionId: string) => void
 }
@@ -43,7 +44,14 @@ export const FooterSection = ({ onScrollToSection }: FooterSectionProps) => {
             <h4 className="font-semibold">Suporte</h4>
             <div className="space-y-2">
               <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">Ajuda</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">Contato</a>
+              <a 
+                href="https://wa.me/5521959206442?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20para%20o%20Cash%20Flow." 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Contato
+              </a>
               <a href="#" className="block text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
             </div>
           </div>
@@ -65,3 +73,4 @@ export const FooterSection = ({ onScrollToSection }: FooterSectionProps) => {
     </footer>
   )
 }
+
