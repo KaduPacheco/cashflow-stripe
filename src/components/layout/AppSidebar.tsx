@@ -9,6 +9,7 @@ import {
   User, 
   Crown,
   Receipt,
+  MessageCircle,
   LogOut
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
@@ -98,6 +99,11 @@ export function AppSidebar() {
     }
   }
 
+  const handleWhatsAppSupport = () => {
+    const whatsappUrl = "https://wa.me/5521989862364?text=Olá,%20preciso%20de%20suporte%20para%20o%20Cash%20Flow."
+    window.open(whatsappUrl, '_blank')
+  }
+
   return (
     <Sidebar className="transition-all duration-300 w-64">
       <SidebarContent className="flex flex-col h-full">
@@ -144,6 +150,19 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Botão Suporte WhatsApp */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button 
+                    onClick={handleWhatsAppSupport}
+                    className="w-full flex items-center hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    <span className="ml-3">Suporte</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               
               {/* Botão Sair */}
               <SidebarMenuItem>
