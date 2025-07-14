@@ -100,7 +100,7 @@ export function AppSidebar() {
   }
 
   const handleWhatsAppSupport = () => {
-    const whatsappUrl = "https://wa.me/5521989862364?text=Olá,%20preciso%20de%20suporte%20para%20o%20Cash%20Flow."
+    const whatsappUrl = "https://wa.me/5521959206442?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20para%20o%20Cash%20Flow."
     window.open(whatsappUrl, '_blank')
   }
 
