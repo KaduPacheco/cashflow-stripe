@@ -10,6 +10,7 @@ import {
   Crown,
   Receipt,
   MessageCircle,
+  Bot,
   LogOut
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
@@ -104,6 +105,11 @@ export function AppSidebar() {
     window.open(whatsappUrl, '_blank')
   }
 
+  const handleWhatsAppAgent = () => {
+    const whatsappUrl = "https://wa.me/5521989862364"
+    window.open(whatsappUrl, '_blank')
+  }
+
   return (
     <Sidebar className="transition-all duration-300 w-64">
       <SidebarContent className="flex flex-col h-full">
@@ -160,6 +166,19 @@ export function AppSidebar() {
                   >
                     <MessageCircle className="h-5 w-5" />
                     <span className="ml-3">Suporte</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Botão Agente Financeiro WhatsApp */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button 
+                    onClick={handleWhatsAppAgent}
+                    className="w-full flex items-center hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  >
+                    <Bot className="h-5 w-5" />
+                    <span className="ml-3">Agente Financeiro</span>
                   </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
