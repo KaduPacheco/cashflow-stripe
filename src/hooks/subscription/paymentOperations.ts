@@ -12,33 +12,21 @@ export const createCheckout = async (user: User | null, session: Session | null)
   }
 
   try {
-    console.log('Creating checkout session for user:', user.id)
+    console.log('Redirecting to Stripe payment link for user:', user.id)
     
-    const { data, error } = await supabase.functions.invoke('create-checkout', {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
+    // Redirecionar diretamente para o link do Stripe fornecido
+    const stripePaymentUrl = "https://buy.stripe.com/8x28wP2VbbfH5OjeDA2wU00"
+    
+    console.log('Redirecting to payment:', stripePaymentUrl)
+    window.open(stripePaymentUrl, '_blank')
+    
+    toast.success("Redirecionando para pagamento", {
+      description: "Abrindo nova aba com o pagamento do Stripe...",
     })
-    
-    if (error) {
-      console.error('Error creating checkout:', error)
-      throw error
-    }
-
-    if (data?.url) {
-      console.log('Redirecting to checkout:', data.url)
-      window.open(data.url, '_blank')
-      
-      toast.success("Redirecionando para pagamento", {
-        description: "Abrindo nova aba com o checkout do Stripe...",
-      })
-    } else {
-      throw new Error('URL do checkout não retornada')
-    }
   } catch (error: any) {
-    console.error('Failed to create checkout:', error)
-    toast.error("Erro ao criar sessão de pagamento", {
-      description: error.message || "Erro desconhecido ao criar checkout",
+    console.error('Failed to redirect to payment:', error)
+    toast.error("Erro ao abrir página de pagamento", {
+      description: error.message || "Erro desconhecido ao abrir pagamento",
     })
   }
 }
