@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { UserProfile } from "./UserProfile"
+import { PWAInstallButton } from "@/components/pwa/PWAInstallButton"
 import { useAuth } from "@/hooks/useAuth"
 
 const menuItems = [
@@ -136,6 +137,15 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* PWA Install Button */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <div className="px-2 py-1">
+              <PWAInstallButton />
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
 
