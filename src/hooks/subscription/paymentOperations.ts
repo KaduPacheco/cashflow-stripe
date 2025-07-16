@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import type { User, Session } from '@supabase/supabase-js'
@@ -14,8 +13,8 @@ export const createCheckout = async (user: User | null, session: Session | null)
   try {
     console.log('Redirecting to Stripe payment link for user:', user.id)
     
-    // Redirecionar diretamente para o link do Stripe fornecido
-    const stripePaymentUrl = "https://buy.stripe.com/8x28wP2VbbfH5OjeDA2wU00"
+    // Redirecionar diretamente para o novo link do Stripe
+    const stripePaymentUrl = "https://buy.stripe.com/28E4gz67n2JbfoT2US2wU02"
     
     console.log('Redirecting to payment:', stripePaymentUrl)
     window.open(stripePaymentUrl, '_blank')

@@ -97,7 +97,7 @@ export default function Plano() {
               )}
 
               <h1 className="text-xl lg:text-2xl font-bold text-slate-800 mb-2 dark:text-slate-300">
-                Plano Agente Financeiro – R$ 34,90/mês
+                Plano Agente Financeiro – R$ 29,90/mês
               </h1>
               <p className="text-base lg:text-lg text-muted-foreground mb-6 lg:mb-8">
                 Organize suas finanças de forma simples e inteligente!
@@ -118,7 +118,7 @@ export default function Plano() {
               {/* Impact Message */}
               <div className="bg-primary/10 rounded-lg p-3 lg:p-4 mb-6 lg:mb-8">
                 <p className="text-base lg:text-lg font-semibold text-primary text-center">
-                  Invista no controle da sua vida financeira por pouco mais de R$ 1 por dia!
+                  Invista no controle da sua vida financeira por menos de R$ 1 por dia!
                 </p>
               </div>
 

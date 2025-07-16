@@ -217,7 +217,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
                 
                 <div className="bg-primary/10 rounded-lg p-4">
                   <div className="font-semibold text-primary mb-2">Plano Agente Financeiro</div>
-                  <div className="text-2xl font-bold mb-1">R$ 34,90/mês</div>
+                  <div className="text-2xl font-bold mb-1">R$ 29,90/mês</div>
                   <div className="text-sm text-muted-foreground">
                     Acesso completo ao sistema de gestão financeira
                   </div>

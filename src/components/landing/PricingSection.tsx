@@ -44,7 +44,7 @@ export const PricingSection = ({ onNavigateToPlano }: PricingSectionProps) => {
                   <CardTitle className="text-3xl">Plano Premium</CardTitle>
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">
-                      <span className="text-4xl font-bold">R$ 34,90</span>
+                      <span className="text-4xl font-bold">R$ 29,90</span>
                       <span className="text-muted-foreground">/mês</span>
                     </div>
                     <p className="text-sm text-muted-foreground">7 dias grátis</p>
