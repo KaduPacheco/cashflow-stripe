@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { EnhancedLoadingSpinner } from "@/components/ui/enhanced-loading-spinner";
 import { LazyWrapper } from "@/components/ui/lazy-wrapper";
 import { PerformanceMonitor } from "@/components/dev/PerformanceMonitor";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
@@ -75,82 +76,85 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      <Route path="/landing" element={<Landing />} />
-      <Route 
-        path="/auth" 
-        element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
-      />
-      <Route 
-        path="/plano" 
-        element={
-          <LazyWrapper>
-            <Plano />
-          </LazyWrapper>
-        } 
-      />
-      <Route 
-        path="/" 
-        element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />} 
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transacoes"
-        element={
-          <ProtectedRoute>
-            <Transacoes />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contas/*"
-        element={
-          <ProtectedRoute>
-            <ContasPagarReceber />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/categorias"
-        element={
-          <ProtectedRoute>
-            <Categorias />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/relatorios"
-        element={
-          <ProtectedRoute>
-            <Relatorios />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/lembretes"
-        element={
-          <ProtectedRoute>
-            <Lembretes />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/perfil"
-        element={
-          <ProtectedRoute>
-            <Perfil />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/landing" element={<Landing />} />
+        <Route 
+          path="/auth" 
+          element={user ? <Navigate to="/dashboard" replace /> : <Auth />} 
+        />
+        <Route 
+          path="/plano" 
+          element={
+            <LazyWrapper>
+              <Plano />
+            </LazyWrapper>
+          } 
+        />
+        <Route 
+          path="/" 
+          element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />} 
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/transacoes"
+          element={
+            <ProtectedRoute>
+              <Transacoes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contas/*"
+          element={
+            <ProtectedRoute>
+              <ContasPagarReceber />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/categorias"
+          element={
+            <ProtectedRoute>
+              <Categorias />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/relatorios"
+          element={
+            <ProtectedRoute>
+              <Relatorios />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lembretes"
+          element={
+            <ProtectedRoute>
+              <Lembretes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <Perfil />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <PWAInstallPrompt />
+    </>
   );
 }
 
