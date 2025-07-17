@@ -140,15 +140,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* PWA Install Button */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <div className="px-2 py-1">
-              <PWAInstallButton />
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Bottom Section */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -192,8 +183,23 @@ export function AppSidebar() {
                   </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
-              {/* Botão Sair */}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* PWA Install Button - Posicionado abaixo do Agente Financeiro */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <div className="px-2 py-1">
+              <PWAInstallButton />
+            </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Logout Button */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button 
