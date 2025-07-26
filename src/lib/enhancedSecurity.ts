@@ -1,5 +1,6 @@
 
 import { SecureLogger } from '@/lib/logger'
+import { supabase } from '@/lib/supabase'
 
 // Função local para validar UUID
 function validateUUID(uuid: string, context: string): void {
@@ -9,7 +10,7 @@ function validateUUID(uuid: string, context: string): void {
   }
 }
 
-// Sistema aprimorado de rate limiting
+// Sistema aprimorado de rate limiting com persistência
 class EnhancedRateLimiter {
   private static attempts = new Map<string, { count: number; resetTime: number; blocked: boolean }>()
   
@@ -18,14 +19,40 @@ class EnhancedRateLimiter {
     login: { max: 5, windowMs: 15 * 60 * 1000 }, // 5 tentativas em 15 min
     password_change: { max: 3, windowMs: 60 * 60 * 1000 }, // 3 tentativas em 1 hora
     api_request: { max: 100, windowMs: 60 * 1000 }, // 100 requests por minuto
-    transaction_create: { max: 50, windowMs: 60 * 1000 } // 50 transações por minuto
+    transaction_create: { max: 50, windowMs: 60 * 1000 }, // 50 transações por minuto
+    form_submission: { max: 20, windowMs: 60 * 1000 } // 20 submissões por minuto
   }
 
-  static checkLimit(identifier: string, operation: keyof typeof this.LIMITS): boolean {
+  static async checkLimit(identifier: string, operation: keyof typeof this.LIMITS): Promise<boolean> {
     const now = Date.now()
     const limit = this.LIMITS[operation]
     const key = `${operation}_${identifier}`
     
+    // Try to get from database first for persistence
+    try {
+      const { data: rateLimitData } = await supabase
+        .from('security_logs')
+        .select('details')
+        .eq('action', 'rate_limit')
+        .eq('table_name', key)
+        .gte('created_at', new Date(now - limit.windowMs).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(limit.max)
+
+      if (rateLimitData && rateLimitData.length >= limit.max) {
+        SecureLogger.warn(`Rate limit exceeded for ${operation}`, { 
+          identifier: '***MASKED***', 
+          operation,
+          count: rateLimitData.length
+        })
+        return false
+      }
+    } catch (error) {
+      // Fallback to in-memory if database fails
+      SecureLogger.warn('Rate limit database check failed, using in-memory fallback', { error })
+    }
+
+    // Update in-memory cache
     const record = this.attempts.get(key)
     
     if (!record || now > record.resetTime) {
@@ -35,6 +62,21 @@ class EnhancedRateLimiter {
         resetTime: now + limit.windowMs,
         blocked: false
       })
+      
+      // Log to database
+      try {
+        await supabase
+          .from('security_logs')
+          .insert({
+            action: 'rate_limit',
+            table_name: key,
+            success: true,
+            details: { operation, count: 1 }
+          })
+      } catch (error) {
+        SecureLogger.error('Failed to log rate limit event', { error })
+      }
+      
       return true
     }
     
@@ -42,12 +84,28 @@ class EnhancedRateLimiter {
       record.blocked = true
       SecureLogger.warn(`Rate limit exceeded for ${operation}`, { 
         identifier: '***MASKED***', 
-        operation 
+        operation,
+        count: record.count
       })
       return false
     }
     
     record.count += 1
+    
+    // Log to database
+    try {
+      await supabase
+        .from('security_logs')
+        .insert({
+          action: 'rate_limit',
+          table_name: key,
+          success: true,
+          details: { operation, count: record.count }
+        })
+    } catch (error) {
+      SecureLogger.error('Failed to log rate limit event', { error })
+    }
+    
     return true
   }
 
@@ -94,6 +152,51 @@ export const validateUserUUID = (uuid: string, context: string): boolean => {
   } catch (error: any) {
     SecureLogger.error(`Invalid UUID in ${context}`, { error: error.message })
     return false
+  }
+}
+
+// Security monitoring utilities
+export const SecurityMonitor = {
+  async logSecurityEvent(
+    action: string,
+    details: Record<string, any>,
+    success: boolean = true
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('security_logs')
+        .insert({
+          action,
+          table_name: 'security_monitor',
+          success,
+          details
+        })
+    } catch (error) {
+      SecureLogger.error('Failed to log security event', { error, action })
+    }
+  },
+
+  async checkSuspiciousActivity(userId: string): Promise<boolean> {
+    try {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+      
+      const { data: logs } = await supabase
+        .from('security_logs')
+        .select('action, success')
+        .eq('user_id', userId)
+        .gte('created_at', oneHourAgo.toISOString())
+        .order('created_at', { ascending: false })
+
+      if (!logs) return false
+
+      const failedAttempts = logs.filter(log => !log.success).length
+      const suspiciousThreshold = 10
+
+      return failedAttempts > suspiciousThreshold
+    } catch (error) {
+      SecureLogger.error('Failed to check suspicious activity', { error })
+      return false
+    }
   }
 }
 
