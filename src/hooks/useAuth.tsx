@@ -3,7 +3,6 @@ import { useState, useEffect, createContext, useContext } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
-import { SecureAuthManager } from '@/lib/secureAuth'
 
 interface AuthContextType {
   user: User | null
@@ -46,12 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (event === 'SIGNED_OUT' || !session) {
           clearAuthState()
-        } else if (session && SecureAuthManager.isSessionValid(session)) {
+        } else if (session) {
           setSession(session)
           setUser(session.user)
-        } else if (session && !SecureAuthManager.isSessionValid(session)) {
-          SecureLogger.warn('Invalid session detected, clearing...')
-          clearAuthState()
         }
         
         setLoading(false)
@@ -69,12 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      if (session && SecureAuthManager.isSessionValid(session)) {
+      if (session) {
         setSession(session)
         setUser(session.user)
-      } else if (session && !SecureAuthManager.isSessionValid(session)) {
-        SecureLogger.auth('Initial session is invalid, clearing...')
-        clearAuthState()
       } else {
         clearAuthState()
       }
@@ -90,14 +83,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     SecureLogger.auth('Attempting sign in', { email: '***MASKED***' })
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) {
-      SecureLogger.error('Sign in error', error)
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        SecureLogger.error('Sign in error', error)
+        return { error }
+      }
+
+      if (data.user && data.session) {
+        SecureLogger.auth('Sign in successful', { userId: data.user.id })
+        return { error: null }
+      }
+
+      return { error: new Error('Login falhou - dados inválidos') }
+    } catch (error) {
+      SecureLogger.error('Sign in exception', error)
+      return { error }
     }
-    return { error }
   }
 
   const signUp = async (email: string, password: string, metadata?: { nome?: string; phone?: string; whatsapp?: string }) => {
@@ -122,11 +129,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     SecureLogger.auth('Attempting sign out...')
     
     try {
-      // Limpar sessões do usuário
-      if (user?.id) {
-        SecureAuthManager.clearUserSessions(user.id)
-      }
-      
       // Tentar fazer logout no servidor
       const { error } = await supabase.auth.signOut()
       if (error) {

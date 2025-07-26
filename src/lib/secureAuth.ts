@@ -8,7 +8,7 @@ import { RateLimitOperation } from '@/lib/rateLimitTypes'
 // Sistema de validação de sessão seguro
 export class SecureAuthManager {
   private static readonly SESSION_REFRESH_THRESHOLD = 5 * 60 * 1000 // 5 minutos
-  private static readonly MAX_PASSWORD_ATTEMPTS = 3
+  private static readonly MAX_PASSWORD_ATTEMPTS = 5 // Aumentado de 3 para 5
   private static passwordAttempts = new Map<string, { count: number; resetTime: number }>()
 
   static isSessionValid(session: any): boolean {
@@ -68,8 +68,8 @@ export class SecureAuthManager {
 
   static async secureLogin(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Rate limiting - fix the parameter type issue
-      if (!EnhancedRateLimiter.checkLimit(email, 'login' as RateLimitOperation, 5)) {
+      // Rate limiting com limite mais alto para login
+      if (!EnhancedRateLimiter.checkLimit(email, 'login' as RateLimitOperation, 10)) {
         throw new Error('Muitas tentativas de login. Tente novamente em alguns minutos.')
       }
       
