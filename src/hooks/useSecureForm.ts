@@ -49,11 +49,14 @@ export function useSecureForm<T extends Record<string, any>>(
     
     if (!validation.success) {
       const newErrors: Record<string, string> = {}
-      validation.errors.forEach((error, index) => {
-        // Map errors to fields (simplified approach)
-        const fieldName = Object.keys(data)[index] || 'form'
-        newErrors[fieldName] = error
-      })
+      // Fix: Check if validation has errors property
+      if ('errors' in validation) {
+        validation.errors.forEach((error, index) => {
+          // Map errors to fields (simplified approach)
+          const fieldName = Object.keys(data)[index] || 'form'
+          newErrors[fieldName] = error
+        })
+      }
       setErrors(newErrors)
       return false
     }
