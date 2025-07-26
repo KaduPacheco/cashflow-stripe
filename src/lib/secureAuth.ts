@@ -1,7 +1,7 @@
 
 import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
-import { validateRateLimit } from './security'
+import { EnhancedRateLimiter } from '@/lib/enhancedSecurity'
 import { AuthSecurityManager } from './authSecurity'
 
 // Sistema de validação de sessão seguro
@@ -67,8 +67,10 @@ export class SecureAuthManager {
 
   static async secureLogin(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Rate limiting
-      validateRateLimit(email, 5) // 5 tentativas por minuto
+      // Rate limiting - fix the parameter type issue
+      if (!EnhancedRateLimiter.checkLimit(email, 'login', 5)) {
+        throw new Error('Muitas tentativas de login. Tente novamente em alguns minutos.')
+      }
       
       // Use enhanced login
       return await AuthSecurityManager.secureLogin(email, password)

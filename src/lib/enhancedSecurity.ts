@@ -1,203 +1,107 @@
 
-import { SecureLogger } from '@/lib/logger'
 import { supabase } from '@/lib/supabase'
+import { SecureLogger } from '@/lib/logger'
 
-// Função local para validar UUID
-function validateUUID(uuid: string, context: string): void {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-  if (!uuidRegex.test(uuid)) {
-    throw new Error(`Invalid UUID in ${context}: ${uuid}`)
-  }
-}
-
-// Sistema aprimorado de rate limiting com persistência
-class EnhancedRateLimiter {
-  private static attempts = new Map<string, { count: number; resetTime: number; blocked: boolean }>()
-  
-  // Diferentes limites por tipo de operação
-  private static readonly LIMITS = {
-    login: { max: 5, windowMs: 15 * 60 * 1000 }, // 5 tentativas em 15 min
-    password_change: { max: 3, windowMs: 60 * 60 * 1000 }, // 3 tentativas em 1 hora
-    api_request: { max: 100, windowMs: 60 * 1000 }, // 100 requests por minuto
-    transaction_create: { max: 50, windowMs: 60 * 1000 }, // 50 transações por minuto
-    form_submission: { max: 20, windowMs: 60 * 1000 } // 20 submissões por minuto
+export class EnhancedRateLimiter {
+  private static readonly rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+  private static readonly DEFAULT_WINDOW_MS = 60 * 1000 // 1 minute
+  private static readonly MAX_ATTEMPTS = {
+    login: 5,
+    password_change: 3,
+    form_submission: 10,
+    api_call: 60
   }
 
-  static async checkLimit(identifier: string, operation: keyof typeof this.LIMITS): Promise<boolean> {
+  static checkLimit(
+    identifier: string, 
+    operation: keyof typeof EnhancedRateLimiter.MAX_ATTEMPTS,
+    customLimit?: number
+  ): boolean {
     const now = Date.now()
-    const limit = this.LIMITS[operation]
     const key = `${operation}_${identifier}`
+    const maxAttempts = customLimit || this.MAX_ATTEMPTS[operation]
     
-    // Try to get from database first for persistence
-    try {
-      const { data: rateLimitData } = await supabase
-        .from('security_logs')
-        .select('details')
-        .eq('action', 'rate_limit')
-        .eq('table_name', key)
-        .gte('created_at', new Date(now - limit.windowMs).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(limit.max)
-
-      if (rateLimitData && rateLimitData.length >= limit.max) {
-        SecureLogger.warn(`Rate limit exceeded for ${operation}`, { 
-          identifier: '***MASKED***', 
-          operation,
-          count: rateLimitData.length
-        })
-        return false
-      }
-    } catch (error) {
-      // Fallback to in-memory if database fails
-      SecureLogger.warn('Rate limit database check failed, using in-memory fallback', { error })
-    }
-
-    // Update in-memory cache
-    const record = this.attempts.get(key)
+    const record = this.rateLimitStore.get(key)
     
     if (!record || now > record.resetTime) {
-      // Reset ou criar novo registro
-      this.attempts.set(key, {
+      // Reset or create new record
+      this.rateLimitStore.set(key, {
         count: 1,
-        resetTime: now + limit.windowMs,
-        blocked: false
+        resetTime: now + this.DEFAULT_WINDOW_MS
       })
-      
-      // Log to database
-      try {
-        await supabase
-          .from('security_logs')
-          .insert({
-            action: 'rate_limit',
-            table_name: key,
-            success: true,
-            details: { operation, count: 1 }
-          })
-      } catch (error) {
-        SecureLogger.error('Failed to log rate limit event', { error })
-      }
-      
       return true
     }
     
-    if (record.count >= limit.max) {
-      record.blocked = true
-      SecureLogger.warn(`Rate limit exceeded for ${operation}`, { 
-        identifier: '***MASKED***', 
-        operation,
-        count: record.count
+    if (record.count >= maxAttempts) {
+      SecureLogger.security('Rate limit exceeded', { 
+        operation, 
+        identifier: identifier.slice(0, 3) + '***',
+        attempts: record.count 
       })
       return false
     }
     
     record.count += 1
-    
-    // Log to database
-    try {
-      await supabase
-        .from('security_logs')
-        .insert({
-          action: 'rate_limit',
-          table_name: key,
-          success: true,
-          details: { operation, count: record.count }
-        })
-    } catch (error) {
-      SecureLogger.error('Failed to log rate limit event', { error })
-    }
-    
     return true
   }
 
-  static isBlocked(identifier: string, operation: keyof typeof this.LIMITS): boolean {
+  static clearAttempts(identifier: string, operation: keyof typeof EnhancedRateLimiter.MAX_ATTEMPTS): void {
     const key = `${operation}_${identifier}`
-    const record = this.attempts.get(key)
-    return record?.blocked || false
+    this.rateLimitStore.delete(key)
   }
 
-  static clearAttempts(identifier: string, operation: keyof typeof this.LIMITS): void {
-    const key = `${operation}_${identifier}`
-    this.attempts.delete(key)
-  }
-}
-
-// Headers de segurança aprimorados
-export const createEnhancedSecurityHeaders = (): Record<string, string> => {
-  return {
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
-    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'Content-Security-Policy': [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "connect-src 'self' https://csvkgokkvbtojjkitodc.supabase.co wss://csvkgokkvbtojjkitodc.supabase.co",
-      "font-src 'self'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'"
-    ].join('; ')
-  }
-}
-
-// Validador de UUID aprimorado
-export const validateUserUUID = (uuid: string, context: string): boolean => {
-  try {
-    validateUUID(uuid, context)
-    return true
-  } catch (error: any) {
-    SecureLogger.error(`Invalid UUID in ${context}`, { error: error.message })
-    return false
-  }
-}
-
-// Security monitoring utilities
-export const SecurityMonitor = {
-  async logSecurityEvent(
+  static async logSecurityEvent(
     action: string,
-    details: Record<string, any>,
-    success: boolean = true
+    details: Record<string, any> = {}
   ): Promise<void> {
     try {
-      await supabase
-        .from('security_logs')
-        .insert({
-          action,
-          table_name: 'security_monitor',
-          success,
-          details
-        })
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      await supabase.from('security_logs').insert({
+        user_id: user?.id,
+        action,
+        details,
+        timestamp: new Date().toISOString()
+      })
     } catch (error) {
       SecureLogger.error('Failed to log security event', { error, action })
     }
-  },
+  }
 
-  async checkSuspiciousActivity(userId: string): Promise<boolean> {
-    try {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-      
-      const { data: logs } = await supabase
-        .from('security_logs')
-        .select('action, success')
-        .eq('user_id', userId)
-        .gte('created_at', oneHourAgo.toISOString())
-        .order('created_at', { ascending: false })
-
-      if (!logs) return false
-
-      const failedAttempts = logs.filter(log => !log.success).length
-      const suspiciousThreshold = 10
-
-      return failedAttempts > suspiciousThreshold
-    } catch (error) {
-      SecureLogger.error('Failed to check suspicious activity', { error })
-      return false
+  // Cleanup old records periodically
+  static cleanupOldRecords(): void {
+    const now = Date.now()
+    for (const [key, record] of this.rateLimitStore.entries()) {
+      if (now > record.resetTime) {
+        this.rateLimitStore.delete(key)
+      }
     }
   }
 }
 
-export { EnhancedRateLimiter }
+// Security Headers utility
+export class SecurityHeaders {
+  static getSecurityHeaders(): Record<string, string> {
+    return {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Content-Security-Policy': [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' https://*.supabase.co wss://*.supabase.co"
+      ].join('; ')
+    }
+  }
+}
+
+// Clean up old rate limit records every 5 minutes
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    EnhancedRateLimiter.cleanupOldRecords()
+  }, 5 * 60 * 1000)
+}

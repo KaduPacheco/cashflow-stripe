@@ -28,14 +28,16 @@ export function useSecureForm<T extends Record<string, any>>(
 
   const validateField = (field: keyof T, value: any): string | null => {
     try {
-      const fieldSchema = validationSchema.shape[field as string]
-      if (fieldSchema) {
-        fieldSchema.parse(value)
-        return null
+      // For individual field validation, we'll use a partial schema approach
+      const fieldSchema = z.object({ [field]: validationSchema.shape?.[field as string] || z.any() })
+      const result = fieldSchema.safeParse({ [field]: value })
+      
+      if (!result.success) {
+        return result.error.errors[0]?.message || 'Valor inválido'
       }
       return null
     } catch (error: any) {
-      return error.errors?.[0]?.message || 'Valor inválido'
+      return 'Erro de validação'
     }
   }
 

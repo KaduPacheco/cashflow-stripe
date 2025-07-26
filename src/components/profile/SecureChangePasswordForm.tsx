@@ -19,9 +19,11 @@ interface PasswordStrength {
 
 export function SecureChangePasswordForm() {
   const { user } = useAuth()
+  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -97,10 +99,17 @@ export function SecureChangePasswordForm() {
     setLoading(true)
 
     try {
-      const result = await SecureAuthManager.changePasswordSecurely(newPassword, user.id)
+      // Updated to match the new function signature with 4 arguments
+      const result = await SecureAuthManager.changePasswordSecurely(
+        currentPassword,
+        newPassword,
+        confirmPassword,
+        user.id
+      )
       
       if (result.success) {
         // Limpar formulário
+        setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')
         
@@ -138,6 +147,33 @@ export function SecureChangePasswordForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Senha atual</Label>
+            <div className="relative">
+              <Input
+                id="current-password"
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Digite sua senha atual"
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              >
+                {showCurrentPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="new-password">Nova senha</Label>
             <div className="relative">
