@@ -56,7 +56,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { installPWA, canInstall } = usePWA();
+  const { canInstall } = usePWA();
 
   useEffect(() => {
     // Log PWA status
