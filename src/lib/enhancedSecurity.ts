@@ -9,7 +9,8 @@ export class EnhancedRateLimiter {
     login: 5,
     password_change: 3,
     form_submission: 10,
-    api_call: 60
+    api_call: 60,
+    api_request: 30 // Add support for api_request operation
   }
 
   static checkLimit(
@@ -33,7 +34,8 @@ export class EnhancedRateLimiter {
     }
     
     if (record.count >= maxAttempts) {
-      SecureLogger.security('Rate limit exceeded', { 
+      // Use existing SecureLogger methods instead of non-existent security method
+      SecureLogger.warn('Rate limit exceeded', { 
         operation, 
         identifier: identifier.slice(0, 3) + '***',
         attempts: record.count 
