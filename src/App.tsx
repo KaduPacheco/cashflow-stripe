@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminRedirectGuard } from "@/components/admin/AdminRedirectGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/error-boundary/ErrorBoundary";
@@ -52,7 +53,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <AdminRedirectGuard>
+      {children}
+    </AdminRedirectGuard>
+  );
 }
 
 function AppRoutes() {
