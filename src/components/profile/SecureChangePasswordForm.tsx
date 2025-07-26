@@ -10,6 +10,7 @@ import { SecureAuthManager } from '@/lib/secureAuth'
 import { useAuth } from '@/hooks/useAuth'
 import { EnhancedRateLimiter } from '@/lib/enhancedSecurity'
 import { SecureLogger } from '@/lib/logger'
+import { RateLimitOperation } from '@/lib/rateLimitTypes'
 
 interface PasswordStrength {
   score: number
@@ -67,7 +68,7 @@ export function SecureChangePasswordForm() {
     }
 
     // Verificar rate limiting
-    if (!EnhancedRateLimiter.checkLimit(user.id, 'password_change')) {
+    if (!EnhancedRateLimiter.checkLimit(user.id, 'password_change' as RateLimitOperation)) {
       toast({
         title: "Erro",
         description: "Muitas tentativas de alteração de senha. Tente novamente mais tarde.",
@@ -114,7 +115,7 @@ export function SecureChangePasswordForm() {
         setConfirmPassword('')
         
         // Limpar tentativas de rate limiting
-        EnhancedRateLimiter.clearAttempts(user.id, 'password_change')
+        EnhancedRateLimiter.clearAttempts(user.id, 'password_change' as RateLimitOperation)
 
         toast({
           title: "Senha atualizada com sucesso!",

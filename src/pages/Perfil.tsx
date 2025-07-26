@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import { validateWhatsAppNumber } from '@/utils/whatsapp'
 import { useNavigate } from 'react-router-dom'
 import { SecureLogger } from '@/lib/logger'
 import { EnhancedRateLimiter } from '@/lib/enhancedSecurity'
+import { RateLimitOperation } from '@/lib/rateLimitTypes'
 
 interface Profile {
   nome: string
@@ -119,7 +121,7 @@ export default function Perfil() {
     if (!user?.id) return
     
     // Verificar rate limiting
-    if (!EnhancedRateLimiter.checkLimit(user.id, 'api_request')) {
+    if (!EnhancedRateLimiter.checkLimit(user.id, 'api_request' as RateLimitOperation)) {
       toast({
         title: "Erro",
         description: "Muitas tentativas. Tente novamente em alguns minutos.",
@@ -270,7 +272,7 @@ export default function Perfil() {
     if (!user?.id) return
 
     // Verificar rate limiting para operações críticas
-    if (!EnhancedRateLimiter.checkLimit(user.id, 'api_request')) {
+    if (!EnhancedRateLimiter.checkLimit(user.id, 'api_request' as RateLimitOperation)) {
       toast({
         title: "Erro",
         description: "Muitas tentativas. Tente novamente em alguns minutos.",

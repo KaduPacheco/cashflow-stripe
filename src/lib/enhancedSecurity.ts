@@ -1,26 +1,20 @@
 
 import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
+import { RateLimitOperation, RATE_LIMIT_CONFIGS } from '@/lib/rateLimitTypes'
 
 export class EnhancedRateLimiter {
   private static readonly rateLimitStore = new Map<string, { count: number; resetTime: number }>()
   private static readonly DEFAULT_WINDOW_MS = 60 * 1000 // 1 minute
-  private static readonly MAX_ATTEMPTS = {
-    login: 5,
-    password_change: 3,
-    form_submission: 10,
-    api_call: 60,
-    api_request: 30 // Add support for api_request operation
-  }
 
   static checkLimit(
     identifier: string, 
-    operation: keyof typeof EnhancedRateLimiter.MAX_ATTEMPTS,
+    operation: RateLimitOperation,
     customLimit?: number
   ): boolean {
     const now = Date.now()
     const key = `${operation}_${identifier}`
-    const maxAttempts = customLimit || this.MAX_ATTEMPTS[operation]
+    const maxAttempts = customLimit || RATE_LIMIT_CONFIGS[operation]
     
     const record = this.rateLimitStore.get(key)
     
@@ -47,7 +41,7 @@ export class EnhancedRateLimiter {
     return true
   }
 
-  static clearAttempts(identifier: string, operation: keyof typeof EnhancedRateLimiter.MAX_ATTEMPTS): void {
+  static clearAttempts(identifier: string, operation: RateLimitOperation): void {
     const key = `${operation}_${identifier}`
     this.rateLimitStore.delete(key)
   }

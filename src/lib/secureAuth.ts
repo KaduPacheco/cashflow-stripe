@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { SecureLogger } from '@/lib/logger'
 import { EnhancedRateLimiter } from '@/lib/enhancedSecurity'
 import { AuthSecurityManager } from './authSecurity'
+import { RateLimitOperation } from '@/lib/rateLimitTypes'
 
 // Sistema de validação de sessão seguro
 export class SecureAuthManager {
@@ -68,7 +69,7 @@ export class SecureAuthManager {
   static async secureLogin(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
       // Rate limiting - fix the parameter type issue
-      if (!EnhancedRateLimiter.checkLimit(email, 'login', 5)) {
+      if (!EnhancedRateLimiter.checkLimit(email, 'login' as RateLimitOperation, 5)) {
         throw new Error('Muitas tentativas de login. Tente novamente em alguns minutos.')
       }
       
