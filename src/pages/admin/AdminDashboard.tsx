@@ -1,9 +1,11 @@
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { useAdmin } from '@/hooks/useAdmin'
+import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, CreditCard, Bell, Database } from 'lucide-react'
+import { SecureLogger } from '@/lib/logger'
 
 interface SystemStats {
   totalUsers: number
@@ -16,6 +18,7 @@ interface SystemStats {
 
 export default function AdminDashboard() {
   const { logAdminAction } = useAdmin()
+  const { user } = useAuth()
   const [stats, setStats] = useState<SystemStats>({
     totalUsers: 0,
     totalTransactions: 0,
@@ -25,22 +28,34 @@ export default function AdminDashboard() {
     recentSignups: 0
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadSystemStats()
-    logAdminAction('admin_dashboard_view')
-  }, [logAdminAction])
+    // Verificar se o usuário é admin antes de carregar dados
+    if (user?.email === 'adm.forteia@gmail.com') {
+      loadSystemStats()
+      logAdminAction('admin_dashboard_view')
+    } else {
+      setError('Acesso não autorizado')
+      setLoading(false)
+    }
+  }, [user?.email, logAdminAction])
 
   const loadSystemStats = async () => {
     try {
       setLoading(true)
+      setError(null)
 
-      // Buscar estatísticas do sistema
+      SecureLogger.info('Admin dashboard: Iniciando carregamento de estatísticas', {
+        adminEmail: user?.email
+      })
+
+      // Buscar estatísticas do sistema com o cliente correto
       const [
-        { count: totalUsers },
-        { count: totalTransactions },
-        { count: totalReminders },
-        { count: totalCategories }
+        { count: totalUsers, error: usersError },
+        { count: totalTransactions, error: transactionsError },
+        { count: totalReminders, error: remindersError },
+        { count: totalCategories, error: categoriesError }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('transacoes').select('*', { count: 'exact', head: true }),
@@ -48,37 +63,70 @@ export default function AdminDashboard() {
         supabase.from('categorias').select('*', { count: 'exact', head: true })
       ])
 
-      // Usuários ativos (com transações nos últimos 30 dias)
+      // Verificar erros nas consultas
+      if (usersError) {
+        SecureLogger.error('Erro ao buscar usuários:', usersError)
+        throw usersError
+      }
+      if (transactionsError) {
+        SecureLogger.error('Erro ao buscar transações:', transactionsError)
+        throw transactionsError
+      }
+      if (remindersError) {
+        SecureLogger.error('Erro ao buscar lembretes:', remindersError)
+        throw remindersError
+      }
+      if (categoriesError) {
+        SecureLogger.error('Erro ao buscar categorias:', categoriesError)
+        throw categoriesError
+      }
+
+      // Usuários ativos (com updated_at nos últimos 30 dias)
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       
-      const { data: activeUsersData } = await supabase
-        .from('transacoes')
-        .select('userId')
-        .gte('created_at', thirtyDaysAgo.toISOString())
+      const { count: activeUsers, error: activeUsersError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('updated_at', thirtyDaysAgo.toISOString())
 
-      const activeUsers = new Set(activeUsersData?.map(t => t.userId) || []).size
+      if (activeUsersError) {
+        SecureLogger.error('Erro ao buscar usuários ativos:', activeUsersError)
+        throw activeUsersError
+      }
 
       // Novos usuários (últimos 7 dias)
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
       
-      const { count: recentSignups } = await supabase
+      const { count: recentSignups, error: recentSignupsError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', sevenDaysAgo.toISOString())
 
-      setStats({
+      if (recentSignupsError) {
+        SecureLogger.error('Erro ao buscar novos usuários:', recentSignupsError)
+        throw recentSignupsError
+      }
+
+      const newStats: SystemStats = {
         totalUsers: totalUsers || 0,
         totalTransactions: totalTransactions || 0,
         totalReminders: totalReminders || 0,
         totalCategories: totalCategories || 0,
-        activeUsers,
+        activeUsers: activeUsers || 0,
         recentSignups: recentSignups || 0
+      }
+
+      setStats(newStats)
+
+      SecureLogger.info('Admin dashboard: Estatísticas carregadas com sucesso', {
+        stats: newStats
       })
 
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error)
+    } catch (error: any) {
+      SecureLogger.error('Erro ao carregar estatísticas do sistema:', error)
+      setError(error.message || 'Erro ao carregar dados do sistema')
     } finally {
       setLoading(false)
     }
@@ -107,6 +155,26 @@ export default function AdminDashboard() {
       </CardContent>
     </Card>
   )
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">
+            Dashboard Administrativo
+          </h1>
+          <p className="text-gray-400">
+            Erro ao carregar dados do sistema
+          </p>
+        </div>
+        <Card className="bg-red-900/20 border-red-800">
+          <CardContent className="pt-6">
+            <p className="text-red-400">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
