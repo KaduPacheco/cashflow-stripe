@@ -13,22 +13,32 @@ const Index = () => {
   useEffect(() => {
     // Aguardar que tanto a autenticação quanto a verificação admin sejam concluídas
     if (!authLoading && !adminLoading) {
+      SecureLogger.info('Index page - checking user status', { 
+        hasUser: !!user, 
+        isAdmin, 
+        authLoading, 
+        adminLoading 
+      })
+
       if (user) {
-        if (isAdmin) {
-          SecureLogger.info('Admin user detected, redirecting to admin panel', { 
-            userId: user.id,
-            email: user.email 
-          })
-          navigate('/admin-panel')
-        } else {
-          SecureLogger.info('Regular user detected, redirecting to dashboard', { 
-            userId: user.id 
-          })
-          navigate('/dashboard')
-        }
+        // Aguardar um pouco para garantir que o estado seja estável
+        setTimeout(() => {
+          if (isAdmin) {
+            SecureLogger.info('Admin user detected, redirecting to admin panel', { 
+              userId: user.id,
+              email: user.email 
+            })
+            navigate('/admin-panel', { replace: true })
+          } else {
+            SecureLogger.info('Regular user detected, redirecting to dashboard', { 
+              userId: user.id 
+            })
+            navigate('/dashboard', { replace: true })
+          }
+        }, 100)
       } else {
         SecureLogger.info('No user found, redirecting to auth')
-        navigate('/auth')
+        navigate('/auth', { replace: true })
       }
     }
   }, [user, authLoading, adminLoading, isAdmin, navigate])

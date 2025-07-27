@@ -97,6 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data.user && data.session) {
         SecureLogger.auth('Sign in successful', { userId: data.user.id })
+        
+        // Aguardar um pouco para garantir que o estado seja atualizado
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
         return { error: null }
       }
 

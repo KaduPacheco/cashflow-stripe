@@ -1,12 +1,15 @@
 
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
+import { useAdmin } from '@/hooks/useAdmin'
 import { toast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { SecureLogger } from '@/lib/logger'
 
 interface LoginFormProps {
   onForgotPassword: () => void
@@ -18,6 +21,8 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
+  const { isAdmin } = useAdmin()
+  const navigate = useNavigate()
   const isMobile = useIsMobile()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,12 +38,13 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
     }
 
     setLoading(true)
+    SecureLogger.auth('Login form submitted', { email: '***MASKED***' })
 
     try {
       const { error } = await signIn(email, password)
 
       if (error) {
-        console.error('Login error:', error)
+        SecureLogger.error('Login form error', { error: error.message })
         
         let errorMessage = 'Erro desconhecido no login'
         
@@ -47,7 +53,7 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
             errorMessage = 'Email ou senha incorretos'
           } else if (error.message.includes('Email not confirmed')) {
             errorMessage = 'Email não confirmado. Verifique sua caixa de entrada'
-          } else if (error.message.includes('Too many requests')) {
+          } else if (error.message.includes('Too many requests') || error.message.includes('Muitas tentativas')) {
             errorMessage = 'Muitas tentativas. Tente novamente em alguns minutos'
           } else {
             errorMessage = error.message
@@ -60,14 +66,27 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
           variant: "destructive",
         })
       } else {
+        SecureLogger.auth('Login successful, redirecting...')
+        
         toast({
           title: "Login realizado com sucesso",
-          description: "Você será redirecionado em instantes",
+          description: "Redirecionando...",
           variant: "default",
         })
+
+        // Aguardar um pouco e depois redirecionar manualmente
+        setTimeout(() => {
+          if (isAdmin) {
+            SecureLogger.auth('Redirecting admin to admin panel')
+            navigate('/admin-panel', { replace: true })
+          } else {
+            SecureLogger.auth('Redirecting user to dashboard')
+            navigate('/dashboard', { replace: true })
+          }
+        }, 500)
       }
     } catch (error: any) {
-      console.error('Login exception:', error)
+      SecureLogger.error('Login exception', { error: error.message })
       toast({
         title: "Erro no login",
         description: "Erro interno. Tente novamente.",

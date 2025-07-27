@@ -16,7 +16,7 @@ export function AdminRedirectGuard({ children }: AdminRedirectGuardProps) {
   const location = useLocation()
 
   useEffect(() => {
-    // Não fazer redirecionamento se estiver na página de auth
+    // Não fazer redirecionamento se estiver na página de auth ou ainda carregando
     if (location.pathname === '/auth' || authLoading || adminLoading) {
       return
     }
@@ -26,12 +26,21 @@ export function AdminRedirectGuard({ children }: AdminRedirectGuardProps) {
       SecureLogger.info('Admin user accessing regular pages, redirecting to admin panel', {
         currentPath: location.pathname
       })
-      navigate('/admin-panel', { replace: true })
+      
+      // Usar timeout para evitar conflitos com outros redirecionamentos
+      setTimeout(() => {
+        navigate('/admin-panel', { replace: true })
+      }, 100)
     }
   }, [user, isAdmin, authLoading, adminLoading, navigate, location.pathname])
 
-  // Se for admin e não estiver no painel admin (e não for auth), não renderizar nada durante o redirecionamento
-  if (user && !authLoading && !adminLoading && isAdmin && !location.pathname.startsWith('/admin-panel') && location.pathname !== '/auth') {
+  // Se estiver na página de auth, sempre renderizar o conteúdo
+  if (location.pathname === '/auth') {
+    return <>{children}</>
+  }
+
+  // Se for admin e não estiver no painel admin (e não for auth), mostrar loading durante o redirecionamento
+  if (user && !authLoading && !adminLoading && isAdmin && !location.pathname.startsWith('/admin-panel')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
         <div className="text-center">
