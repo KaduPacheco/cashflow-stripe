@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,10 +9,10 @@ import { Loader2 } from 'lucide-react'
 import { validateWhatsAppNumber } from '@/utils/whatsapp'
 
 interface SignUpFormProps {
-  onBackToLogin: () => void
+  onSwitchToLogin: () => void
 }
 
-export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
+export function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -87,7 +85,7 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
           description: "Verifique seu email para confirmar a conta",
           variant: "default",
         })
-        onBackToLogin()
+        onSwitchToLogin()
       }
     } catch (error: any) {
       toast({
@@ -203,7 +201,7 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
       <div className="mt-6 text-center">
         <Button
           variant="link"
-          onClick={onBackToLogin}
+          onClick={onSwitchToLogin}
           className="text-sm text-muted-foreground hover:text-primary"
         >
           Já tem uma conta? Faça login
@@ -212,4 +210,3 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
     </div>
   )
 }
-
