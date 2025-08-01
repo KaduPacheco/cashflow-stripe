@@ -15,10 +15,54 @@ export function usePasswordReset() {
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({})
   const navigate = useNavigate()
 
-  // Verificar se há uma sessão ativa (tokens de recuperação)
+  // Melhorar verificação de sessão de recuperação
   useEffect(() => {
     const checkRecoverySession = async () => {
       try {
+        // Capturar parâmetros da URL que podem conter tokens
+        const urlParams = new URLSearchParams(window.location.search)
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
+        
+        // Verificar se há tokens de acesso na URL
+        const accessToken = urlParams.get('access_token') || hashParams.get('access_token')
+        const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token')
+        const tokenType = urlParams.get('token_type') || hashParams.get('token_type')
+        const type = urlParams.get('type') || hashParams.get('type')
+        
+        SecureLogger.auth('Checking recovery tokens', { 
+          hasAccessToken: !!accessToken, 
+          hasRefreshToken: !!refreshToken,
+          tokenType,
+          type
+        })
+
+        // Se encontrarmos tokens na URL, definir a sessão
+        if (accessToken && refreshToken && type === 'recovery') {
+          SecureLogger.auth('Recovery tokens found in URL, setting session')
+          
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          })
+
+          if (error) {
+            SecureLogger.error('Error setting recovery session', error)
+            setIsTokenValid(false)
+            return
+          }
+
+          if (data.session && data.user) {
+            SecureLogger.auth('Recovery session set successfully', { userId: data.user.id })
+            setIsTokenValid(true)
+            
+            // Limpar a URL dos parâmetros de token por segurança
+            const cleanUrl = window.location.pathname
+            window.history.replaceState({}, document.title, cleanUrl)
+            return
+          }
+        }
+
+        // Verificar se há uma sessão ativa existente
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
@@ -27,10 +71,18 @@ export function usePasswordReset() {
           return
         }
 
-        // Verificar se há uma sessão ativa com tokens de recuperação
         if (session && session.user) {
-          setIsTokenValid(true)
-          SecureLogger.auth('Recovery session found', { userId: session.user.id })
+          // Verificar se a sessão é válida e não expirou
+          const now = Math.floor(Date.now() / 1000)
+          const expiresAt = session.expires_at || 0
+          
+          if (expiresAt > now) {
+            setIsTokenValid(true)
+            SecureLogger.auth('Valid recovery session found', { userId: session.user.id })
+          } else {
+            setIsTokenValid(false)
+            SecureLogger.warn('Recovery session expired')
+          }
         } else {
           setIsTokenValid(false)
           SecureLogger.warn('No recovery session found')
@@ -42,6 +94,21 @@ export function usePasswordReset() {
     }
 
     checkRecoverySession()
+
+    // Também escutar mudanças de estado de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      SecureLogger.auth('Auth state change in password reset', { event, hasSession: !!session })
+      
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        if (session && session.user) {
+          setIsTokenValid(true)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setIsTokenValid(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const validatePasswords = (): boolean => {
@@ -85,11 +152,18 @@ export function usePasswordReset() {
       if (error) {
         SecureLogger.error('Password reset failed', { error: error.message })
         
-        if (error.message.includes('expired') || error.message.includes('invalid')) {
-          toast.error('Link Expirado', {
-            description: 'Este link de recuperação expirou ou é inválido. Solicite um novo.'
+        if (error.message.includes('expired') || error.message.includes('invalid') || error.message.includes('session')) {
+          toast.error('Sessão Expirada', {
+            description: 'Sua sessão de recuperação expirou. Solicite um novo link de recuperação.'
           })
           setIsTokenValid(false)
+          
+          // Redirecionar para solicitar novo link após alguns segundos
+          setTimeout(() => {
+            navigate('/auth', { 
+              state: { message: 'Sessão de recuperação expirada. Solicite um novo link.' }
+            })
+          }, 3000)
         } else {
           toast.error('Erro ao Redefinir Senha', {
             description: 'Ocorreu um erro ao redefinir sua senha. Tente novamente.'

@@ -1,6 +1,6 @@
 
 import { useState } from 'react'
-import { Eye, EyeOff, Lock, Shield, CheckCircle, XCircle } from 'lucide-react'
+import { Eye, EyeOff, Lock, Shield, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -58,14 +58,31 @@ export default function ResetPassword() {
             </div>
             
             <h1 className="text-2xl font-bold text-slate-900 mb-4">
-              Link Inválido
+              Link Inválido ou Expirado
             </h1>
             
             <div className="space-y-4 text-slate-600">
-              <p>Este link de recuperação é inválido ou expirou.</p>
+              <p>Este link de recuperação é inválido, expirado ou já foi usado.</p>
               <p className="text-sm">
-                Links de recuperação expiram em 30 minutos por segurança.
+                Links de recuperação expiram em 1 hora por segurança e só podem ser usados uma vez.
               </p>
+            </div>
+
+            {/* Caixa de informação sobre URLs do Supabase */}
+            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-left">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="font-medium text-amber-900 text-sm">
+                    Problema com redirecionamento?
+                  </p>
+                  <div className="text-xs text-amber-700 space-y-1">
+                    <p>• Verifique se clicou no link correto do email</p>
+                    <p>• O administrador deve configurar as URLs no painel Supabase</p>
+                    <p>• Links só funcionam no domínio autorizado</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-8 space-y-4">
