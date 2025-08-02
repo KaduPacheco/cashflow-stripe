@@ -149,7 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (email: string) => {
     SecureLogger.auth('Attempting password reset', { email: '***MASKED***' })
+    
+    // Usar a URL completa para garantir o redirecionamento correto
     const redirectUrl = `${window.location.origin}/reset-password`
+    
+    console.log('ResetPassword: Using redirect URL:', redirectUrl)
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
@@ -157,6 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (error) {
       SecureLogger.error('Password reset error', error)
+    } else {
+      console.log('ResetPassword: Email sent successfully')
     }
     return { error }
   }

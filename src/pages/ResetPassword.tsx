@@ -15,6 +15,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [validatingLink, setValidatingLink] = useState(true)
   const [hasValidTokens, setHasValidTokens] = useState(false)
   const navigate = useNavigate()
   const { theme } = useTheme()
@@ -33,79 +34,127 @@ export default function ResetPassword() {
     }
   }
 
-  useEffect(() => {
-    console.log('ResetPassword: Component mounted')
-    console.log('ResetPassword: Current URL hash:', window.location.hash)
-    console.log('ResetPassword: Current URL search:', window.location.search)
+  const extractTokensFromUrl = () => {
+    console.log('ResetPassword: Extracting tokens from URL')
+    console.log('ResetPassword: Current URL:', window.location.href)
+    console.log('ResetPassword: Hash:', window.location.hash)
+    console.log('ResetPassword: Search:', window.location.search)
     
-    // Verificar tokens tanto na hash quanto na query string
-    const checkTokens = () => {
-      // Primeiro, tentar capturar da hash (formato padrão do Supabase)
+    let accessToken = null
+    let refreshToken = null
+    let tokenType = null
+    let type = null
+
+    // Primeiro, tentar extrair da hash fragment (#)
+    if (window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      let accessToken = hashParams.get('access_token')
-      let refreshToken = hashParams.get('refresh_token')
-      let tokenType = hashParams.get('token_type')
-      let type = hashParams.get('type')
-
-      // Se não encontrou na hash, tentar na query string
-      if (!accessToken) {
-        const searchParams = new URLSearchParams(window.location.search)
-        accessToken = searchParams.get('access_token')
-        refreshToken = searchParams.get('refresh_token')
-        tokenType = searchParams.get('token_type')
-        type = searchParams.get('type')
-      }
-
-      console.log('ResetPassword: Extracted tokens:', {
+      accessToken = hashParams.get('access_token')
+      refreshToken = hashParams.get('refresh_token')
+      tokenType = hashParams.get('token_type')
+      type = hashParams.get('type')
+      
+      console.log('ResetPassword: Hash tokens:', {
         hasAccessToken: !!accessToken,
         hasRefreshToken: !!refreshToken,
         tokenType,
-        type
+        type,
+        accessTokenLength: accessToken?.length || 0
       })
+    }
 
-      // Verificar se é um link de recovery válido
-      if (accessToken && type === 'recovery') {
-        console.log('ResetPassword: Valid recovery tokens found')
-        setHasValidTokens(true)
+    // Se não encontrou na hash, tentar na query string (?)
+    if (!accessToken && window.location.search) {
+      const searchParams = new URLSearchParams(window.location.search)
+      accessToken = searchParams.get('access_token')
+      refreshToken = searchParams.get('refresh_token')
+      tokenType = searchParams.get('token_type')
+      type = searchParams.get('type')
+      
+      console.log('ResetPassword: Search tokens:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        tokenType,
+        type,
+        accessTokenLength: accessToken?.length || 0
+      })
+    }
+
+    return { accessToken, refreshToken, tokenType, type }
+  }
+
+  useEffect(() => {
+    console.log('ResetPassword: Component mounted')
+    
+    const validateResetLink = async () => {
+      setValidatingLink(true)
+      
+      try {
+        const { accessToken, refreshToken, tokenType, type } = extractTokensFromUrl()
+
+        console.log('ResetPassword: Token extraction result:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          tokenType,
+          type
+        })
+
+        // Verificar se é um link de recovery válido
+        if (!accessToken || type !== 'recovery') {
+          console.log('ResetPassword: Invalid recovery link - missing tokens or wrong type')
+          toast({
+            title: "Link inválido",
+            description: "Este link de reset de senha é inválido ou expirou. Solicite um novo reset.",
+            variant: "destructive",
+          })
+          navigate('/auth')
+          return
+        }
+
+        console.log('ResetPassword: Valid tokens found, setting session')
         
-        // Definir a sessão com os tokens
-        supabase.auth.setSession({
+        // Tentar definir a sessão com os tokens
+        const { data, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || ''
-        }).then(({ error }) => {
-          if (error) {
-            console.error('ResetPassword: Error setting session:', error)
-            toast({
-              title: "Erro",
-              description: "Erro ao validar link de reset. Tente novamente.",
-              variant: "destructive",
-            })
-            navigate('/auth')
-          } else {
-            console.log('ResetPassword: Session set successfully')
-          }
         })
-      } else {
-        console.log('ResetPassword: Invalid or missing tokens')
+
+        if (error) {
+          console.error('ResetPassword: Session error:', error)
+          toast({
+            title: "Link expirado",
+            description: "Este link de reset de senha expirou. Solicite um novo reset.",
+            variant: "destructive",
+          })
+          navigate('/auth')
+          return
+        }
+
+        if (data.session) {
+          console.log('ResetPassword: Session established successfully')
+          setHasValidTokens(true)
+        } else {
+          console.log('ResetPassword: No session created')
+          toast({
+            title: "Erro de autenticação",
+            description: "Não foi possível autenticar o link. Tente solicitar um novo reset.",
+            variant: "destructive",
+          })
+          navigate('/auth')
+        }
+      } catch (error) {
+        console.error('ResetPassword: Validation error:', error)
         toast({
-          title: "Link inválido",
-          description: "Este link de reset de senha é inválido ou expirou. Solicite um novo reset.",
+          title: "Erro",
+          description: "Erro ao validar link de reset. Tente novamente.",
           variant: "destructive",
         })
         navigate('/auth')
+      } finally {
+        setValidatingLink(false)
       }
     }
 
-    checkTokens()
-
-    // Também escutar mudanças na URL (caso o usuário recarregue a página)
-    const handleHashChange = () => {
-      console.log('ResetPassword: Hash changed, rechecking tokens')
-      checkTokens()
-    }
-
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+    validateResetLink()
   }, [navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,7 +207,7 @@ export default function ResetPassword() {
       })
 
       if (error) {
-        console.error('ResetPassword: Error updating password:', error)
+        console.error('ResetPassword: Password update error:', error)
         throw error
       }
 
@@ -178,18 +227,29 @@ export default function ResetPassword() {
         description: error.message || "Erro ao redefinir senha. Tente novamente.",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
-  // Mostrar loading enquanto verifica tokens
-  if (!hasValidTokens) {
+  // Mostrar loading enquanto valida o link
+  if (validatingLink) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Validando link de reset...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Se não tem tokens válidos após validação, não renderizar o formulário
+  if (!hasValidTokens) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-4">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecionando...</p>
         </div>
       </div>
     )
