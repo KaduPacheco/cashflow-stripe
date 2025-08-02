@@ -15,17 +15,17 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [hasValidTokens, setHasValidTokens] = useState(false)
   const navigate = useNavigate()
   const { theme } = useTheme()
 
   // Determine which logo to use based on theme
   const getLogoSrc = () => {
     if (theme === 'dark') {
-      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png' // logo-black
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
     } else if (theme === 'light') {
-      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png' // logo-white
+      return 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429599/1_ezh8mk.png'
     } else {
-      // System theme - check actual computed theme
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       return isDark 
         ? 'https://res.cloudinary.com/dio2sipj1/image/upload/v1749429600/5_jh9nh0.png'
@@ -34,23 +34,93 @@ export default function ResetPassword() {
   }
 
   useEffect(() => {
-    // Verificar se há tokens de autenticação na URL
-    const hashParams = new URLSearchParams(window.location.hash.substring(1))
-    const accessToken = hashParams.get('access_token')
-    const refreshToken = hashParams.get('refresh_token')
+    console.log('ResetPassword: Component mounted')
+    console.log('ResetPassword: Current URL hash:', window.location.hash)
+    console.log('ResetPassword: Current URL search:', window.location.search)
     
-    if (!accessToken || !refreshToken) {
-      toast({
-        title: "Link inválido",
-        description: "Este link de reset de senha é inválido ou expirou.",
-        variant: "destructive",
+    // Verificar tokens tanto na hash quanto na query string
+    const checkTokens = () => {
+      // Primeiro, tentar capturar da hash (formato padrão do Supabase)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      let accessToken = hashParams.get('access_token')
+      let refreshToken = hashParams.get('refresh_token')
+      let tokenType = hashParams.get('token_type')
+      let type = hashParams.get('type')
+
+      // Se não encontrou na hash, tentar na query string
+      if (!accessToken) {
+        const searchParams = new URLSearchParams(window.location.search)
+        accessToken = searchParams.get('access_token')
+        refreshToken = searchParams.get('refresh_token')
+        tokenType = searchParams.get('token_type')
+        type = searchParams.get('type')
+      }
+
+      console.log('ResetPassword: Extracted tokens:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        tokenType,
+        type
       })
-      navigate('/auth')
+
+      // Verificar se é um link de recovery válido
+      if (accessToken && type === 'recovery') {
+        console.log('ResetPassword: Valid recovery tokens found')
+        setHasValidTokens(true)
+        
+        // Definir a sessão com os tokens
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        }).then(({ error }) => {
+          if (error) {
+            console.error('ResetPassword: Error setting session:', error)
+            toast({
+              title: "Erro",
+              description: "Erro ao validar link de reset. Tente novamente.",
+              variant: "destructive",
+            })
+            navigate('/auth')
+          } else {
+            console.log('ResetPassword: Session set successfully')
+          }
+        })
+      } else {
+        console.log('ResetPassword: Invalid or missing tokens')
+        toast({
+          title: "Link inválido",
+          description: "Este link de reset de senha é inválido ou expirou. Solicite um novo reset.",
+          variant: "destructive",
+        })
+        navigate('/auth')
+      }
     }
+
+    checkTokens()
+
+    // Também escutar mudanças na URL (caso o usuário recarregue a página)
+    const handleHashChange = () => {
+      console.log('ResetPassword: Hash changed, rechecking tokens')
+      checkTokens()
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
   }, [navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('ResetPassword: Form submitted')
+    
+    if (!hasValidTokens) {
+      toast({
+        title: "Erro",
+        description: "Sessão inválida. Solicite um novo link de reset.",
+        variant: "destructive",
+      })
+      navigate('/auth')
+      return
+    }
     
     if (!password || !confirmPassword) {
       toast({
@@ -82,14 +152,17 @@ export default function ResetPassword() {
     setLoading(true)
 
     try {
+      console.log('ResetPassword: Updating user password')
       const { error } = await supabase.auth.updateUser({
         password: password
       })
 
       if (error) {
+        console.error('ResetPassword: Error updating password:', error)
         throw error
       }
 
+      console.log('ResetPassword: Password updated successfully')
       toast({
         title: "Senha alterada!",
         description: "Sua senha foi redefinida com sucesso. Faça login com sua nova senha.",
@@ -99,6 +172,7 @@ export default function ResetPassword() {
       await supabase.auth.signOut()
       navigate('/auth')
     } catch (error: any) {
+      console.error('ResetPassword: Password update failed:', error)
       toast({
         title: "Erro",
         description: error.message || "Erro ao redefinir senha. Tente novamente.",
@@ -107,6 +181,18 @@ export default function ResetPassword() {
     }
 
     setLoading(false)
+  }
+
+  // Mostrar loading enquanto verifica tokens
+  if (!hasValidTokens) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Validando link de reset...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
