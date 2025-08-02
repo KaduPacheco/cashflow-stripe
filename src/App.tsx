@@ -1,9 +1,11 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminRedirectGuard } from "@/components/admin/AdminRedirectGuard";
@@ -183,16 +185,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <ErrorBoundary>
-          <AuthProvider>
-            <BrowserRouter>
-              <AppRoutes />
-              <PWAInstallPrompt />
-              <Toaster />
-              <Sonner />
-            </BrowserRouter>
-          </AuthProvider>
-        </ErrorBoundary>
+        <ThemeProvider defaultTheme="light" storageKey="cashflow-ui-theme">
+          <ErrorBoundary>
+            <AuthProvider>
+              <BrowserRouter>
+                <AppRoutes />
+                <PWAInstallPrompt />
+                <Toaster />
+                <Sonner />
+              </BrowserRouter>
+            </AuthProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
