@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -11,11 +12,11 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { SecureLogger } from '@/lib/logger'
 
 interface LoginFormProps {
-  onSwitchToSignUp: () => void
-  onSwitchToForgot: () => void
+  onForgotPassword: () => void
+  onSignUp: () => void
 }
 
-export function LoginForm({ onSwitchToSignUp, onSwitchToForgot }: LoginFormProps) {
+export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -156,7 +157,7 @@ export function LoginForm({ onSwitchToSignUp, onSwitchToForgot }: LoginFormProps
       
       <div className={`${isMobile ? 'mt-4' : 'mt-6'} space-y-${isMobile ? '3' : '4'} text-center`}>
         <Button
-          onClick={onSwitchToSignUp}
+          onClick={onSignUp}
           variant="outline"
           disabled={loading}
           className={`w-full ${isMobile ? 'h-10' : 'h-11'} border-primary text-primary hover:bg-primary hover:text-primary-foreground`}
@@ -166,7 +167,7 @@ export function LoginForm({ onSwitchToSignUp, onSwitchToForgot }: LoginFormProps
         
         <Button
           variant="link"
-          onClick={onSwitchToForgot}
+          onClick={onForgotPassword}
           disabled={loading}
           className="text-sm text-muted-foreground hover:text-primary"
         >
