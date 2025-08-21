@@ -19,6 +19,9 @@ export function TransactionCard({
   onDelete, 
   isReadOnly = false 
 }: TransactionCardProps) {
+  // Modo gratuito premium: sempre permite edição
+  const actuallyReadOnly = false
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -63,7 +66,7 @@ export function TransactionCard({
               {transacao.tipo === 'receita' ? '+' : '-'} {formatCurrency(transacao.valor || 0)}
             </Badge>
             
-            {!isReadOnly && (
+            {!actuallyReadOnly && (
               <div className="flex gap-1">
                 <Button
                   variant="ghost"

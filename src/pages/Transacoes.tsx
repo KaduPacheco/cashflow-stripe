@@ -1,139 +1,157 @@
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ResponsiveModal } from '@/components/ui/responsive-modal'
-import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
-import { TransactionFilters } from '@/components/transactions/TransactionFilters'
-import { TransactionForm } from '@/components/transacoes/TransactionForm'
-import { TransactionsList } from '@/components/transacoes/TransactionsList'
-import { TransactionsActions } from '@/components/transacoes/TransactionsActions'
+import { useState, useMemo, useCallback } from 'react'
 import { useTransactions } from '@/hooks/useTransactions'
-import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
-import { ReadOnlyWrapper } from '@/components/subscription/ReadOnlyWrapper'
-import { SubscriptionGate } from '@/components/subscription/SubscriptionGate'
-import { Transacao } from '@/types/transaction'
+import { TransactionsList } from '@/components/transacoes/TransactionsList'
+import { TransactionForm } from '@/components/transacoes/TransactionForm'
+import { TransactionFilters } from '@/components/transactions/TransactionFilters'
+import { TransactionsActions } from '@/components/transacoes/TransactionsActions'
+import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
+import { ResponsiveModal } from '@/components/ui/responsive-modal'
+import { useDebounce } from '@/hooks/useDebounce'
+import { motion } from 'framer-motion'
+import type { Transacao } from '@/types/transaction'
 
 export default function Transacoes() {
-  const { 
-    transacoes, 
-    loading, 
-    totals,
-    searchTerm,
-    setSearchTerm,
-    typeFilter,
-    setTypeFilter,
-    categoryFilter,
-    setCategoryFilter,
-    clearFilters,
+  const {
+    transacoes,
+    loading,
+    createTransaction,
+    updateTransaction,
     deleteTransaction,
-    deleteAllTransactions
+    deleteAllTransactions,
+    fetchTransactions
   } = useTransactions()
-  
-  const { isReadOnly } = useReadOnlyMode()
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState('todos')
+  const [categoryFilter, setCategoryFilter] = useState('todas')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transacao | null>(null)
 
-  const handleEdit = (transacao: Transacao) => {
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  const filteredTransacoes = useMemo(() => {
+    return transacoes.filter(transacao => {
+      const matchesSearch = !debouncedSearchTerm || 
+        transacao.estabelecimento?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        transacao.detalhes?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+
+      const matchesType = typeFilter === 'todos' || transacao.tipo === typeFilter
+
+      const matchesCategory = categoryFilter === 'todas' || 
+        transacao.categoria_id === categoryFilter
+
+      return matchesSearch && matchesType && matchesCategory
+    })
+  }, [transacoes, debouncedSearchTerm, typeFilter, categoryFilter])
+
+  const handleCreateNew = useCallback(() => {
+    setEditingTransaction(null)
+    setDialogOpen(true)
+  }, [])
+
+  const handleEdit = useCallback((transacao: Transacao) => {
     setEditingTransaction(transacao)
     setDialogOpen(true)
-  }
+  }, [])
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir esta transação?')) return
-    await deleteTransaction(id)
-  }
+  const handleDelete = useCallback(async (id: number) => {
+    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
+      await deleteTransaction(id)
+    }
+  }, [deleteTransaction])
 
-  const handleCreateNew = () => {
-    setEditingTransaction(null)
-    setDialogOpen(true)
-  }
+  const handleDeleteAll = useCallback(async () => {
+    if (window.confirm('Tem certeza que deseja excluir TODAS as transações? Esta ação não pode ser desfeita!')) {
+      await deleteAllTransactions()
+    }
+  }, [deleteAllTransactions])
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(async (data: any) => {
+    if (editingTransaction) {
+      await updateTransaction(editingTransaction.id, data)
+    } else {
+      await createTransaction(data)
+    }
     setDialogOpen(false)
     setEditingTransaction(null)
-  }
+    fetchTransactions()
+  }, [editingTransaction, updateTransaction, createTransaction, fetchTransactions])
+
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('')
+    setTypeFilter('todos')
+    setCategoryFilter('todas')
+  }, [])
+
+  const isEmpty = filteredTransacoes.length === 0
 
   return (
-    <div className="space-y-4 px-2 sm:px-6 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <motion.div 
+        className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div>
           <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Transações</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Gerencie suas transações financeiras
           </p>
         </div>
         
-        <div className="sm:hidden">
-          <ReadOnlyWrapper message="Criação de transações disponível apenas na versão premium">
-            <TransactionsActions 
-              hasTransactions={transacoes.length > 0}
-              onCreateNew={handleCreateNew}
-              onDeleteAll={deleteAllTransactions}
-              isReadOnly={isReadOnly}
-            />
-          </ReadOnlyWrapper>
-        </div>
-      </div>
-
-      <SubscriptionGate>
-        <TransactionSummaryCards 
-          receitas={totals.receitas} 
-          despesas={totals.despesas} 
-          saldo={totals.saldo} 
+        <TransactionsActions 
+          hasTransactions={transacoes.length > 0}
+          onCreateNew={handleCreateNew}
+          onDeleteAll={handleDeleteAll}
+          isReadOnly={false} // Sempre false - acesso premium para todos
         />
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg sm:text-xl">Filtros</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <TransactionFilters 
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              typeFilter={typeFilter}
-              onTypeFilterChange={setTypeFilter}
-              categoryFilter={categoryFilter}
-              onCategoryFilterChange={setCategoryFilter}
-              onClearFilters={clearFilters}
-            />
-          </CardContent>
-        </Card>
+      </motion.div>
 
-        <Card>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3">
-            <CardTitle className="text-lg sm:text-xl">Lista de Transações</CardTitle>
-            <div className="hidden sm:block">
-              <TransactionsActions 
-                hasTransactions={transacoes.length > 0}
-                onCreateNew={handleCreateNew}
-                onDeleteAll={deleteAllTransactions}
-                isReadOnly={isReadOnly}
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <TransactionsList 
-              transacoes={transacoes}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onCreateNew={handleCreateNew}
-              isReadOnly={isReadOnly}
-              isEmpty={transacoes.length === 0}
-            />
-          </CardContent>
-        </Card>
+      <TransactionSummaryCards transacoes={filteredTransacoes} />
 
-        <ResponsiveModal
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
-        >
-          <TransactionForm 
-            onSuccess={handleFormSuccess}
-            editingTransaction={editingTransaction}
-          />
-        </ResponsiveModal>
-      </SubscriptionGate>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <TransactionFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          categoryFilter={categoryFilter}
+          onCategoryFilterChange={setCategoryFilter}
+          onClearFilters={handleClearFilters}
+        />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <TransactionsList
+          transacoes={filteredTransacoes}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onCreateNew={handleCreateNew}
+          isReadOnly={false} // Sempre false - acesso premium para todos
+          isEmpty={isEmpty}
+        />
+      </motion.div>
+
+      <ResponsiveModal
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
+      >
+        <TransactionForm 
+          onSuccess={handleFormSuccess}
+          initialData={editingTransaction}
+        />
+      </ResponsiveModal>
     </div>
   )
 }
