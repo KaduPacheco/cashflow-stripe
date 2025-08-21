@@ -146,7 +146,7 @@ export default function Transacoes() {
       >
         <TransactionForm 
           onSuccess={handleFormSuccess}
-          initialData={editingTransaction}
+          editingTransaction={editingTransaction}
         />
       </ResponsiveModal>
     </div>
