@@ -167,7 +167,7 @@ export function StripeSyncButton() {
                           {lastSync.exemplosAtivos.map((exemplo, index) => (
                             <div key={index} className="flex items-center gap-2 text-xs">
                               <span className="font-mono">{exemplo.email}</span>
-                              <Badge size="sm" variant="secondary">{exemplo.tier}</Badge>
+                              <Badge variant="secondary">{exemplo.tier}</Badge>
                               <span className="text-muted-foreground">{exemplo.status}</span>
                             </div>
                           ))}
