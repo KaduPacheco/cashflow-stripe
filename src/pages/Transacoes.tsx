@@ -1,147 +1,176 @@
 
-import { useState, useMemo, useCallback } from 'react'
-import { useTransactions } from '@/hooks/useTransactions'
-import { TransactionsList } from '@/components/transacoes/TransactionsList'
-import { TransactionForm } from '@/components/transacoes/TransactionForm'
-import { TransactionFilters } from '@/components/transactions/TransactionFilters'
-import { TransactionsActions } from '@/components/transacoes/TransactionsActions'
-import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
+import { useState, useMemo } from 'react'
+import { Plus, Search, Filter } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
-import { motion } from 'framer-motion'
+import { TransactionForm } from '@/components/transacoes/TransactionForm'
+import { TransactionCard } from '@/components/transacoes/TransactionCard'
+import { TransactionFilters } from '@/components/transactions/TransactionFilters'
+import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useSecureTransactions } from '@/hooks/useSecureTransactions'
+import { useAuth } from '@/hooks/useAuth'
 import type { Transacao } from '@/types/transaction'
 
 export default function Transacoes() {
+  const { user } = useAuth()
   const {
-    transacoes,
+    transactions,
     loading,
-    totals,
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    deleteAllTransactions,
-    refetch
-  } = useTransactions()
+    fetchTransactions
+  } = useSecureTransactions()
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState('todos')
-  const [categoryFilter, setCategoryFilter] = useState('todas')
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transacao | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState({
+    categoria_id: '',
+    tipo: '',
+    dataInicio: '',
+    dataFim: ''
+  })
 
-  const filteredTransacoes = useMemo(() => {
-    return transacoes.filter(transacao => {
-      const matchesSearch = !searchTerm || 
-        transacao.estabelecimento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        transacao.detalhes?.toLowerCase().includes(searchTerm.toLowerCase())
-
-      const matchesType = typeFilter === 'todos' || transacao.tipo === typeFilter
-
-      const matchesCategory = categoryFilter === 'todas' || 
-        transacao.category_id === categoryFilter
-
-      return matchesSearch && matchesType && matchesCategory
+  // Filter transactions based on search and filters
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(transaction => {
+      // Search filter
+      if (searchTerm && !transaction.estabelecimento?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false
+      }
+      
+      // Category filter
+      if (filters.categoria_id && transaction.category_id !== filters.categoria_id) {
+        return false
+      }
+      
+      // Type filter
+      if (filters.tipo && transaction.tipo !== filters.tipo) {
+        return false
+      }
+      
+      // Date filters
+      if (filters.dataInicio && new Date(transaction.quando) < new Date(filters.dataInicio)) {
+        return false
+      }
+      
+      if (filters.dataFim && new Date(transaction.quando) > new Date(filters.dataFim)) {
+        return false
+      }
+      
+      return true
     })
-  }, [transacoes, searchTerm, typeFilter, categoryFilter])
+  }, [transactions, searchTerm, filters])
 
-  const handleCreateNew = useCallback(() => {
+  const handleFormSuccess = async () => {
+    setShowForm(false)
     setEditingTransaction(null)
-    setDialogOpen(true)
-  }, [])
+    await fetchTransactions(filters)
+  }
 
-  const handleEdit = useCallback((transacao: Transacao) => {
-    setEditingTransaction(transacao)
-    setDialogOpen(true)
-  }, [])
+  const handleEdit = (transaction: Transacao) => {
+    setEditingTransaction(transaction)
+    setShowForm(true)
+  }
 
-  const handleDelete = useCallback(async (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
       await deleteTransaction(id)
     }
-  }, [deleteTransaction])
+  }
 
-  const handleDeleteAll = useCallback(async () => {
-    if (window.confirm('Tem certeza que deseja excluir TODAS as transações? Esta ação não pode ser desfeita!')) {
-      await deleteAllTransactions()
-    }
-  }, [deleteAllTransactions])
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters)
+    fetchTransactions(newFilters)
+  }
 
-  const handleFormSuccess = useCallback(async () => {
-    setDialogOpen(false)
-    setEditingTransaction(null)
-    refetch()
-  }, [refetch])
-
-  const handleClearFilters = useCallback(() => {
-    setSearchTerm('')
-    setTypeFilter('todos')
-    setCategoryFilter('todas')
-  }, [])
-
-  const isEmpty = filteredTransacoes.length === 0
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Acesso Restrito</h2>
+          <p className="text-muted-foreground">Faça login para acessar suas transações.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      <motion.div 
-        className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div>
-          <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Transações</h1>
-          <p className="text-sm text-muted-foreground">
-            Gerencie suas transações financeiras
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Transações</h1>
+        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Nova Transação
+        </Button>
+      </div>
+
+      <TransactionSummaryCards transactions={filteredTransactions} />
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Buscar por estabelecimento..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2"
+        >
+          <Filter className="w-4 h-4" />
+          Filtros
+        </Button>
+      </div>
+
+      {showFilters && (
+        <TransactionFilters
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+        />
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <LoadingSpinner />
+        </div>
+      ) : filteredTransactions.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            {searchTerm || Object.values(filters).some(v => v) 
+              ? 'Nenhuma transação encontrada com os filtros aplicados.' 
+              : 'Nenhuma transação encontrada. Crie sua primeira transação!'}
           </p>
         </div>
-        
-        <TransactionsActions 
-          hasTransactions={transacoes.length > 0}
-          onCreateNew={handleCreateNew}
-          onDeleteAll={handleDeleteAll}
-          isReadOnly={false}
-        />
-      </motion.div>
-
-      <TransactionSummaryCards 
-        receitas={totals.receitas}
-        despesas={totals.despesas}
-        saldo={totals.saldo}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
-        <TransactionFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          typeFilter={typeFilter}
-          onTypeFilterChange={setTypeFilter}
-          categoryFilter={categoryFilter}
-          onCategoryFilterChange={setCategoryFilter}
-          onClearFilters={handleClearFilters}
-        />
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <TransactionsList
-          transacoes={filteredTransacoes}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onCreateNew={handleCreateNew}
-          isReadOnly={false}
-          isEmpty={isEmpty}
-        />
-      </motion.div>
+      ) : (
+        <div className="grid gap-4">
+          {filteredTransactions.map((transaction) => (
+            <TransactionCard
+              key={transaction.id}
+              transaction={transaction}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
 
       <ResponsiveModal
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={showForm}
+        onOpenChange={(open) => {
+          setShowForm(open)
+          if (!open) setEditingTransaction(null)
+        }}
         title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
       >
         <TransactionForm 
