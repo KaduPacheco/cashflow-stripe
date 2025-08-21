@@ -45,28 +45,48 @@ export default function AdminDashboard() {
           title="Total de Usuários"
           value={metrics?.totalUsers || 0}
           description="Usuários cadastrados"
-          icon={<Users className="h-4 w-4" />}
+          icon={Users}
+          iconColor="text-blue-600"
+          iconBgColor="bg-blue-100"
+          borderColor="border-blue-200"
+          valueColor="text-blue-600"
+          isCurrency={false}
         />
         
         <DashboardMetricCard
           title="Assinantes Ativos"
           value={metrics?.activeSubscribers || 0}
           description="Com assinatura ativa"
-          icon={<CreditCard className="h-4 w-4" />}
+          icon={CreditCard}
+          iconColor="text-green-600"
+          iconBgColor="bg-green-100"
+          borderColor="border-green-200"
+          valueColor="text-green-600"
+          isCurrency={false}
         />
         
         <DashboardMetricCard
           title="Taxa de Conversão"
-          value={`${((metrics?.activeSubscribers || 0) / (metrics?.totalUsers || 1) * 100).toFixed(1)}%`}
-          description="Usuários que assinaram"
-          icon={<TrendingUp className="h-4 w-4" />}
+          value={((metrics?.activeSubscribers || 0) / (metrics?.totalUsers || 1) * 100)}
+          description="Usuários que assinaram (%)"
+          icon={TrendingUp}
+          iconColor="text-orange-600"
+          iconBgColor="bg-orange-100"
+          borderColor="border-orange-200"
+          valueColor="text-orange-600"
+          isCurrency={false}
         />
         
         <DashboardMetricCard
           title="Usuários Premium"
           value={metrics?.premiumUsers || 0}
           description="Tier Premium/VIP"
-          icon={<AlertCircle className="h-4 w-4" />}
+          icon={AlertCircle}
+          iconColor="text-purple-600"
+          iconBgColor="bg-purple-100"
+          borderColor="border-purple-200"
+          valueColor="text-purple-600"
+          isCurrency={false}
         />
       </div>
 
