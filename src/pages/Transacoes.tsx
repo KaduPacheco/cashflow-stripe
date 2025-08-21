@@ -7,7 +7,6 @@ import { TransactionFilters } from '@/components/transactions/TransactionFilters
 import { TransactionsActions } from '@/components/transacoes/TransactionsActions'
 import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
-import { useDebounce } from '@/hooks/useDebounce'
 import { motion } from 'framer-motion'
 import type { Transacao } from '@/types/transaction'
 
@@ -29,13 +28,11 @@ export default function Transacoes() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transacao | null>(null)
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
-
   const filteredTransacoes = useMemo(() => {
     return transacoes.filter(transacao => {
-      const matchesSearch = !debouncedSearchTerm || 
-        transacao.estabelecimento?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        transacao.detalhes?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      const matchesSearch = !searchTerm || 
+        transacao.estabelecimento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transacao.detalhes?.toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesType = typeFilter === 'todos' || transacao.tipo === typeFilter
 
@@ -44,7 +41,7 @@ export default function Transacoes() {
 
       return matchesSearch && matchesType && matchesCategory
     })
-  }, [transacoes, debouncedSearchTerm, typeFilter, categoryFilter])
+  }, [transacoes, searchTerm, typeFilter, categoryFilter])
 
   const handleCreateNew = useCallback(() => {
     setEditingTransaction(null)
@@ -68,16 +65,11 @@ export default function Transacoes() {
     }
   }, [deleteAllTransactions])
 
-  const handleFormSuccess = useCallback(async (data: any) => {
-    if (editingTransaction) {
-      await updateTransaction(editingTransaction.id, data)
-    } else {
-      await createTransaction(data)
-    }
+  const handleFormSuccess = useCallback(async () => {
     setDialogOpen(false)
     setEditingTransaction(null)
     refetch()
-  }, [editingTransaction, updateTransaction, createTransaction, refetch])
+  }, [refetch])
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('')
