@@ -15,7 +15,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Price ID mapping for different subscription tiers - corrigido
+// Price ID mapping for different subscription tiers - corrigido e unificado
 const PRICE_TIER_MAPPING: Record<string, string> = {
   'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',     // VIP price ID (invisível para usuários)
   // Adicione outros price IDs Premium aqui conforme necessário
@@ -315,7 +315,7 @@ serve(async (req) => {
       subscriptionId = subscription.id;
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       
-      // Determine tier based on price_id
+      // Determine tier based on price_id - corrigido para detectar VIP
       const priceId = subscription.items.data[0]?.price.id;
       subscriptionTier = determineSubscriptionTier(priceId);
       

@@ -13,7 +13,7 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// Mapeamento de preços para tiers - corrigido para usar a tabela subscribers
+// Mapeamento de preços para tiers - unificado e corrigido
 const tierMapping: Record<string, string> = {
   'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',  // VIP price ID (invisível)
   // Adicione outros price IDs Premium aqui conforme necessário
@@ -80,7 +80,7 @@ serve(async (req) => {
         
         logStep('Determined subscription tier', { priceId, tier })
 
-        // Update or create subscription record - corrigido para usar tabela subscribers
+        // Update subscription record na tabela subscribers (corrigido)
         const subscriptionData = {
           user_id: user.user.id,
           email: customerEmail,
@@ -125,7 +125,7 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription
         logStep('Processing subscription deletion', { subscriptionId: subscription.id })
         
-        // Update subscription status to canceled - corrigido para usar tabela subscribers
+        // Update subscription status to canceled na tabela subscribers (corrigido)
         const { error: updateError } = await supabase
           .from('subscribers')
           .update({ 

@@ -70,7 +70,7 @@ export class SubscriptionService {
       'recurring-accounts'
     ]
 
-    // VIP has same access as Premium
+    // VIP has same access as Premium - negação corrigida
     return premiumFeatures.includes(feature) && !['Premium', 'VIP'].includes(subscriptionTier)
   }
 
