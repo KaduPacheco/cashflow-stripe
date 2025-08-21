@@ -19,10 +19,10 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Starting Stripe customers synchronization");
+    logStep("Iniciando sincronização completa dos clientes Stripe");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY não configurada");
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -30,23 +30,23 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Verificar se o usuário é admin (opcional - pode ser removido se quiser permitir acesso geral)
+    // Verificar se o usuário é admin (opcional)
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: userData } = await supabaseClient.auth.getUser(token);
-      logStep("Request from user", { userId: userData.user?.id, email: userData.user?.email });
+      logStep("Requisição do usuário", { userId: userData.user?.id, email: userData.user?.email });
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    let syncedCustomers = 0;
-    let processedSubscriptions = 0;
-    let errors = 0;
-    const syncResults = [];
+    let sincronizados = 0;
+    let assinaturasProcessadas = 0;
+    let erros = 0;
+    const resultados = [];
 
     // Buscar todos os clientes do Stripe
-    logStep("Fetching all Stripe customers");
+    logStep("Buscando todos os clientes do Stripe");
     
     let hasMore = true;
     let startingAfter = undefined;
@@ -57,58 +57,61 @@ serve(async (req) => {
         starting_after: startingAfter,
       });
       
-      logStep(`Processing batch of ${customers.data.length} customers`);
+      logStep(`Processando lote de ${customers.data.length} clientes`);
       
       for (const customer of customers.data) {
         try {
           if (!customer.email) {
-            logStep("Skipping customer without email", { customerId: customer.id });
+            logStep("Pulando cliente sem email", { customerId: customer.id });
             continue;
           }
 
           // Buscar assinaturas ativas do cliente
           const subscriptions = await stripe.subscriptions.list({
             customer: customer.id,
-            status: "active",
             limit: 10,
           });
 
           let subscriptionTier = null;
           let subscriptionEnd = null;
-          let subscriptionId = null;
-          const hasActiveSub = subscriptions.data.length > 0;
+          let subscriptionStatus = null;
+          const hasActiveSub = subscriptions.data.some(sub => sub.status === 'active');
 
-          if (hasActiveSub) {
+          // Processar a assinatura mais recente
+          if (subscriptions.data.length > 0) {
             const subscription = subscriptions.data[0];
-            subscriptionId = subscription.id;
-            subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+            subscriptionStatus = subscription.status;
             
-            // Determinar tier baseado no preço
-            if (subscription.items?.data?.[0]) {
-              const priceId = subscription.items.data[0].price.id;
-              const price = await stripe.prices.retrieve(priceId);
-              const amount = price.unit_amount || 0;
+            if (subscription.status === 'active') {
+              subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
               
-              if (amount <= 999) {
-                subscriptionTier = "Basic";
-              } else if (amount <= 2999) {
-                subscriptionTier = "Premium";
-              } else {
-                subscriptionTier = "VIP";
+              // Determinar tier baseado no preço
+              if (subscription.items?.data?.[0]) {
+                const priceId = subscription.items.data[0].price.id;
+                const price = await stripe.prices.retrieve(priceId);
+                const amount = price.unit_amount || 0;
+                
+                if (amount <= 999) {
+                  subscriptionTier = "Basic";
+                } else if (amount <= 2999) {
+                  subscriptionTier = "Premium";
+                } else {
+                  subscriptionTier = "VIP";
+                }
               }
             }
             
-            processedSubscriptions++;
+            assinaturasProcessadas++;
           }
 
-          // Buscar o usuário no sistema pelo email
+          // Buscar perfil do usuário pelo email
           const { data: profile } = await supabaseClient
             .from('profiles')
             .select('id')
             .eq('email', customer.email)
             .single();
 
-          // Atualizar ou inserir na tabela subscribers
+          // Atualizar/inserir na tabela subscribers
           const { error: upsertError } = await supabaseClient
             .from('subscribers')
             .upsert({
@@ -125,22 +128,23 @@ serve(async (req) => {
             });
 
           if (upsertError) {
-            logStep("Error upserting subscriber", { email: customer.email, error: upsertError.message });
-            errors++;
+            logStep("Erro ao atualizar subscriber", { email: customer.email, error: upsertError.message });
+            erros++;
           } else {
-            syncedCustomers++;
-            syncResults.push({
+            sincronizados++;
+            resultados.push({
               email: customer.email,
               customerId: customer.id,
               subscribed: hasActiveSub,
               tier: subscriptionTier,
+              status: subscriptionStatus,
               hasProfile: !!profile?.id
             });
           }
 
         } catch (customerError) {
-          logStep("Error processing customer", { customerId: customer.id, error: customerError.message });
-          errors++;
+          logStep("Erro ao processar cliente", { customerId: customer.id, error: customerError.message });
+          erros++;
         }
       }
       
@@ -150,32 +154,32 @@ serve(async (req) => {
       }
     }
 
-    // Buscar sessões de checkout recentes para capturar pagamentos que podem não ter sido processados
-    logStep("Checking recent checkout sessions");
-    const recentSessions = await stripe.checkout.sessions.list({
+    // Verificar sessões de checkout recentes para capturar pagamentos não processados
+    logStep("Verificando sessões de checkout recentes");
+    const sessionsRecentes = await stripe.checkout.sessions.list({
       limit: 100,
       created: {
-        gte: Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000) // Últimos 30 dias
+        gte: Math.floor((Date.now() - 90 * 24 * 60 * 60 * 1000) / 1000) // Últimos 90 dias
       }
     });
 
-    let processedSessions = 0;
-    for (const session of recentSessions.data) {
+    let sessoesProcessadas = 0;
+    for (const session of sessionsRecentes.data) {
       if (session.mode === 'subscription' && session.subscription && session.customer) {
         try {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           const customer = await stripe.customers.retrieve(session.customer as string);
           
           if (!customer.deleted && customer.email) {
-            // Processar esta assinatura se ainda não foi processada
+            // Verificar se o subscriber já foi processado corretamente
             const { data: existingSubscriber } = await supabaseClient
               .from('subscribers')
               .select('*')
               .eq('email', customer.email)
               .single();
 
-            if (!existingSubscriber || !existingSubscriber.subscribed) {
-              logStep("Processing missed subscription from checkout", { 
+            if (!existingSubscriber || !existingSubscriber.subscribed || !existingSubscriber.subscription_tier) {
+              logStep("Processando assinatura perdida do checkout", { 
                 sessionId: session.id, 
                 email: customer.email 
               });
@@ -213,34 +217,45 @@ serve(async (req) => {
                   updated_at: new Date().toISOString(),
                 }, { onConflict: 'email' });
 
-              processedSessions++;
+              sessoesProcessadas++;
             }
           }
         } catch (sessionError) {
-          logStep("Error processing session", { sessionId: session.id, error: sessionError.message });
+          logStep("Erro ao processar sessão", { sessionId: session.id, error: sessionError.message });
         }
       }
     }
 
-    const summary = {
-      syncedCustomers,
-      processedSubscriptions,
-      processedSessions,
-      errors,
-      totalProcessed: syncResults.length,
-      activeSubscriptions: syncResults.filter(r => r.subscribed).length,
-      premiumUsers: syncResults.filter(r => r.tier === 'Premium').length,
-      vipUsers: syncResults.filter(r => r.tier === 'VIP').length,
-      usersWithoutProfile: syncResults.filter(r => !r.hasProfile).length,
+    // Estatísticas finais
+    const resumo = {
+      clientesSincronizados: sincronizados,
+      assinaturasProcessadas,
+      sessoesProcessadas,
+      erros,
+      totalProcessado: resultados.length,
+      assinaturasAtivas: resultados.filter(r => r.subscribed).length,
+      usuariosPremium: resultados.filter(r => r.tier === 'Premium').length,
+      usuariosVIP: resultados.filter(r => r.tier === 'VIP').length,
+      usuariosSemPerfil: resultados.filter(r => !r.hasProfile).length,
     };
 
-    logStep("Synchronization completed", summary);
+    logStep("Sincronização concluída", resumo);
+
+    // Retornar apenas alguns exemplos para evitar resposta muito grande
+    const exemplos = resultados
+      .filter(r => r.subscribed)
+      .slice(0, 20)
+      .map(r => ({
+        email: r.email.substring(0, 3) + '***', // Mascarar email por segurança
+        tier: r.tier,
+        status: r.status
+      }));
 
     return new Response(JSON.stringify({
-      success: true,
-      message: "Stripe customers synchronized successfully",
-      summary,
-      details: syncResults.slice(0, 50) // Limitar detalhes para evitar resposta muito grande
+      sucesso: true,
+      mensagem: "Clientes Stripe sincronizados com sucesso",
+      resumo,
+      exemplosAtivos: exemplos
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -248,12 +263,12 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in sync-stripe-customers", { message: errorMessage });
+    logStep("ERRO na sincronização", { mensagem: errorMessage });
     
     return new Response(JSON.stringify({ 
-      success: false,
-      error: errorMessage,
-      message: "Falha na sincronização dos clientes Stripe"
+      sucesso: false,
+      erro: errorMessage,
+      mensagem: "Falha na sincronização dos clientes Stripe"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

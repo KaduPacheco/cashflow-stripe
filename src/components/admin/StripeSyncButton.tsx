@@ -1,133 +1,190 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/hooks/use-toast'
+import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
-import { toast } from 'sonner'
-import { Loader2, RefreshCw } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
-interface SyncSummary {
-  syncedCustomers: number
-  processedSubscriptions: number
-  processedSessions: number
-  errors: number
-  totalProcessed: number
-  activeSubscriptions: number
-  premiumUsers: number
-  vipUsers: number
-  usersWithoutProfile: number
+interface SyncResult {
+  sucesso: boolean
+  mensagem: string
+  resumo?: {
+    clientesSincronizados: number
+    assinaturasProcessadas: number
+    sessoesProcessadas: number
+    erros: number
+    totalProcessado: number
+    assinaturasAtivas: number
+    usuariosPremium: number
+    usuariosVIP: number
+    usuariosSemPerfil: number
+  }
+  exemplosAtivos?: Array<{
+    email: string
+    tier: string
+    status: string
+  }>
+  erro?: string
 }
 
 export function StripeSyncButton() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [lastSync, setLastSync] = useState<Date | null>(null)
-  const [syncSummary, setSyncSummary] = useState<SyncSummary | null>(null)
-  const { session } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [lastSync, setLastSync] = useState<SyncResult | null>(null)
 
   const handleSync = async () => {
-    if (!session) {
-      toast.error('Você precisa estar logado para executar a sincronização')
-      return
-    }
-
-    setIsLoading(true)
-    
+    setLoading(true)
     try {
-      toast.info('Iniciando sincronização com Stripe...', {
-        description: 'Este processo pode levar alguns minutos'
-      })
-
-      const { data, error } = await supabase.functions.invoke('sync-stripe-customers', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      })
-
+      console.log('Iniciando sincronização do Stripe...')
+      
+      const { data, error } = await supabase.functions.invoke('sync-stripe-customers')
+      
       if (error) {
+        console.error('Erro na sincronização:', error)
         throw error
       }
 
-      if (data.success) {
-        setSyncSummary(data.summary)
-        setLastSync(new Date())
-        
-        toast.success('Sincronização concluída com sucesso!', {
-          description: `${data.summary.syncedCustomers} clientes sincronizados, ${data.summary.activeSubscriptions} assinaturas ativas`
+      console.log('Resultado da sincronização:', data)
+      setLastSync(data)
+      
+      if (data.sucesso) {
+        toast({
+          title: "Sincronização concluída!",
+          description: `${data.resumo?.clientesSincronizados || 0} clientes sincronizados com sucesso.`,
         })
       } else {
-        throw new Error(data.error || 'Erro desconhecido na sincronização')
+        throw new Error(data.erro || 'Erro desconhecido na sincronização')
       }
     } catch (error: any) {
-      console.error('Sync error:', error)
-      toast.error('Erro na sincronização', {
-        description: error.message || 'Erro desconhecido ao sincronizar clientes'
+      console.error('Erro na sincronização:', error)
+      toast({
+        title: "Erro na sincronização",
+        description: error.message || "Falha ao sincronizar clientes do Stripe",
+        variant: "destructive",
+      })
+      setLastSync({
+        sucesso: false,
+        mensagem: "Erro na sincronização",
+        erro: error.message
       })
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <Button 
-          onClick={handleSync} 
-          disabled={isLoading}
-          variant="outline"
-          className="gap-2"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          {isLoading ? 'Sincronizando...' : 'Sincronizar Stripe'}
-        </Button>
-        
-        {lastSync && (
-          <span className="text-sm text-muted-foreground">
-            Última sincronização: {lastSync.toLocaleString('pt-BR')}
-          </span>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5" />
+            Sincronização Stripe
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Sincroniza todos os clientes e assinaturas do Stripe com o banco de dados local.
+            Processa assinaturas ativas, canceladas e sessões de checkout recentes.
+          </p>
+          
+          <Button 
+            onClick={handleSync} 
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sincronizar Clientes Stripe
+              </>
+            )}
+          </Button>
 
-      {syncSummary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/50">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{syncSummary.syncedCustomers}</div>
-            <div className="text-sm text-muted-foreground">Clientes Sincronizados</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{syncSummary.activeSubscriptions}</div>
-            <div className="text-sm text-muted-foreground">Assinaturas Ativas</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{syncSummary.premiumUsers}</div>
-            <div className="text-sm text-muted-foreground">Usuários Premium</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">{syncSummary.vipUsers}</div>
-            <div className="text-sm text-muted-foreground">Usuários VIP</div>
-          </div>
-          
-          {syncSummary.errors > 0 && (
-            <div className="col-span-2 text-center">
-              <div className="text-2xl font-bold text-red-600">{syncSummary.errors}</div>
-              <div className="text-sm text-muted-foreground">Erros</div>
-            </div>
+          {lastSync && (
+            <Card className={lastSync.sucesso ? "border-green-200" : "border-red-200"}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  {lastSync.sucesso ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      Última sincronização - Sucesso
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      Última sincronização - Erro
+                    </>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {lastSync.sucesso && lastSync.resumo ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Clientes sincronizados:</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {lastSync.resumo.clientesSincronizados}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="font-medium">Assinaturas ativas:</span>
+                        <Badge variant="default" className="ml-2">
+                          {lastSync.resumo.assinaturasAtivas}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="font-medium">Usuários Premium:</span>
+                        <Badge variant="outline" className="ml-2">
+                          {lastSync.resumo.usuariosPremium}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="font-medium">Usuários VIP:</span>
+                        <Badge variant="outline" className="ml-2">
+                          {lastSync.resumo.usuariosVIP}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {lastSync.resumo.erros > 0 && (
+                      <div className="text-sm text-orange-600">
+                        <AlertCircle className="h-4 w-4 inline mr-1" />
+                        {lastSync.resumo.erros} erros durante o processamento
+                      </div>
+                    )}
+
+                    {lastSync.exemplosAtivos && lastSync.exemplosAtivos.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Assinaturas Ativas (exemplos):</h4>
+                        <div className="space-y-1">
+                          {lastSync.exemplosAtivos.map((exemplo, index) => (
+                            <div key={index} className="flex items-center gap-2 text-xs">
+                              <span className="font-mono">{exemplo.email}</span>
+                              <Badge size="sm" variant="secondary">{exemplo.tier}</Badge>
+                              <span className="text-muted-foreground">{exemplo.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-sm text-red-600">
+                    {lastSync.erro || lastSync.mensagem}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
-          
-          {syncSummary.usersWithoutProfile > 0 && (
-            <div className="col-span-2 text-center">
-              <div className="text-2xl font-bold text-yellow-600">{syncSummary.usersWithoutProfile}</div>
-              <div className="text-sm text-muted-foreground">Sem Perfil no Sistema</div>
-            </div>
-          )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
