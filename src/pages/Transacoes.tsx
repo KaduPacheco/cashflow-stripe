@@ -15,11 +15,12 @@ export default function Transacoes() {
   const {
     transacoes,
     loading,
+    totals,
     createTransaction,
     updateTransaction,
     deleteTransaction,
     deleteAllTransactions,
-    fetchTransactions
+    refetch
   } = useTransactions()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -39,7 +40,7 @@ export default function Transacoes() {
       const matchesType = typeFilter === 'todos' || transacao.tipo === typeFilter
 
       const matchesCategory = categoryFilter === 'todas' || 
-        transacao.categoria_id === categoryFilter
+        transacao.category_id === categoryFilter
 
       return matchesSearch && matchesType && matchesCategory
     })
@@ -75,8 +76,8 @@ export default function Transacoes() {
     }
     setDialogOpen(false)
     setEditingTransaction(null)
-    fetchTransactions()
-  }, [editingTransaction, updateTransaction, createTransaction, fetchTransactions])
+    refetch()
+  }, [editingTransaction, updateTransaction, createTransaction, refetch])
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('')
@@ -105,11 +106,15 @@ export default function Transacoes() {
           hasTransactions={transacoes.length > 0}
           onCreateNew={handleCreateNew}
           onDeleteAll={handleDeleteAll}
-          isReadOnly={false} // Sempre false - acesso premium para todos
+          isReadOnly={false}
         />
       </motion.div>
 
-      <TransactionSummaryCards transacoes={filteredTransacoes} />
+      <TransactionSummaryCards 
+        receitas={totals.receitas}
+        despesas={totals.despesas}
+        saldo={totals.saldo}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -137,7 +142,7 @@ export default function Transacoes() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onCreateNew={handleCreateNew}
-          isReadOnly={false} // Sempre false - acesso premium para todos
+          isReadOnly={false}
           isEmpty={isEmpty}
         />
       </motion.div>
