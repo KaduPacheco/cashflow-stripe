@@ -70,8 +70,8 @@ export class SubscriptionService {
       'recurring-accounts'
     ]
 
-    // VIP has same access as Premium - negação corrigida
-    return premiumFeatures.includes(feature) && !['Premium', 'VIP'].includes(subscriptionTier)
+    // Return true if feature requires premium and user doesn't have premium access
+    return premiumFeatures.includes(feature) && !this.hasPremiumAccess(subscriptionTier)
   }
 
   // Helper method to display tier name to user (VIP shows as Premium)
@@ -82,5 +82,28 @@ export class SubscriptionService {
   // Helper method to check if user has premium access (includes VIP)
   static hasPremiumAccess(subscriptionTier: string): boolean {
     return ['Premium', 'VIP'].includes(subscriptionTier)
+  }
+
+  // New method to force refresh subscription status
+  static async forceRefreshSubscription(session: any): Promise<SubscriptionData | null> {
+    if (!session?.access_token) return null
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (error) {
+        console.error('Force refresh error:', error)
+        return null
+      }
+
+      return data as SubscriptionData
+    } catch (error) {
+      console.error('Force refresh subscription error:', error)
+      return null
+    }
   }
 }

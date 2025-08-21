@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import type { User, Session } from '@supabase/supabase-js'
@@ -11,21 +12,30 @@ export const createCheckout = async (user: User | null, session: Session | null)
   }
 
   try {
-    console.log('Redirecting to Stripe payment link for user:', user.id)
+    console.log('Creating checkout session for user:', user.id)
     
-    // Redirecionar diretamente para o novo link do Stripe
-    const stripePaymentUrl = "https://buy.stripe.com/28E4gz67n2JbfoT2US2wU02"
-    
-    console.log('Redirecting to payment:', stripePaymentUrl)
-    window.open(stripePaymentUrl, '_blank')
-    
-    toast.success("Redirecionando para pagamento", {
-      description: "Abrindo nova aba com o pagamento do Stripe...",
+    const { data, error } = await supabase.functions.invoke('create-checkout', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
     })
+    
+    if (error) {
+      console.error('Error creating checkout:', error)
+      throw error
+    }
+
+    if (data?.url) {
+      console.log('Redirecting to checkout:', data.url)
+      window.location.href = data.url
+    } else {
+      throw new Error('URL de checkout não retornada')
+    }
+    
   } catch (error: any) {
-    console.error('Failed to redirect to payment:', error)
-    toast.error("Erro ao abrir página de pagamento", {
-      description: error.message || "Erro desconhecido ao abrir pagamento",
+    console.error('Failed to create checkout:', error)
+    toast.error("Erro ao criar checkout", {
+      description: error.message || "Erro desconhecido ao criar sessão de pagamento",
     })
   }
 }
@@ -55,6 +65,12 @@ export const openCustomerPortal = async (user: User | null, session: Session | n
     if (data?.url) {
       console.log('Redirecting to customer portal:', data.url)
       window.open(data.url, '_blank')
+      
+      toast.success("Portal do cliente aberto", {
+        description: "Você pode gerenciar sua assinatura na nova aba",
+      })
+    } else {
+      throw new Error('URL do portal não retornada')
     }
   } catch (error: any) {
     console.error('Failed to open customer portal:', error)
