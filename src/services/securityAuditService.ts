@@ -8,7 +8,7 @@ export class SecurityAuditService {
    * Validate user session and ownership before any sensitive operation
    */
   static async validateUserAccess(resourceId?: string, resourceUserId?: string) {
-    const { data: { session, user } } = await supabase.auth.getSession()
+    const { data: { session }, data: { user } } = await supabase.auth.getSession()
     
     validateAuthentication(user, session)
     

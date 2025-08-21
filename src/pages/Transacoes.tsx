@@ -7,7 +7,6 @@ import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import { TransactionForm } from '@/components/transacoes/TransactionForm'
 import { TransactionCard } from '@/components/transacoes/TransactionCard'
 import { TransactionFilters } from '@/components/transactions/TransactionFilters'
-import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useSecureTransactions } from '@/hooks/useSecureTransactions'
 import { useAuth } from '@/hooks/useAuth'
@@ -54,17 +53,32 @@ export default function Transacoes() {
       }
       
       // Date filters
-      if (filters.dataInicio && new Date(transaction.quando) < new Date(filters.dataInicio)) {
+      if (filters.dataInicio && new Date(transaction.quando || '') < new Date(filters.dataInicio)) {
         return false
       }
       
-      if (filters.dataFim && new Date(transaction.quando) > new Date(filters.dataFim)) {
+      if (filters.dataFim && new Date(transaction.quando || '') > new Date(filters.dataFim)) {
         return false
       }
       
       return true
     })
   }, [transactions, searchTerm, filters])
+
+  // Calculate summary data
+  const summaryData = useMemo(() => {
+    const receitas = filteredTransactions
+      .filter(t => t.tipo === 'receita')
+      .reduce((sum, t) => sum + (t.valor || 0), 0)
+    
+    const despesas = filteredTransactions
+      .filter(t => t.tipo === 'despesa')
+      .reduce((sum, t) => sum + (t.valor || 0), 0)
+    
+    const saldo = receitas - despesas
+
+    return { receitas, despesas, saldo }
+  }, [filteredTransactions])
 
   const handleFormSuccess = async () => {
     setShowForm(false)
@@ -109,7 +123,44 @@ export default function Transacoes() {
         </Button>
       </div>
 
-      <TransactionSummaryCards transactions={filteredTransactions} />
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <div className="bg-card text-card-foreground rounded-lg border p-6">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Total Receitas</h3>
+          </div>
+          <div className="text-2xl font-bold text-green-600">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(summaryData.receitas)}
+          </div>
+        </div>
+        
+        <div className="bg-card text-card-foreground rounded-lg border p-6">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Total Despesas</h3>
+          </div>
+          <div className="text-2xl font-bold text-red-600">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(summaryData.despesas)}
+          </div>
+        </div>
+        
+        <div className="bg-card text-card-foreground rounded-lg border p-6">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Saldo</h3>
+          </div>
+          <div className={`text-2xl font-bold ${summaryData.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(summaryData.saldo)}
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -134,10 +185,24 @@ export default function Transacoes() {
       </div>
 
       {showFilters && (
-        <TransactionFilters
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-        />
+        <div className="bg-card rounded-lg border p-4">
+          <h3 className="text-lg font-medium mb-4">Filtros</h3>
+          {/* Basic filters implementation */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="text-sm font-medium">Tipo</label>
+              <select 
+                className="w-full mt-1 p-2 border rounded"
+                value={filters.tipo}
+                onChange={(e) => handleFiltersChange({ ...filters, tipo: e.target.value })}
+              >
+                <option value="">Todos</option>
+                <option value="receita">Receita</option>
+                <option value="despesa">Despesa</option>
+              </select>
+            </div>
+          </div>
+        </div>
       )}
 
       {loading ? (
@@ -157,7 +222,7 @@ export default function Transacoes() {
           {filteredTransactions.map((transaction) => (
             <TransactionCard
               key={transaction.id}
-              transaction={transaction}
+              transacao={transaction}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
