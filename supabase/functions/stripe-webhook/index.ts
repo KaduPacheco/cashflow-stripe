@@ -13,10 +13,10 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// Mapeamento de preços para tiers - incluindo VIP
+// Mapeamento de preços para tiers - corrigido para usar a tabela subscribers
 const tierMapping: Record<string, string> = {
-  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',  // VIP price from the provided link
-  // Add other price mappings as needed
+  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',  // VIP price ID (invisível)
+  // Adicione outros price IDs Premium aqui conforme necessário
 }
 
 const logStep = (step: string, details?: any) => {
@@ -74,35 +74,47 @@ serve(async (req) => {
 
         logStep('User found', { userId: user.user.id })
 
-        // Determine subscription tier based on price
+        // Determine subscription tier based on price - corrigido para detectar VIP
         const priceId = subscription.items.data[0]?.price.id
         let tier = tierMapping[priceId] || 'Premium' // Default to Premium for unknown prices
         
         logStep('Determined subscription tier', { priceId, tier })
 
-        // Update or create subscription record
+        // Update or create subscription record - corrigido para usar tabela subscribers
         const subscriptionData = {
           user_id: user.user.id,
-          subscription_id: subscription.id,
-          subscription_tier: tier,
-          subscription_status: subscription.status,
-          subscription_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          email: customerEmail,
           stripe_customer_id: subscription.customer as string,
-          stripe_price_id: priceId,
+          subscribed: true,
+          subscription_tier: tier,
+          subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
           updated_at: new Date().toISOString()
         }
 
         const { error: upsertError } = await supabase
-          .from('subscriptions')
+          .from('subscribers')
           .upsert(subscriptionData, { 
-            onConflict: 'user_id',
+            onConflict: 'email',
             ignoreDuplicates: false 
           })
 
         if (upsertError) {
           logStep('ERROR: Database upsert failed', { error: upsertError, userId: user.user.id })
           return new Response('Database error', { status: 500 })
+        }
+
+        // Também atualizar a tabela profiles
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.user.id,
+            email: customerEmail,
+            assinaturaId: subscription.id,
+            updated_at: new Date().toISOString()
+          })
+
+        if (profileError) {
+          logStep('ERROR: Profile update failed', { error: profileError, userId: user.user.id })
         }
 
         logStep('Subscription updated successfully', { userId: user.user.id, tier, status: subscription.status })
@@ -113,14 +125,15 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription
         logStep('Processing subscription deletion', { subscriptionId: subscription.id })
         
-        // Update subscription status to canceled
+        // Update subscription status to canceled - corrigido para usar tabela subscribers
         const { error: updateError } = await supabase
-          .from('subscriptions')
+          .from('subscribers')
           .update({ 
-            subscription_status: 'canceled',
+            subscribed: false,
+            subscription_tier: null,
             updated_at: new Date().toISOString()
           })
-          .eq('subscription_id', subscription.id)
+          .eq('stripe_customer_id', subscription.customer as string)
 
         if (updateError) {
           logStep('ERROR: Failed to update subscription status', { error: updateError, subscriptionId: subscription.id })
@@ -140,13 +153,13 @@ serve(async (req) => {
           const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
           
           const { error: updateError } = await supabase
-            .from('subscriptions')
+            .from('subscribers')
             .update({ 
               subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
-              subscription_status: subscription.status,
+              subscribed: true,
               updated_at: new Date().toISOString()
             })
-            .eq('subscription_id', subscription.id)
+            .eq('stripe_customer_id', subscription.customer as string)
 
           if (updateError) {
             logStep('ERROR: Failed to update subscription after payment', { error: updateError, subscriptionId: subscription.id })
@@ -164,12 +177,12 @@ serve(async (req) => {
         
         if (invoice.subscription) {
           const { error: updateError } = await supabase
-            .from('subscriptions')
+            .from('subscribers')
             .update({ 
-              subscription_status: 'past_due',
+              subscribed: false,
               updated_at: new Date().toISOString()
             })
-            .eq('subscription_id', invoice.subscription as string)
+            .eq('stripe_customer_id', invoice.subscription as string)
 
           if (updateError) {
             logStep('ERROR: Failed to update subscription after payment failure', { error: updateError, subscriptionId: invoice.subscription })

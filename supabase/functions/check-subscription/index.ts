@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -16,11 +15,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Price ID mapping for different subscription tiers
+// Price ID mapping for different subscription tiers - corrigido
 const PRICE_TIER_MAPPING: Record<string, string> = {
-  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'Premium', // Existing Premium price
-  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',     // VIP price from the provided link
-  // Add more price mappings as needed
+  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',     // VIP price ID (invisível para usuários)
+  // Adicione outros price IDs Premium aqui conforme necessário
 };
 
 const logStep = (step: string, details?: any) => {
@@ -29,13 +27,15 @@ const logStep = (step: string, details?: any) => {
 };
 
 const determineSubscriptionTier = (priceId: string): string => {
-  // Check if it's the VIP price ID from the link
-  if (priceId === 'price_1RbPYoHVDJ85Dm6EzXjQsclN') {
-    return 'VIP';
+  // Verifica se é o price ID específico do VIP
+  if (PRICE_TIER_MAPPING[priceId]) {
+    logStep("VIP price ID detected", { priceId, tier: PRICE_TIER_MAPPING[priceId] });
+    return PRICE_TIER_MAPPING[priceId];
   }
   
-  // Default to Premium for other active subscriptions
-  return PRICE_TIER_MAPPING[priceId] || 'Premium';
+  // Default para Premium para outras assinaturas ativas
+  logStep("Default to Premium tier", { priceId });
+  return 'Premium';
 };
 
 const determineSubscriptionStatus = (subscription: any, subscriptionEnd: string) => {
