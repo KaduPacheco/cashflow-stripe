@@ -70,6 +70,17 @@ export class SubscriptionService {
       'recurring-accounts'
     ]
 
-    return premiumFeatures.includes(feature) && subscriptionTier !== 'Premium'
+    // VIP has same access as Premium
+    return premiumFeatures.includes(feature) && !['Premium', 'VIP'].includes(subscriptionTier)
+  }
+
+  // Helper method to display tier name to user (VIP shows as Premium)
+  static getDisplayTier(subscriptionTier: string): string {
+    return subscriptionTier === 'VIP' ? 'Premium' : subscriptionTier
+  }
+
+  // Helper method to check if user has premium access (includes VIP)
+  static hasPremiumAccess(subscriptionTier: string): boolean {
+    return ['Premium', 'VIP'].includes(subscriptionTier)
   }
 }

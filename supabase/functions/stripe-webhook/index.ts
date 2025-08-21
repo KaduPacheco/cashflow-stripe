@@ -13,10 +13,10 @@ const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// Mapeamento de preços para tiers
+// Mapeamento de preços para tiers - incluindo VIP
 const tierMapping: Record<string, string> = {
-  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'agente_financeiro',  // Preço exemplo do plano básico
-  // Adicione outros mapeamentos conforme necessário
+  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',  // VIP price from the provided link
+  // Add other price mappings as needed
 }
 
 const logStep = (step: string, details?: any) => {
@@ -76,7 +76,7 @@ serve(async (req) => {
 
         // Determine subscription tier based on price
         const priceId = subscription.items.data[0]?.price.id
-        let tier = tierMapping[priceId] || 'agente_financeiro' // Default tier
+        let tier = tierMapping[priceId] || 'Premium' // Default to Premium for unknown prices
         
         logStep('Determined subscription tier', { priceId, tier })
 

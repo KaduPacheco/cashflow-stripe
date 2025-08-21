@@ -16,9 +16,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Price ID mapping for different subscription tiers
+const PRICE_TIER_MAPPING: Record<string, string> = {
+  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'Premium', // Existing Premium price
+  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'VIP',     // VIP price from the provided link
+  // Add more price mappings as needed
+};
+
 const logStep = (step: string, details?: any) => {
   const safeDetails = details ? JSON.stringify(details).slice(0, 500) : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${safeDetails ? ` - ${safeDetails}` : ''}`);
+};
+
+const determineSubscriptionTier = (priceId: string): string => {
+  // Check if it's the VIP price ID from the link
+  if (priceId === 'price_1RbPYoHVDJ85Dm6EzXjQsclN') {
+    return 'VIP';
+  }
+  
+  // Default to Premium for other active subscriptions
+  return PRICE_TIER_MAPPING[priceId] || 'Premium';
 };
 
 const determineSubscriptionStatus = (subscription: any, subscriptionEnd: string) => {
@@ -129,14 +146,12 @@ serve(async (req) => {
       });
     }
 
-    // Simplificada validação de autenticação - removendo timeout muito restritivo
     let userData: any;
     try {
       const { data, error: userError } = await authClient.auth.getUser(validatedToken);
       
       if (userError) {
         logStep("Authentication error", { error: userError.message });
-        // Ser menos restritivo com erros de JWT
         if (userError.message?.includes('expired')) {
           return new Response(JSON.stringify({ 
             subscribed: false,
@@ -148,7 +163,6 @@ serve(async (req) => {
           });
         }
         
-        // Para outros erros, tentar continuar com dados limitados se possível
         logStep("Auth error but attempting to continue", { error: userError.message });
       }
       
@@ -217,7 +231,6 @@ serve(async (req) => {
     
     let customers: any;
     try {
-      // Removendo timeout muito restritivo
       customers = await stripe.customers.list({ email: validatedEmail, limit: 1 });
     } catch (stripeApiError) {
       logStep("Stripe API error", { error: stripeApiError.message });
@@ -269,7 +282,6 @@ serve(async (req) => {
 
     let subscriptions: any;
     try {
-      // Removendo timeout muito restritivo
       subscriptions = await stripe.subscriptions.list({
         customer: customerId,
         status: "all",
@@ -302,14 +314,20 @@ serve(async (req) => {
       const subscription = activeSubscriptions[0];
       subscriptionId = subscription.id;
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      subscriptionTier = "Premium";
+      
+      // Determine tier based on price_id
+      const priceId = subscription.items.data[0]?.price.id;
+      subscriptionTier = determineSubscriptionTier(priceId);
+      
       subscriptionStatus = determineSubscriptionStatus(subscription, subscriptionEnd);
       detailedStatus = subscriptionStatus;
       
       logStep("Active subscription found", { 
         subscriptionId: subscriptionId.slice(0, 8) + "...", 
         endDate: subscriptionEnd,
-        status: subscriptionStatus
+        status: subscriptionStatus,
+        tier: subscriptionTier,
+        priceId: priceId
       });
     } else if (subscriptions.data.length > 0) {
       const lastSubscription = subscriptions.data[0];
