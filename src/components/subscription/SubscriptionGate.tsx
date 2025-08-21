@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useAuth } from '@/hooks/useAuth'
-import { SubscriptionService } from '@/services/subscriptionService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -92,17 +91,6 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     }
   }
 
-  // Check if user has premium access (includes VIP)
-  const hasAccessToContent = () => {
-    return subscriptionData.subscribed && 
-           SubscriptionService.hasPremiumAccess(subscriptionData.subscription_tier || '')
-  }
-
-  // Get display tier for UI (VIP shows as Premium)
-  const getDisplayTier = () => {
-    return SubscriptionService.getDisplayTier(subscriptionData.subscription_tier || '')
-  }
-
   // Show loading with progress and timeout handling apenas se deve mostrar splash
   if (loading && showSplash) {
     return (
@@ -143,7 +131,7 @@ export function SubscriptionGate({ children }: SubscriptionGateProps) {
     )
   }
 
-  if (!hasAccessToContent()) {
+  if (!subscriptionData.subscribed) {
     const isSessionError = subscriptionData.errorType === 'session'
     const isNetworkError = subscriptionData.errorType === 'network'
     const isRateLimit = subscriptionData.errorType === 'rate_limit'

@@ -42,7 +42,7 @@ export const BUSINESS_RULES = {
   MIN_PASSWORD_LENGTH: 8,
   MAX_TRANSACTION_VALUE: 1000000,
   MAX_DESCRIPTION_LENGTH: 255,
-  SUBSCRIPTION_TIERS: ['Free', 'Premium', 'VIP'] as const,
+  SUBSCRIPTION_TIERS: ['Free', 'Premium'] as const,
   TRANSACTION_TYPES: ['receita', 'despesa'] as const,
   ACCOUNT_TYPES: ['pagar', 'receber'] as const,
   ACCOUNT_STATUS: ['pendente', 'pago', 'parcialmente_pago', 'vencido'] as const,

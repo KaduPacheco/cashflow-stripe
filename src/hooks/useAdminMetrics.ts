@@ -11,9 +11,6 @@ interface AdminMetrics {
   paidUsers: number
   freeUsers: number
   cashFlow: number
-  totalUsers: number
-  activeSubscribers: number
-  premiumUsers: number
 }
 
 interface UseAdminMetricsReturn {
@@ -32,10 +29,7 @@ export function useAdminMetrics(): UseAdminMetricsReturn {
   const [metrics, setMetrics] = useState<AdminMetrics>({
     paidUsers: 0,
     freeUsers: 0,
-    cashFlow: 0,
-    totalUsers: 0,
-    activeSubscribers: 0,
-    premiumUsers: 0
+    cashFlow: 0
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,17 +87,6 @@ export function useAdminMetrics(): UseAdminMetricsReturn {
         totalUsersQuery = totalUsersQuery.gte('created_at', userDateFilter)
       }
 
-      // Buscar usuários premium (VIP)
-      let premiumUsersQuery = supabase
-        .from('subscribers')
-        .select('user_id', { count: 'exact', head: true })
-        .eq('subscribed', true)
-        .eq('subscription_tier', 'VIP')
-
-      if (userDateFilter) {
-        premiumUsersQuery = premiumUsersQuery.gte('created_at', userDateFilter)
-      }
-
       // Calcular datas para fluxo de caixa
       let cashFlowDateFrom: string
       let cashFlowDateTo: string
@@ -130,18 +113,15 @@ export function useAdminMetrics(): UseAdminMetricsReturn {
       const [
         { count: paidUsersCount, error: paidUsersError },
         { count: totalUsersCount, error: totalUsersError },
-        { count: premiumUsersCount, error: premiumUsersError },
         { data: transactions, error: transactionsError }
       ] = await Promise.all([
         paidUsersQuery,
         totalUsersQuery,
-        premiumUsersQuery,
         cashFlowQuery
       ])
 
       if (paidUsersError) throw paidUsersError
       if (totalUsersError) throw totalUsersError
-      if (premiumUsersError) throw premiumUsersError
       if (transactionsError) throw transactionsError
 
       // Calcular usuários gratuitos
@@ -161,10 +141,7 @@ export function useAdminMetrics(): UseAdminMetricsReturn {
       const newMetrics: AdminMetrics = {
         paidUsers: paidUsersCount || 0,
         freeUsers: Math.max(0, freeUsersCount),
-        cashFlow,
-        totalUsers: totalUsersCount || 0,
-        activeSubscribers: paidUsersCount || 0,
-        premiumUsers: premiumUsersCount || 0
+        cashFlow
       }
 
       setMetrics(newMetrics)
