@@ -8,15 +8,20 @@ export class SecurityAuditService {
    * Validate user session and ownership before any sensitive operation
    */
   static async validateUserAccess(resourceId?: string, resourceUserId?: string) {
-    const { data: { session }, data: { user } } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (sessionError || userError || !user || !session) {
+      throw new Error('Authentication required')
+    }
     
     validateAuthentication(user, session)
     
     if (resourceId && resourceUserId) {
-      validateResourceOwnership(resourceUserId, user!.id)
+      validateResourceOwnership(resourceUserId, user.id)
     }
     
-    return { user: user!, session: session! }
+    return { user, session }
   }
 
   /**
@@ -50,7 +55,7 @@ export class SecurityAuditService {
     details?: Record<string, any>
   ) {
     try {
-      SecureLogger.security('Security operation', {
+      SecureLogger.auth('Security operation', {
         operation,
         userId: '***MASKED***',
         resourceType,
