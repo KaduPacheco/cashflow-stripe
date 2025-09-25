@@ -1,7 +1,7 @@
 
 export interface SubscriptionData {
   subscribed: boolean
-  subscription_tier?: string
+  subscription_tier?: 'Free' | 'Premium' | 'VIP'
   subscription_end?: string
   subscription_id?: string
   status?: string

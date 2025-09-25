@@ -1,248 +1,139 @@
 
-import { useState, useMemo } from 'react'
-import { Plus, Search, Filter } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
-import { TransactionForm } from '@/components/transacoes/TransactionForm'
-import { TransactionCard } from '@/components/transacoes/TransactionCard'
+import { TransactionSummaryCards } from '@/components/transactions/TransactionSummaryCards'
 import { TransactionFilters } from '@/components/transactions/TransactionFilters'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { useSecureTransactions } from '@/hooks/useSecureTransactions'
-import { useAuth } from '@/hooks/useAuth'
-import type { Transacao } from '@/types/transaction'
+import { TransactionForm } from '@/components/transacoes/TransactionForm'
+import { TransactionsList } from '@/components/transacoes/TransactionsList'
+import { TransactionsActions } from '@/components/transacoes/TransactionsActions'
+import { useTransactions } from '@/hooks/useTransactions'
+import { useReadOnlyMode } from '@/hooks/useReadOnlyMode'
+import { ReadOnlyWrapper } from '@/components/subscription/ReadOnlyWrapper'
+import { SubscriptionGate } from '@/components/subscription/SubscriptionGate'
+import { Transacao } from '@/types/transaction'
 
 export default function Transacoes() {
-  const { user } = useAuth()
-  const {
-    transactions,
-    loading,
-    createTransaction,
-    updateTransaction,
+  const { 
+    transacoes, 
+    loading, 
+    totals,
+    searchTerm,
+    setSearchTerm,
+    typeFilter,
+    setTypeFilter,
+    categoryFilter,
+    setCategoryFilter,
+    clearFilters,
     deleteTransaction,
-    fetchTransactions
-  } = useSecureTransactions()
-
-  const [showForm, setShowForm] = useState(false)
+    deleteAllTransactions
+  } = useTransactions()
+  
+  const { isReadOnly } = useReadOnlyMode()
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transacao | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [filters, setFilters] = useState({
-    categoria_id: '',
-    tipo: '',
-    dataInicio: '',
-    dataFim: ''
-  })
 
-  // Filter transactions based on search and filters
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(transaction => {
-      // Search filter
-      if (searchTerm && !transaction.estabelecimento?.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false
-      }
-      
-      // Category filter
-      if (filters.categoria_id && transaction.category_id !== filters.categoria_id) {
-        return false
-      }
-      
-      // Type filter
-      if (filters.tipo && transaction.tipo !== filters.tipo) {
-        return false
-      }
-      
-      // Date filters
-      if (filters.dataInicio && new Date(transaction.quando || '') < new Date(filters.dataInicio)) {
-        return false
-      }
-      
-      if (filters.dataFim && new Date(transaction.quando || '') > new Date(filters.dataFim)) {
-        return false
-      }
-      
-      return true
-    })
-  }, [transactions, searchTerm, filters])
-
-  // Calculate summary data
-  const summaryData = useMemo(() => {
-    const receitas = filteredTransactions
-      .filter(t => t.tipo === 'receita')
-      .reduce((sum, t) => sum + (t.valor || 0), 0)
-    
-    const despesas = filteredTransactions
-      .filter(t => t.tipo === 'despesa')
-      .reduce((sum, t) => sum + (t.valor || 0), 0)
-    
-    const saldo = receitas - despesas
-
-    return { receitas, despesas, saldo }
-  }, [filteredTransactions])
-
-  const handleFormSuccess = async () => {
-    setShowForm(false)
-    setEditingTransaction(null)
-    await fetchTransactions(filters)
-  }
-
-  const handleEdit = (transaction: Transacao) => {
-    setEditingTransaction(transaction)
-    setShowForm(true)
+  const handleEdit = (transacao: Transacao) => {
+    setEditingTransaction(transacao)
+    setDialogOpen(true)
   }
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
-      await deleteTransaction(id)
-    }
+    if (!confirm('Tem certeza que deseja excluir esta transação?')) return
+    await deleteTransaction(id)
   }
 
-  const handleFiltersChange = (newFilters: typeof filters) => {
-    setFilters(newFilters)
-    fetchTransactions(newFilters)
+  const handleCreateNew = () => {
+    setEditingTransaction(null)
+    setDialogOpen(true)
   }
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Acesso Restrito</h2>
-          <p className="text-muted-foreground">Faça login para acessar suas transações.</p>
-        </div>
-      </div>
-    )
+  const handleFormSuccess = () => {
+    setDialogOpen(false)
+    setEditingTransaction(null)
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Transações</h1>
-        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Transação
-        </Button>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <div className="bg-card text-card-foreground rounded-lg border p-6">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Total Receitas</h3>
-          </div>
-          <div className="text-2xl font-bold text-green-600">
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(summaryData.receitas)}
-          </div>
-        </div>
-        
-        <div className="bg-card text-card-foreground rounded-lg border p-6">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Total Despesas</h3>
-          </div>
-          <div className="text-2xl font-bold text-red-600">
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(summaryData.despesas)}
-          </div>
-        </div>
-        
-        <div className="bg-card text-card-foreground rounded-lg border p-6">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Saldo</h3>
-          </div>
-          <div className={`text-2xl font-bold ${summaryData.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(summaryData.saldo)}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar por estabelecimento..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2"
-        >
-          <Filter className="w-4 h-4" />
-          Filtros
-        </Button>
-      </div>
-
-      {showFilters && (
-        <div className="bg-card rounded-lg border p-4">
-          <h3 className="text-lg font-medium mb-4">Filtros</h3>
-          {/* Basic filters implementation */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <label className="text-sm font-medium">Tipo</label>
-              <select 
-                className="w-full mt-1 p-2 border rounded"
-                value={filters.tipo}
-                onChange={(e) => handleFiltersChange({ ...filters, tipo: e.target.value })}
-              >
-                <option value="">Todos</option>
-                <option value="receita">Receita</option>
-                <option value="despesa">Despesa</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <LoadingSpinner />
-        </div>
-      ) : filteredTransactions.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">
-            {searchTerm || Object.values(filters).some(v => v) 
-              ? 'Nenhuma transação encontrada com os filtros aplicados.' 
-              : 'Nenhuma transação encontrada. Crie sua primeira transação!'}
+    <div className="space-y-4 px-2 sm:px-6 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400">Transações</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Gerencie suas transações financeiras
           </p>
         </div>
-      ) : (
-        <div className="grid gap-4">
-          {filteredTransactions.map((transaction) => (
-            <TransactionCard
-              key={transaction.id}
-              transacao={transaction}
+        
+        <div className="sm:hidden">
+          <ReadOnlyWrapper message="Criação de transações disponível apenas na versão premium">
+            <TransactionsActions 
+              hasTransactions={transacoes.length > 0}
+              onCreateNew={handleCreateNew}
+              onDeleteAll={deleteAllTransactions}
+              isReadOnly={isReadOnly}
+            />
+          </ReadOnlyWrapper>
+        </div>
+      </div>
+
+      <SubscriptionGate>
+        <TransactionSummaryCards 
+          receitas={totals.receitas} 
+          despesas={totals.despesas} 
+          saldo={totals.saldo} 
+        />
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg sm:text-xl">Filtros</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <TransactionFilters 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              typeFilter={typeFilter}
+              onTypeFilterChange={setTypeFilter}
+              categoryFilter={categoryFilter}
+              onCategoryFilterChange={setCategoryFilter}
+              onClearFilters={clearFilters}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3">
+            <CardTitle className="text-lg sm:text-xl">Lista de Transações</CardTitle>
+            <div className="hidden sm:block">
+              <TransactionsActions 
+                hasTransactions={transacoes.length > 0}
+                onCreateNew={handleCreateNew}
+                onDeleteAll={deleteAllTransactions}
+                isReadOnly={isReadOnly}
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <TransactionsList 
+              transacoes={transacoes}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onCreateNew={handleCreateNew}
+              isReadOnly={isReadOnly}
+              isEmpty={transacoes.length === 0}
             />
-          ))}
-        </div>
-      )}
+          </CardContent>
+        </Card>
 
-      <ResponsiveModal
-        open={showForm}
-        onOpenChange={(open) => {
-          setShowForm(open)
-          if (!open) setEditingTransaction(null)
-        }}
-        title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
-      >
-        <TransactionForm 
-          onSuccess={handleFormSuccess}
-          editingTransaction={editingTransaction}
-        />
-      </ResponsiveModal>
+        <ResponsiveModal
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          title={editingTransaction ? 'Editar Transação' : 'Nova Transação'}
+        >
+          <TransactionForm 
+            onSuccess={handleFormSuccess}
+            editingTransaction={editingTransaction}
+          />
+        </ResponsiveModal>
+      </SubscriptionGate>
     </div>
   )
 }
