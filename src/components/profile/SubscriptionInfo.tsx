@@ -1,7 +1,6 @@
 
 import { useSubscription } from '@/hooks/useSubscription'
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus'
-import { SubscriptionService } from '@/services/subscriptionService'
 
 export function SubscriptionInfo() {
   const { subscriptionData, loading } = useSubscription()
@@ -14,7 +13,7 @@ export function SubscriptionInfo() {
     )
   }
 
-  if (!subscriptionData.subscribed || !SubscriptionService.hasPremiumAccess(subscriptionData.subscription_tier || '')) {
+  if (!subscriptionData.subscribed) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground mb-4">Você não possui uma assinatura ativa</p>
