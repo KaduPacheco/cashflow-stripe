@@ -7,49 +7,13 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
-      admin_logs: {
-        Row: {
-          action: string
-          admin_user_id: string | null
-          created_at: string | null
-          details: Json | null
-          id: string
-          ip_address: unknown | null
-          target_id: string | null
-          target_table: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          action: string
-          admin_user_id?: string | null
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          ip_address?: unknown | null
-          target_id?: string | null
-          target_table?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          action?: string
-          admin_user_id?: string | null
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          ip_address?: unknown | null
-          target_id?: string | null
-          target_table?: string | null
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
       categorias: {
         Row: {
           created_at: string
@@ -284,7 +248,6 @@ export type Database = {
           customerId: string | null
           email: string | null
           id: string
-          is_admin: boolean | null
           nome: string | null
           phone: string | null
           updated_at: string
@@ -299,7 +262,6 @@ export type Database = {
           customerId?: string | null
           email?: string | null
           id: string
-          is_admin?: boolean | null
           nome?: string | null
           phone?: string | null
           updated_at?: string
@@ -314,7 +276,6 @@ export type Database = {
           customerId?: string | null
           email?: string | null
           id?: string
-          is_admin?: boolean | null
           nome?: string | null
           phone?: string | null
           updated_at?: string
@@ -462,31 +423,18 @@ export type Database = {
         Args: { input_timestamp: string }
         Returns: string
       }
-      is_user_admin: {
-        Args: { user_id?: string }
-        Returns: boolean
-      }
-      log_admin_action: {
-        Args: {
-          p_action: string
-          p_target_table?: string
-          p_target_id?: string
-          p_details?: Json
-        }
-        Returns: undefined
-      }
       log_security_event: {
         Args: {
           p_action: string
-          p_table_name: string
+          p_details?: Json
           p_record_id?: string
           p_success?: boolean
-          p_details?: Json
+          p_table_name: string
         }
         Returns: undefined
       }
       verify_user_ownership: {
-        Args: { table_name: string; record_id: string; user_id_field?: string }
+        Args: { record_id: string; table_name: string; user_id_field?: string }
         Returns: boolean
       }
     }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
-import { useAdmin } from '@/hooks/useAdmin'
+
 import { toast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -21,7 +21,6 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
-  const { isAdmin } = useAdmin()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
@@ -76,13 +75,8 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
 
         // Aguardar um pouco e depois redirecionar manualmente
         setTimeout(() => {
-          if (isAdmin) {
-            SecureLogger.auth('Redirecting admin to admin panel')
-            navigate('/admin-panel', { replace: true })
-          } else {
-            SecureLogger.auth('Redirecting user to dashboard')
-            navigate('/dashboard', { replace: true })
-          }
+          SecureLogger.auth('Redirecting user to dashboard')
+          navigate('/dashboard', { replace: true })
         }, 500)
       }
     } catch (error: any) {

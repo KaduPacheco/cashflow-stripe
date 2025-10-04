@@ -6,9 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
-import { AdminRoute } from "@/components/admin/AdminRoute";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import { AdminRedirectGuard } from "@/components/admin/AdminRedirectGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/error-boundary/ErrorBoundary";
@@ -31,10 +28,6 @@ import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 import ContasPagarReceber from "./pages/ContasPagarReceber";
 
-// Admin Pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -55,11 +48,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return (
-    <AdminRedirectGuard>
-      {children}
-    </AdminRedirectGuard>
-  );
+  return <>{children}</>;
 }
 
 function AppRoutes() {
@@ -158,23 +147,6 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-
-      {/* Admin Routes - Completamente invisíveis para usuários normais */}
-      <Route 
-        path="/admin-panel" 
-        element={
-          <AdminRoute>
-            <AdminLayout />
-          </AdminRoute>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="security-logs" element={<div className="text-white">Security Logs - Em desenvolvimento</div>} />
-        <Route path="analytics" element={<div className="text-white">Analytics - Em desenvolvimento</div>} />
-        <Route path="database" element={<div className="text-white">Database - Em desenvolvimento</div>} />
-        <Route path="settings" element={<div className="text-white">Settings - Em desenvolvimento</div>} />
-      </Route>
 
       <Route path="*" element={<NotFound />} />
     </Routes>
