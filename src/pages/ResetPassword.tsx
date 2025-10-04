@@ -53,13 +53,7 @@ export default function ResetPassword() {
       tokenType = hashParams.get('token_type')
       type = hashParams.get('type')
       
-      console.log('ResetPassword: Hash tokens:', {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        tokenType,
-        type,
-        accessTokenLength: accessToken?.length || 0
-      })
+      console.log('ResetPassword: Tokens found in hash fragment')
     }
 
     // Se não encontrou na hash, tentar na query string (?)
@@ -70,13 +64,7 @@ export default function ResetPassword() {
       tokenType = searchParams.get('token_type')
       type = searchParams.get('type')
       
-      console.log('ResetPassword: Search tokens:', {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        tokenType,
-        type,
-        accessTokenLength: accessToken?.length || 0
-      })
+      console.log('ResetPassword: Tokens found in query string')
     }
 
     return { accessToken, refreshToken, tokenType, type }
@@ -91,12 +79,7 @@ export default function ResetPassword() {
       try {
         const { accessToken, refreshToken, tokenType, type } = extractTokensFromUrl()
 
-        console.log('ResetPassword: Token extraction result:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          tokenType,
-          type
-        })
+        console.log('ResetPassword: Validating reset link')
 
         // Verificar se é um link de recovery válido
         if (!accessToken || type !== 'recovery') {
@@ -189,10 +172,24 @@ export default function ResetPassword() {
       return
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "Erro",
-        description: "A senha deve ter pelo menos 6 caracteres.",
+        description: "A senha deve ter pelo menos 8 caracteres.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validação de complexidade da senha
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumber = /[0-9]/.test(password)
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha deve conter letras maiúsculas, minúsculas e números.",
         variant: "destructive",
       })
       return

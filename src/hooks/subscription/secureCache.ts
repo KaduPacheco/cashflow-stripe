@@ -1,8 +1,19 @@
+/**
+ * SECURE CACHE MANAGER
+ * 
+ * Este sistema usa ofuscação (btoa/atob) com checksum para integridade,
+ * não criptografia verdadeira. Adequado para dados de subscription que:
+ * - Não são críticos de segurança (tier, datas de expiração)
+ * - Já são validados no backend
+ * - Servem apenas para melhorar UX (evitar chamadas repetidas)
+ * 
+ * Para dados verdadeiramente sensíveis (tokens, senhas), use Web Crypto API.
+ */
 
 import { SubscriptionData, CachedSubscriptionData } from './types'
 import { SecureLogger } from '@/lib/logger'
 
-// Sistema de cache seguro com criptografia simples
+// Sistema de cache seguro com ofuscação simples
 class SecureCacheManager {
   private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 horas
   private static readonly ENCRYPTION_KEY = 'subscription_cache_key_v1'
