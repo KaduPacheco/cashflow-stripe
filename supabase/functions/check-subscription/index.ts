@@ -215,6 +215,69 @@ serve(async (req) => {
       });
     }
     
+    // ============= VERIFICAR PERMISSÕES ESPECIAIS (FOUNDER/ADMIN) =============
+    logStep("Checking for special roles (founder/admin)");
+    
+    try {
+      const { data: specialRole, error: roleError } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', validatedUserId)
+        .in('role', ['founder', 'admin'])
+        .maybeSingle();
+
+      if (specialRole && !roleError) {
+        logStep("Special role detected", { 
+          role: specialRole.role, 
+          userId: validatedUserId.slice(0, 8) + "..." 
+        });
+
+        // Atualizar tabela subscribers para manter consistência
+        await supabaseClient.from("subscribers").upsert({
+          email: validatedEmail,
+          user_id: validatedUserId,
+          stripe_customer_id: null,
+          subscribed: true,
+          subscription_tier: 'Premium',
+          subscription_end: null, // Acesso vitalício
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'email' });
+
+        // Atualizar profiles
+        await supabaseClient.from("profiles").upsert({
+          id: validatedUserId,
+          email: validatedEmail,
+          assinaturaId: null,
+          updated_at: new Date().toISOString(),
+        });
+
+        logStep("Founder/Admin access granted", { 
+          role: specialRole.role,
+          tier: 'Premium'
+        });
+
+        // Retornar acesso Premium imediato
+        return new Response(JSON.stringify({
+          subscribed: true,
+          subscription_tier: 'Premium',
+          subscription_end: null,
+          subscription_id: null,
+          status: 'founder',
+          message: 'Acesso Premium (Founder)'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    } catch (roleCheckError) {
+      // Se houver erro ao verificar roles, continua com fluxo normal do Stripe
+      logStep("Role check error, continuing with Stripe flow", { 
+        error: roleCheckError.message 
+      });
+    }
+
+    // ============= SE NÃO TEM ROLE ESPECIAL, CONTINUA COM STRIPE =============
+    
     let customers: any;
     try {
       // Removendo timeout muito restritivo
