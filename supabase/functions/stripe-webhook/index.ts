@@ -15,8 +15,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Mapeamento de preços para tiers
 const tierMapping: Record<string, string> = {
-  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'agente_financeiro',  // Preço exemplo do plano básico
-  // Adicione outros mapeamentos conforme necessário
+  'price_1RbPYoHVDJ85Dm6EzXjQsclN': 'agente_financeiro',  // Plano público
+  'price_1RlVapH5wZPXEK4CHPfKL9vH': 'Premium',           // 🔒 Plano VIP (oculto)
 }
 
 const logStep = (step: string, details?: any) => {

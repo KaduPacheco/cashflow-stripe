@@ -24,6 +24,7 @@ import Categorias from "./pages/Categorias";
 import Relatorios from "./pages/Relatorios";
 import Perfil from "./pages/Perfil";
 import Plano from "./pages/Plano";
+import PlanoVip from "./pages/PlanoVip";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 import ContasPagarReceber from "./pages/ContasPagarReceber";
@@ -134,6 +135,14 @@ function AppRoutes() {
             <AppLayout>
               <Plano />
             </AppLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/plano-vip" 
+        element={
+          <ProtectedRoute>
+            <PlanoVip />
           </ProtectedRoute>
         } 
       />

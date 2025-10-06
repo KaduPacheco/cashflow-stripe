@@ -1,1 +1,4 @@
 project_id = "csvkgokkvbtojjkitodc"
+
+[functions.create-checkout-vip]
+verify_jwt = false
