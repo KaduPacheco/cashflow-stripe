@@ -20,7 +20,7 @@ interface ContasListProps {
 }
 
 export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps) {
-  const { deleteConta, pagarConta, pararRecorrencia, gerarRecorrencia } = useContas()
+  const { deleteConta, pagarConta, pararRecorrencia } = useContas()
   const [pagamentoDialog, setPagamentoDialog] = useState(false)
   const [editDialog, setEditDialog] = useState(false)
   const [contaSelecionada, setContaSelecionada] = useState<ContaPagarReceber | null>(null)
@@ -63,18 +63,7 @@ export function ContasList({ contas, loading, tipo, onUpdate }: ContasListProps)
     if (!contaSelecionada || !valorPagamento) return
 
     const valor = parseFloat(valorPagamento)
-    const resultado = await pagarConta(contaSelecionada.id, valor, dataPagamento)
-    
-    // Se o pagamento foi bem-sucedido e a conta é recorrente, gerar próxima ocorrência
-    if (resultado && contaSelecionada.recorrencia && contaSelecionada.recorrencia !== 'unica') {
-      const valorTotal = contaSelecionada.valor
-      const valorJaPago = contaSelecionada.valor_pago + valor
-      
-      // Se a conta foi completamente paga, gerar próxima recorrência
-      if (valorJaPago >= valorTotal) {
-        await gerarRecorrencia(contaSelecionada)
-      }
-    }
+    await pagarConta(contaSelecionada.id, valor, dataPagamento)
     
     setPagamentoDialog(false)
     setContaSelecionada(null)
