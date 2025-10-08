@@ -17,18 +17,6 @@ export function useContasRecorrencia() {
       return null
     }
 
-    const novaConta = {
-      ...contaOriginal,
-      id: undefined,
-      data_vencimento: contaOriginal.data_proxima_recorrencia,
-      valor_pago: 0,
-      status: 'pendente' as const,
-      data_pagamento: undefined,
-      conta_origem_id: contaOriginal.id,
-      created_at: undefined,
-      updated_at: undefined
-    }
-
     // Calculate next recurrence
     const proximaData = new Date(contaOriginal.data_proxima_recorrencia)
     switch (contaOriginal.recorrencia) {
@@ -46,7 +34,23 @@ export function useContasRecorrencia() {
         break
     }
 
-    novaConta.data_proxima_recorrencia = proximaData.toISOString().split('T')[0]
+    // Create a clean copy without relational fields
+    const novaConta = {
+      user_id: contaOriginal.user_id,
+      tipo: contaOriginal.tipo,
+      descricao: contaOriginal.descricao,
+      valor: contaOriginal.valor,
+      data_vencimento: contaOriginal.data_proxima_recorrencia,
+      valor_pago: 0,
+      status: 'pendente' as const,
+      category_id: contaOriginal.category_id,
+      cliente_fornecedor_id: contaOriginal.cliente_fornecedor_id,
+      observacoes: contaOriginal.observacoes,
+      numero_documento: contaOriginal.numero_documento,
+      recorrencia: contaOriginal.recorrencia,
+      conta_origem_id: contaOriginal.id,
+      data_proxima_recorrencia: proximaData.toISOString().split('T')[0]
+    }
 
     return createConta(novaConta)
   }
