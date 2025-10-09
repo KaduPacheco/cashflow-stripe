@@ -1,28 +1,10 @@
 
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
+import { useDailyTestimonials } from '@/hooks/useDailyTestimonials'
 
 export const TestimonialsSection = () => {
-  const testimonials = [
-    {
-      name: 'Maria Silva',
-      role: 'Empreendedora',
-      content: 'O Cash Flow mudou completamente minha relação com o dinheiro. Agora sei exatamente para onde vai cada centavo!',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face'
-    },
-    {
-      name: 'João Santos',
-      role: 'Freelancer',
-      content: 'Desde que uso o Cash Flow, consegui economizar 30% da minha renda mensal. Recomendo para todos!',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face'
-    },
-    {
-      name: 'Ana Costa',
-      role: 'Professora',
-      content: 'Interface simples e intuitiva. Finalmente um app que me ajuda a organizar minhas finanças sem complicação.',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b381d2da?w=96&h=96&fit=crop&crop=face'
-    }
-  ]
+  const testimonials = useDailyTestimonials()
 
   return (
     <section className="py-20 bg-muted/20">
